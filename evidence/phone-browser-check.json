@@ -1,0 +1,31 @@
+{
+  "environment": "Desktop Chrome testing phone-local mode at127.0.0.1:8769; not Android",
+  "realMusic": "sMcWOaJFuw0 Carefree Kevin MacLeod",
+  "search": "One real music result",
+  "playback": "Playing direct audio; native pause control visible",
+  "retry": {
+    "freshRequest": true,
+    "resolveStatus": 200,
+    "mediaHost": "rr1---sn-jvhh4pcgx-ajtl.googlevideo.com",
+    "responses": [
+      206,
+      206
+    ],
+    "mime": "audio/mp4",
+    "resume": "UI returned Playing direct audio"
+  },
+  "guide": {
+    "opened": true,
+    "copyCommand": "Copied status visible",
+    "initialBlobDownload": "Action fired; download bytes not verified through automation; changed to explicit named attachment endpoint",
+    "download": "Attachment endpoint headers/bytes verified; desktop browser save blocked and automation timed out; no claim of successful native download"
+  },
+  "androidTermux": "Pending owner install and mobile-data test",
+  "deviceSetup": {
+    "termuxInstalled": true,
+    "basis": "Owner supplied phone screenshot with Welcome to Termux and typing prompt",
+    "blackytInstall": "Owner reports still downloading or installing packages",
+    "mobileDataPlayback": "pending",
+    "screenOffQueue": "pending"
+  }
+}

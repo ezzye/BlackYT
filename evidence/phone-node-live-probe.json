@@ -1,0 +1,13 @@
+{
+  "realYouTube": true,
+  "runtime": "minimal pure Python yt-dlp+ejs; Node24 only, Mac test",
+  "videoId": "sMcWOaJFuw0",
+  "host": "rr1---sn-jvhh4pcgx-ajtl.googlevideo.com",
+  "status": 206,
+  "mime": "audio/mp4",
+  "bytesRead": 32768,
+  "contentRange": "bytes 0-32767/3323532",
+  "seconds": 1.67,
+  "phoneDeviceTest": "pending",
+  "relay": false
+}

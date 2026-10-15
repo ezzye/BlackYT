@@ -1,0 +1,31 @@
+test_api_metadata_not_cached_and_no_media_relay (test_server.HttpTests.test_api_metadata_not_cached_and_no_media_relay) ... GET 200
+ok
+test_bad_content_type_and_invalid_ids_are_bounded (test_server.HttpTests.test_bad_content_type_and_invalid_ids_are_bounded) ... POST 415
+POST 400
+ok
+test_certificate_is_a_named_download_not_an_inline_document (test_server.HttpTests.test_certificate_is_a_named_download_not_an_inline_document) ... GET 200
+ok
+test_host_and_cross_site_post_are_rejected (test_server.HttpTests.test_host_and_cross_site_post_are_rejected) ... GET 403
+POST 403
+ok
+test_no_media_proxy_or_directory_traversal_route (test_server.HttpTests.test_no_media_proxy_or_directory_traversal_route) ... GET 404
+GET 404
+GET 404
+ok
+test_phone_identity_and_manifest_are_separate_from_mac_icon (test_server.HttpTests.test_phone_identity_and_manifest_are_separate_from_mac_icon) ... GET 200
+GET 200
+ok
+test_arbitrary_search_urls_never_reach_extractor (test_server.ResolverTests.test_arbitrary_search_urls_never_reach_extractor) ... ok
+test_direct_url_rejects_proxy_hosts_and_deceptive_suffixes (test_server.ResolverTests.test_direct_url_rejects_proxy_hosts_and_deceptive_suffixes) ... ok
+test_exclude_wins_and_include_is_case_insensitive_any_match (test_server.ResolverTests.test_exclude_wins_and_include_is_case_insensitive_any_match) ... ok
+test_expiring_cached_url_is_refreshed_once (test_server.ResolverTests.test_expiring_cached_url_is_refreshed_once) ... ok
+test_fresh_request_avoids_cache_after_network_change (test_server.ResolverTests.test_fresh_request_avoids_cache_after_network_change) ... ok
+test_music_category_does_not_trust_title (test_server.ResolverTests.test_music_category_does_not_trust_title) ... ok
+test_phone_mode_cannot_listen_on_lan (test_server.ResolverTests.test_phone_mode_cannot_listen_on_lan) ... ok
+test_refresh_cannot_bypass_changed_filter_or_host (test_server.ResolverTests.test_refresh_cannot_bypass_changed_filter_or_host) ... ok
+test_supported_youtube_link_is_normalized_and_filtered (test_server.ResolverTests.test_supported_youtube_link_is_normalized_and_filtered) ... ok
+
+----------------------------------------------------------------------
+Ran 15 tests in 0.651s
+
+OK

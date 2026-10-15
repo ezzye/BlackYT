@@ -1,0 +1,26 @@
+{
+  "installer": {
+    "http": 200,
+    "sha256Match": true,
+    "bytes": 5506
+  },
+  "bundle": {
+    "http": 200,
+    "sha256Match": true,
+    "bytes": 21618
+  },
+  "runtimeOnly": {
+    "files": 11,
+    "certificatesOrKeys": false,
+    "macUrlInRuntime": false
+  },
+  "setupCommandSyntax": "passed",
+  "savedGuideDownloads": [],
+  "guideAttachment": {
+    "status": 200,
+    "disposition": "attachment; filename=\"BlackYT-Phone-Setup.html\"",
+    "sameAsStandaloneFile": true
+  },
+  "browserDownload": "Insecure download blocked in desktop Chrome on LAN HTTP; browser automation did not confirm saved file. Explicit attachment bytes verified over HTTP. Local standalone file supplied directly.",
+  "build": "fcf9bc8e135eb0c5"
+}

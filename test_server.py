@@ -4,6 +4,8 @@ import json
 import threading
 import time
 import tempfile
+import subprocess
+import sys
 from pathlib import Path
 import unittest
 from http.client import HTTPConnection
@@ -59,6 +61,27 @@ class ResolverTests(unittest.TestCase):
             server.resolve({"id": ID, "mode": "music"})
         self.assertEqual(error.exception.code, "CATEGORY")
 
+    def test_fresh_request_avoids_cache_after_network_change(self):
+        previous = info()
+        server.cache_put("video:" + ID, previous, 120)
+        changed = info(); changed["url"] += "&network=changed"
+        with patch.object(server, "extract", return_value=changed) as extractor:
+            result = server.resolve({"id": ID, "mode": "music", "fresh": True})
+        extractor.assert_called_once_with("https://www.youtube.com/watch?v=" + ID)
+        self.assertEqual(result["url"], changed["url"])
+        changed["categories"] = ["Education"]
+        with patch.object(server, "extract", return_value=changed), self.assertRaises(server.ApiError) as error:
+            server.resolve({"id": ID, "mode": "music", "fresh": True})
+        self.assertEqual(error.exception.code, "CATEGORY")
+        with self.assertRaises(server.ApiError):
+            server.resolve({"id": ID, "fresh": "true"})
+
+    def test_phone_mode_cannot_listen_on_lan(self):
+        for arguments in (["--listen", "0.0.0.0"], ["--allow-host", "example.test"]):
+            result = subprocess.run([sys.executable, str(Path(server.__file__)), "--phone", *arguments], capture_output=True, text=True, timeout=5)
+            self.assertEqual(result.returncode, 2)
+            self.assertIn("--phone requires", result.stderr)
+
     def test_arbitrary_search_urls_never_reach_extractor(self):
         with patch.object(server, "extract") as extractor:
             for query in ["https://localhost/private", "http://169.254.169.254/latest/meta-data/", "https://evil.test/?v=" + ID]:
@@ -102,6 +125,18 @@ class HttpTests(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertEqual(headers["Cache-Control"], "no-store")
         self.assertFalse(json.loads(raw)["mediaRelay"])
+
+    def test_phone_identity_and_manifest_are_separate_from_mac_icon(self):
+        self.http.runtime = "android-local"
+        try:
+            status = json.loads(self.call("/api/status")[2])
+            self.assertEqual(status["product"], "BlackYT")
+            self.assertEqual(status["runtime"], "android-local")
+            manifest = json.loads(self.call("/manifest.webmanifest")[2])
+            self.assertEqual(manifest["short_name"], "BlackYT Phone")
+            self.assertEqual(manifest["start_url"], "/")
+        finally:
+            self.http.runtime = "desktop-local"
 
     def test_certificate_is_a_named_download_not_an_inline_document(self):
         with tempfile.TemporaryDirectory() as folder:

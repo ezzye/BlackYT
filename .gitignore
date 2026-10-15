@@ -22,3 +22,9 @@ evidence/*url*.txt
 evidence/*usage*.json
 evidence/cloud-state*.json
 research/src/
+
+# Reproducible phone download artifacts
+public/phone/
+*.tar.gz
+
+phone/test-results.json

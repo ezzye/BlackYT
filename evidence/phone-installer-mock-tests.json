@@ -1,0 +1,17 @@
+{
+  "checks": {
+    "shell_syntax": "passed",
+    "mock_install_and_rerun": "passed",
+    "tampered_bytes_and_traversal_rejected": "passed",
+    "mock_launcher_status_and_foreground_start": "passed",
+    "foreign_service_collision": "passed"
+  },
+  "limitations": [
+    "No physical Android or Termux device was used."
+  ],
+  "environment": {
+    "install_bash_n": 0,
+    "launcher_sh_n": 0
+  },
+  "overall": "passed"
+}

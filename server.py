@@ -215,6 +215,13 @@ def resolve(body):
     video_id = body.get("id")
     if not isinstance(video_id, str) or not VIDEO_ID.fullmatch(video_id):
         raise ApiError("INPUT", "A valid YouTube video ID is required.")
+    fresh = body.get("fresh", False)
+    if not isinstance(fresh, bool):
+        raise ApiError("INPUT", "fresh must be true or false.")
+    if fresh:
+        # Signatures may be tied to the former Wi-Fi/mobile public IP.
+        with CACHE_LOCK:
+            CACHE.pop("video:" + video_id, None)
     info = cache_get("video:" + video_id)
     if info is None:
         info = extract("https://www.youtube.com/watch?v=" + video_id)
@@ -278,7 +285,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Referrer-Policy", "no-referrer")
         self.send_header("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
-        script = "'self' 'unsafe-inline'" if self.path.split("?")[0] in ("/report.html", "/certificate.html") else "'self'"
+        script = "'self' 'unsafe-inline'" if self.path.split("?")[0] in ("/report.html", "/certificate.html", "/phone.html", "/phone-help.html") else "'self'"
         self.send_header("Content-Security-Policy", "default-src 'self'; script-src " + script + "; style-src 'self' 'unsafe-inline'; img-src 'self' https://i.ytimg.com data:; media-src https://*.googlevideo.com; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; worker-src 'self'; manifest-src 'self'")
         self.end_headers()
         self.wfile.write(body)
@@ -304,6 +311,13 @@ class Handler(BaseHTTPRequestHandler):
                 return
             self.reply(200, certificate.read_bytes(), "application/octet-stream", download="blackyt-local-ca.cer")
             return
+        if path == "/download-phone-guide":
+            guide = PUBLIC / "phone.html"
+            if not guide.is_file():
+                self.json(404, {"error": "Phone setup guide is not prepared.", "code": "NOT_FOUND"})
+                return
+            self.reply(200, guide.read_bytes(), "text/html; charset=utf-8", download="BlackYT-Phone-Setup.html")
+            return
         if path == "/api/status":
             try:
                 version = importlib.metadata.version("yt-dlp")
@@ -311,7 +325,15 @@ class Handler(BaseHTTPRequestHandler):
             except importlib.metadata.PackageNotFoundError:
                 version, ready = None, False
             self.json(200, {"ok": ready, "resolver": "yt-dlp metadata only", "version": version,
-                            "directOnly": True, "mediaRelay": False, "screenOffTest": "pending"})
+                            "product": "BlackYT", "runtime": getattr(self.server, "runtime", "desktop-local"),
+                            "directOnly": True, "mediaRelay": False,
+                            "androidLocalTest": "pending-device-test"})
+            return
+        if path == "/manifest.webmanifest" and getattr(self.server, "runtime", "") == "android-local":
+            manifest = json.loads((PUBLIC / "manifest.webmanifest").read_text())
+            manifest.update(name="BlackYT Phone", short_name="BlackYT Phone",
+                            description="Phone-local player. Start Termux and run blackyt before listening.")
+            self.reply(200, json.dumps(manifest).encode(), "application/manifest+json")
             return
         if path.startswith("/api/"):
             self.json(404, {"error": "No such route. Media relay is not provided.", "code": "NOT_FOUND"})
@@ -375,10 +397,14 @@ def main():
     parser.add_argument("--allow-host", action="append", default=[])
     parser.add_argument("--cert", type=Path)
     parser.add_argument("--key", type=Path)
+    parser.add_argument("--phone", action="store_true", help="Phone-local mode: loopback only; no LAN listener or TLS")
     args = parser.parse_args()
     if bool(args.cert) != bool(args.key):
         parser.error("--cert and --key must be supplied together")
+    if args.phone and (args.listen != "127.0.0.1" or args.allow_host or args.cert or args.key):
+        parser.error("--phone requires --listen 127.0.0.1, no --allow-host and no TLS certificate")
     server = ThreadingHTTPServer((args.listen, args.port), Handler)
+    server.runtime = "android-local" if args.phone else "desktop-local"
     server.allowed_hosts = {"localhost", "127.0.0.1", "::1", args.listen, *args.allow_host}
     if args.cert:
         context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)

@@ -2,7 +2,7 @@
   'use strict';
   const $ = (id) => document.getElementById(id);
   const audio = $('audio');
-  const state = { queue: [], index: -1, resolution: 0, searching: false, evidence: [] };
+  const state = { queue: [], index: -1, resolution: 0, searching: false, runtime: 'unknown', evidence: [] };
   const prefsKey = 'blackyt.preferences.v1';
   const prefFields = ['mode', 'include', 'exclude'];
   const safeText = (value, fallback = '') => typeof value === 'string' ? value : fallback;
@@ -43,7 +43,7 @@
   function mediaError(error) {
     const code = error && error.code;
     const messages = {
-      NETWORK: 'Could not reach the player. Check your connection and retry.',
+      NETWORK: state.runtime === 'android-local' ? 'Open Termux and run blackyt, then return here. The phone player must be running.' : 'Could not reach the player. Check your connection and retry.',
       NOT_FOUND: 'No playable stream was found for this track. Try another result.',
       CATEGORY: 'This result did not pass the music category check. Choose another track or switch to Interests.',
       EXPIRED: 'That stream link expired. Play the track again to request a fresh one.',
@@ -65,7 +65,7 @@
       remove.addEventListener('click', () => {
         const wasCurrent = index === state.index; state.queue.splice(index, 1);
         if (index < state.index) state.index--;
-        else if (wasCurrent) { ++state.resolution; audio.pause(); audio.removeAttribute('src'); audio.load(); state.index = -1; $('now-title').textContent = 'Choose a track'; $('now-sub').textContent = 'Your queue is ready when you are.'; $('stream-host').textContent = 'No stream loaded'; if ('mediaSession' in navigator) { try { navigator.mediaSession.metadata = null; navigator.mediaSession.playbackState = 'none'; } catch (_) {} } }
+        else if (wasCurrent) { ++state.resolution; audio.pause(); audio.removeAttribute('src'); audio.load(); state.index = -1; $('retry-track').disabled = true; $('now-title').textContent = 'Choose a track'; $('now-sub').textContent = 'Your queue is ready when you are.'; $('stream-host').textContent = 'No stream loaded'; if ('mediaSession' in navigator) { try { navigator.mediaSession.metadata = null; navigator.mediaSession.playbackState = 'none'; } catch (_) {} } }
         drawQueue(); log('queue-remove', { position: index + 1 });
       });
       label.addEventListener('click', () => startAt(index));
@@ -85,28 +85,33 @@
     } catch (_) {}
   }
   function setPlaybackState(value) { if ('mediaSession' in navigator) { try { navigator.mediaSession.playbackState = value; } catch (_) {} } }
-  async function startAt(index) {
+  async function startAt(index, { fresh = false, resume = 0 } = {}) {
     if (index < 0 || index >= state.queue.length) return;
     const item = state.queue[index], ticket = ++state.resolution;
-    state.index = index; drawQueue(); audio.pause(); audio.removeAttribute('src'); audio.load();
+    state.index = index; $('retry-track').disabled = true; drawQueue(); audio.pause(); audio.removeAttribute('src'); audio.load();
     $('now-title').textContent = item.title; $('now-sub').textContent = `${item.channel}${item.duration ? ` · ${item.duration}` : ''} · finding direct audio…`; $('stream-host').textContent = 'Resolving…';
     notice('search-notice', 'Finding a direct audio stream…');
-    log('resolve-start', { position: index + 1, mode: $('mode').value });
+    log('resolve-start', { position: index + 1, mode: $('mode').value, fresh });
     try {
-      const result = await api('/api/resolve', { id: item.id, ...requestFilters() });
+      const result = await api('/api/resolve', { id: item.id, ...requestFilters(), fresh });
       if (ticket !== state.resolution || state.queue[state.index]?.id !== item.id) return;
       let parsed;
       try { parsed = new URL(result.url); } catch (_) { throw Object.assign(new Error('The stream link was invalid.'), { code: 'HOST' }); }
       if (parsed.protocol !== 'https:' || !parsed.hostname.toLowerCase().endsWith('.googlevideo.com')) throw Object.assign(new Error('Stream host validation failed.'), { code: 'HOST' });
       if (!result.mime || !/^audio\//i.test(result.mime) && !/^video\/mp4/i.test(result.mime)) throw Object.assign(new Error('The stream format is not a supported audio source.'), { code: 'UNSUPPORTED' });
-      audio.src = parsed.href; audio.load(); $('stream-host').textContent = parsed.hostname;
+      audio.src = parsed.href; audio.load();
+      if (resume > 0) audio.addEventListener('loadedmetadata', () => {
+        if (ticket === state.resolution && Number.isFinite(audio.duration)) audio.currentTime = Math.min(resume, Math.max(0, audio.duration - 1));
+      }, { once: true }); $('stream-host').textContent = parsed.hostname;
       $('now-title').textContent = safeText(result.title, item.title); $('now-sub').textContent = `${safeText(result.channel, item.channel)} · Direct stream${result.expiresAt ? ` · Expires ${new Date(result.expiresAt).toLocaleTimeString()}` : ''}`;
       setMediaMetadata({ title: $('now-title').textContent, channel: safeText(result.channel, item.channel), thumbnail: item.thumbnail });
       try { await audio.play(); setPlaybackState('playing'); notice('search-notice', 'Playing direct audio.'); log('play', { position: index + 1, host: parsed.hostname, mode: $('mode').value }); }
-      catch (error) { if (ticket !== state.resolution) return; setPlaybackState('paused'); throw Object.assign(error, { code: 'PLAY_REJECTED' }); }
+      catch (error) { if (ticket !== state.resolution) return; setPlaybackState('paused'); throw Object.assign(new Error(error.message || 'Tap Play on the audio controls.'), { code: 'PLAY_REJECTED' }); }
     } catch (error) {
       if (ticket !== state.resolution) return;
       $('now-sub').textContent = mediaError(error); $('stream-host').textContent = 'No playable stream'; notice('search-notice', mediaError(error), true); log('play-error', { code: safeText(error.code, 'UNKNOWN'), position: index + 1 });
+    } finally {
+      if (ticket === state.resolution) $('retry-track').disabled = state.index < 0;
     }
   }
   function drawResults(items) {
@@ -132,18 +137,19 @@
     catch (error) { notice('search-notice', mediaError(error), true); }
     finally { state.searching = false; $('search-button').disabled = false; $('search-button').textContent = 'Search tracks'; }
   });
+  $('retry-track').addEventListener('click', () => { if (state.index >= 0) startAt(state.index, { fresh: true, resume: audio.currentTime || 0 }); });
   $('next').addEventListener('click', () => { if (state.index + 1 < state.queue.length) startAt(state.index + 1); else { ++state.resolution; audio.pause(); notice('search-notice', 'End of queue. Add another track to keep listening.'); } });
   $('previous').addEventListener('click', () => { if (audio.currentTime > 3) { audio.currentTime = 0; return; } if (state.index > 0) startAt(state.index - 1); });
-  $('clear-queue').addEventListener('click', () => { ++state.resolution; state.queue = []; state.index = -1; audio.pause(); audio.removeAttribute('src'); audio.load(); $('now-title').textContent = 'Choose a track'; $('now-sub').textContent = 'Your queue is ready when you are.'; $('stream-host').textContent = 'No stream loaded'; setPlaybackState('none'); if ('mediaSession' in navigator) { try { navigator.mediaSession.metadata = null; } catch (_) {} } drawQueue(); log('queue-clear'); });
+  $('clear-queue').addEventListener('click', () => { ++state.resolution; state.queue = []; state.index = -1; $('retry-track').disabled = true; audio.pause(); audio.removeAttribute('src'); audio.load(); $('now-title').textContent = 'Choose a track'; $('now-sub').textContent = 'Your queue is ready when you are.'; $('stream-host').textContent = 'No stream loaded'; setPlaybackState('none'); if ('mediaSession' in navigator) { try { navigator.mediaSession.metadata = null; } catch (_) {} } drawQueue(); log('queue-clear'); });
   audio.addEventListener('ended', () => { setPlaybackState('none'); log('ended', { position: state.index + 1 }); if (state.index + 1 < state.queue.length) startAt(state.index + 1); else notice('search-notice', 'Track finished. Add another track to keep listening.'); });
   audio.addEventListener('play', () => { setPlaybackState('playing'); log('audio-play-request'); });
   audio.addEventListener('playing', () => { log('playing'); });
   audio.addEventListener('pause', () => { setPlaybackState('paused'); log('pause'); });
-  audio.addEventListener('error', () => { if (audio.currentSrc) { notice('search-notice', 'The browser could not play this stream. Try another result.', true); $('now-sub').textContent = 'This browser could not play the direct stream.'; log('audio-error', { mediaError: audio.error?.code || null }); } });
+  audio.addEventListener('error', () => { if (audio.currentSrc) { notice('search-notice', 'This stream stopped. If you changed Wi-Fi or mobile data, tap Retry track for a fresh link.', true); $('now-sub').textContent = 'This browser could not play the direct stream.'; log('audio-error', { mediaError: audio.error?.code || null }); } });
   audio.addEventListener('timeupdate', () => { if ('mediaSession' in navigator && Number.isFinite(audio.duration) && audio.duration > 0) { try { navigator.mediaSession.setPositionState({ duration: audio.duration, playbackRate: audio.playbackRate, position: audio.currentTime }); } catch (_) {} } });
   if ('mediaSession' in navigator) for (const [action, handler] of Object.entries({ play: () => audio.play().catch(error => { log('media-session-play-error', { code: error?.name || 'UNKNOWN' }); notice('search-notice', 'Your browser could not resume playback. Use the player controls to retry.', true); }), pause: () => audio.pause(), nexttrack: () => $('next').click(), previoustrack: () => $('previous').click(), seekto: details => { if (Number.isFinite(details.seekTime)) audio.currentTime = details.seekTime; } })) { try { navigator.mediaSession.setActionHandler(action, handler); } catch (_) {} }
   function connection() { const online = navigator.onLine; $('net-pill').textContent = online ? 'Online' : 'Offline · streams unavailable'; $('net-pill').style.color = online ? 'var(--mint)' : 'var(--red)'; }
-  window.addEventListener('online', () => { connection(); log('network', { state: 'online' }); });
+  window.addEventListener('online', () => { connection(); log('network', { state: 'online' }); if (state.index >= 0) notice('search-notice', 'Connection restored. If playback has stopped, tap Retry track.'); });
   window.addEventListener('offline', () => { connection(); log('network', { state: 'offline' }); });
   document.addEventListener('visibilitychange', () => log('visibility', { state: document.visibilityState }));
   let deferredInstall = null;
@@ -158,13 +164,21 @@
   });
   $('close-install').addEventListener('click', () => installDialog.close());
   $('export-evidence').addEventListener('click', () => {
-    const payload = { product: 'BlackYT PWA', exportedAt: new Date().toISOString(), note: 'Visibility events do not prove screen-off playback. Add a manual phone result after testing on the Android device.', androidScreenOffTest: 'Owner-reported pass: two minutes in Android Chrome over Wi-Fi; not instrumented', events: state.evidence };
+    const payload = { product: 'BlackYT PWA', runtime: state.runtime, exportedAt: new Date().toISOString(), note: 'Visibility events do not prove screen-off playback. Add a manual phone result after testing on the Android device.', androidScreenOffTest: 'Owner-reported pass: two minutes in Android Chrome over Wi-Fi; not instrumented', events: state.evidence };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `blackyt-phone-evidence-${new Date().toISOString().slice(0,10)}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); log('evidence-export');
   });
   async function boot() {
     loadPrefs(); connection();
-    try { const info = await api('/api/status'); $('system-note').textContent = info.ok && info.directOnly === true ? `Player service ready${info.version ? ` · ${info.version}` : ''}. Direct stream mode is enabled.` : 'Player service is not ready for direct-only playback.'; }
+    if (location.hostname === '127.0.0.1' || location.hostname === 'localhost') state.runtime = 'android-local';
+    try {
+      const info = await api('/api/status'); state.runtime = info.runtime || 'desktop-local';
+      $('system-note').textContent = info.ok && info.directOnly === true ? (state.runtime === 'android-local' ? 'Running on this phone. Audio streams directly from YouTube. Keep Termux running while listening.' : `Player service ready${info.version ? ` · ${info.version}` : ''}. Direct stream mode is enabled.`) : 'Player service is not ready for direct-only playback.';
+    }
     catch (error) { $('system-note').textContent = `Player service unavailable. Search and playback need the service: ${mediaError(error)}`; }
+    if (state.runtime === 'android-local') {
+      document.title = 'BlackYT Phone'; $('device-test-note').textContent = 'Use the BlackYT Phone icon for listening away from home. The earlier Wi-Fi app connects to your Mac.'; $('help-link').href = '/phone-help.html'; $('help-link').textContent = 'Phone help';
+      $('install-help').textContent = 'In Android Chrome at http://127.0.0.1:8765, open the ⋮ menu and choose Add to Home screen or Install app. Use the new BlackYT Phone icon; the earlier Wi-Fi icon connects to your Mac. No local certificate is needed for this phone address.';
+    }
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) navigator.serviceWorker.register('/sw.js').catch(() => {});
   }
   boot();
