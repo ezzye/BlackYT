@@ -1,7 +1,7 @@
 {
   "version": "0.3.0-native",
   "package": "uk.blackyt.app",
-  "recordedUtc": "2026-10-15T21:48:45.230063+00:00",
+  "recordedUtc": "2026-10-15T21:52:55.833221+00:00",
   "build": {
     "java": 17,
     "compileSdk": 36,
@@ -58,8 +58,9 @@
     },
     "finalSignedRelease": {
       "installed": true,
-      "freshMobileDataWithUsbDisconnected": "owner check pending",
-      "screenOffMobileData": "owner check pending"
+      "freshMobileDataWithUsbDisconnected": "owner confirmed passed",
+      "screenOffMobileData": "owner confirmed passed",
+      "ownerStatement": "Yes, it plays on mobile data and stays playing when locked"
     }
   },
   "architecture": {
@@ -83,6 +84,9 @@
   "publication": {
     "visibility": "private",
     "tag": "v0.3.0-native",
-    "status": "prepared for private preview; verify the GitHub release page for publication"
+    "status": "published private preview",
+    "url": "https://github.com/ezzye/BlackYT/releases/tag/v0.3.0-native",
+    "codeCommit": "2025fb7d5c1059a167f42656b2b8eec561197389",
+    "acceptanceDocumentation": "Updated after release tagging; the native code and APK are unchanged."
   }
 }

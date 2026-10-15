@@ -23,7 +23,7 @@ Music classification depends on YouTube metadata and is not guaranteed. BlackYT 
 
 ## Current validation
 
-The signed native release builds and is installed on the Pixel 10 Pro XL; its installed APK hash matches the release file. Five unit checks pass, and release lint reports zero errors with routine warnings. Direct native Googlevideo audio returned HTTP 200. The owner confirmed audible native playback, continued playback with the screen locked, and automatic playback of the next queued song while locked. Those owner checks used the pre-release build; the final signed release has the same playback engine. A fresh-song check on mobile data with USB disconnected is pending owner confirmation.
+The signed native release builds and is installed on the Pixel 10 Pro XL; its installed APK hash matches the release file. Five unit checks pass, and release lint reports zero errors with routine warnings. Direct native Googlevideo audio returned HTTP 200. The owner confirmed audible native playback, continued playback with the screen locked, and automatic playback of the next queued song while locked. Those owner checks used the pre-release build; the final signed release has the same playback engine. The owner then confirmed that the final signed release plays a newly searched song on mobile data with USB unplugged and continues with the screen locked. The Mac and Termux are not playback dependencies.
 
 ## Legacy alternative: Termux + Chrome PWA (v0.2.0)
 
