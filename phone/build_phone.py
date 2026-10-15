@@ -41,7 +41,7 @@ def build(transfer_url):
     installer_name = f'install-{installer_sha[:16]}.sh'
     (output / installer_name).write_bytes(installer)
     target = '"$TMPDIR/blackyt-install.sh"'
-    command = (f'pkg update -y && pkg install -y curl && curl --fail --location --retry 2 --max-time 120 '
+    command = (f'apt update && apt full-upgrade -y && apt install -y curl && curl --fail --location --retry 2 --max-time 120 '
                f'{shlex.quote(base + "/phone/" + installer_name)} -o {target} && '
                f'printf \'%s  %s\\n\' {shlex.quote(installer_sha)} {target} | sha256sum -c - && '
                f'bash {target} {shlex.quote(base + "/phone/" + bundle_name)} && blackyt')

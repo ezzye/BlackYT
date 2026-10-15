@@ -1,0 +1,12 @@
+{
+  "ownerReport": "Cannot link executable curl; complete error requested",
+  "diagnosis": "Likely partial Termux package upgrade; exact missing symbol pending",
+  "source": "https://github.com/termux/termux-packages/wiki/Termux-execution-environment#package-dependencies-are-outdated",
+  "recovery": "apt update && apt full-upgrade -y",
+  "bootstrapChanged": "Full apt upgrade before curl installation/download",
+  "checks": [
+    "Shell syntax passed",
+    "Updated guide served successfully"
+  ],
+  "physicalRecovery": "pending owner result"
+}
