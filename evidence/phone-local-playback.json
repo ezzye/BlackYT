@@ -1,0 +1,24 @@
+{
+  "device": "Pixel 10 Pro XL",
+  "test": "USB-controlled Chrome; audio service on phone",
+  "network": [
+    {
+      "route": "/api/audio/<opaque-token>",
+      "status": 206,
+      "mime": "audio/mp4"
+    }
+  ],
+  "interface": "{\"mode\":\"Phone player\",\"note\":\"Running on this phone. Termux streams YouTube audio to the player locally. Keep Termux running while listening.\"}",
+  "playback": {
+    "now": "Prince and the Revolution - When Doves Cry (Official Music Video)",
+    "notice": "Playing through this phone.",
+    "time": 3.028709,
+    "paused": false,
+    "ready": 4,
+    "error": null,
+    "host": "127.0.0.1",
+    "localRoute": true
+  },
+  "physicalListening": "Owner confirmed: It works!",
+  "unpluggedAndScreenOff": "pending owner result"
+}

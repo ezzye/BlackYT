@@ -10,7 +10,7 @@ server_pid=''
 fail() { printf 'BlackYT: %s\n' "$*" >&2; exit 1; }
 compatible_status() {
   status_json=$(curl --silent --show-error --fail --max-time 2 "$BASE_URL/api/status" 2>/dev/null) || return 1
-  printf '%s' "$status_json" | "$PYTHON" -c 'import json,sys; d=json.load(sys.stdin); sys.exit(0 if d.get("product")=="BlackYT" and d.get("runtime")=="android-local" and d.get("ok") is True and d.get("resolver")=="yt-dlp metadata only" and d.get("directOnly") is True and d.get("mediaRelay") is False else 1)' 2>/dev/null || return 1
+  printf '%s' "$status_json" | "$PYTHON" -c 'import json,sys; d=json.load(sys.stdin); sys.exit(0 if d.get("product")=="BlackYT" and d.get("runtime")=="android-local" and d.get("ok") is True and d.get("resolver")=="yt-dlp metadata only" and (d.get("directOnly") is True and d.get("mediaRelay") is False or d.get("youtubeToDeviceOnly") is True and d.get("externalMediaRelay") is False and d.get("relayLocation")=="this-device") else 1)' 2>/dev/null || return 1
   printf '%s\n' "$status_json"
 }
 show_status() {

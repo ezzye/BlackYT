@@ -1,0 +1,23 @@
+{
+  "checks": [
+    {
+      "id": "Prince UG3VcCAlUgE",
+      "status": 206,
+      "mime": "audio/mp4",
+      "bytes": 4096,
+      "host": "rr8---sn-jvhh4pcgx-ajts.googlevideo.com",
+      "headers": "default",
+      "error": ""
+    },
+    {
+      "id": "controlCarefree sMcWOaJFuw0",
+      "status": 206,
+      "mime": "audio/mp4",
+      "bytes": 4096,
+      "host": "rr1---sn-jvhh4pcgx-ajtl.googlevideo.com",
+      "headers": "default",
+      "error": ""
+    }
+  ],
+  "source": "Phone native urllib HTTPS probe via USB-local receiver"
+}

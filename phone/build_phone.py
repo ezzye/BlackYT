@@ -54,7 +54,7 @@ def build(transfer_url):
     metadata = {'build': checksum[:16], 'bundle': bundle_name, 'bundleSha256': checksum,
                 'installer': installer_name, 'installerSha256': installer_sha,
                 'transferOrigin': base, 'runtimeOrigin': 'http://127.0.0.1:8765',
-                'files': RUNTIME, 'command': command, 'mediaRelay': False,
+                'files': RUNTIME, 'command': command, 'mediaRelay': True, 'relayLocation': 'this-device', 'externalMediaRelay': False,
                 'deviceTest': 'pending owner Pixel Termux test'}
     (output / 'build.json').write_text(json.dumps(metadata, indent=2) + '\n')
     print(json.dumps({k:v for k,v in metadata.items() if k not in ('files','command')}, indent=2))

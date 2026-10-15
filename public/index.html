@@ -18,8 +18,8 @@
 </head>
 <body>
   <main class="shell">
-    <header class="top"><div class="brand"><img src="/icons/icon.svg" alt=""><span>BLACKYT</span></div><div class="top-actions"><span class="pill" id="net-pill">Checking connection…</span><span class="pill">Direct audio</span></div></header>
-    <section class="intro"><div class="eyebrow">Your listening corner</div><h1>Find a sound.<br>Keep it playing.</h1><p>Search YouTube-hosted audio and listen through a direct stream. No video embeds or media relay.</p></section>
+    <header class="top"><div class="brand"><img src="/icons/icon.svg" alt=""><span>BLACKYT</span></div><div class="top-actions"><span class="pill" id="net-pill">Checking connection…</span><span class="pill" id="stream-mode">Direct audio</span></div></header>
+    <section class="intro"><div class="eyebrow">Your listening corner</div><h1>Find a sound.<br>Keep it playing.</h1><p id="intro-description">Search YouTube-hosted audio and listen through a direct stream. No video embeds or media relay.</p></section>
     <div class="layout">
       <section class="panel search" aria-labelledby="search-title">
         <h2 id="search-title">Find something to play</h2>
@@ -37,7 +37,7 @@
           <div class="art" aria-hidden="true">♫</div><div class="tag">Now playing</div><div class="now-title" id="now-title">Choose a track</div><div class="now-sub" id="now-sub">Your queue is ready when you are.</div>
           <audio id="audio" controls preload="none" playsinline></audio>
           <div class="transport"><button class="line-button" id="previous" type="button" aria-label="Previous track">⏮</button><button class="line-button" id="next" type="button" aria-label="Next track">⏭</button><button class="line-button" id="retry-track" type="button" disabled>Retry track</button></div>
-          <div class="hostline">Stream host: <strong id="stream-host">No stream loaded</strong></div>
+          <div class="hostline"><span id="stream-label">Stream host:</span> <strong id="stream-host">No stream loaded</strong></div>
         </section>
         <section class="panel queue"><div class="queue-head"><h2>Up next <span id="queue-count">(0)</span></h2><button class="line-button" id="clear-queue" type="button">Clear</button></div><div class="queue-items" id="queue-items"><p class="notice">Add a search result to start a queue.</p></div></section>
       </aside>

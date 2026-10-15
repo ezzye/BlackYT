@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""BlackYT local metadata resolver. There is deliberately no media/proxy route."""
+"""BlackYT local resolver with an optional phone-local audio stream."""
 from __future__ import annotations
 import argparse
 import datetime as dt
@@ -14,6 +14,9 @@ import socket
 import ssl
 import threading
 import time
+import secrets
+import urllib.error
+import urllib.request
 from collections import defaultdict, deque
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, unquote, urlparse
@@ -26,6 +29,12 @@ CACHE_LOCK = threading.Lock()
 EXTRACT_SLOTS = threading.BoundedSemaphore(2)
 REQUESTS: dict[str, deque] = defaultdict(deque)
 REQUEST_LOCK = threading.Lock()
+AUDIO_TOKENS: dict[str, tuple[float, str, str, str]] = {}
+AUDIO_TOKEN_LOCK = threading.Lock()
+AUDIO_STREAMS = threading.BoundedSemaphore(4)
+MAX_AUDIO_TOKENS = 40
+MAX_AUDIO_TOKEN_TTL = 6 * 60 * 60
+STREAM_TIMEOUT = 15
 
 
 class ApiError(Exception):
@@ -83,6 +92,75 @@ def direct_url(raw):
     if expiry and expiry < time.time() + 45:
         raise ApiError("EXPIRED", "The direct stream URL is already expiring. Try Play again.", 502)
     return parsed.hostname, expiry
+
+
+def phone_audio_result(result):
+    """Replace a signed URL with an opaque, short-lived local route."""
+    now = time.time()
+    host, expiry = direct_url(result.get("url"))
+    token_expiry = min(now + MAX_AUDIO_TOKEN_TTL, float(expiry or now + MAX_AUDIO_TOKEN_TTL))
+    token = secrets.token_urlsafe(24)
+    with AUDIO_TOKEN_LOCK:
+        for old, value in list(AUDIO_TOKENS.items()):
+            if value[0] <= now:
+                AUDIO_TOKENS.pop(old, None)
+        while len(AUDIO_TOKENS) >= MAX_AUDIO_TOKENS:
+            AUDIO_TOKENS.pop(next(iter(AUDIO_TOKENS)))
+        AUDIO_TOKENS[token] = (token_expiry, result["url"], result["mime"], result["id"])
+    return {key: value for key, value in result.items() if key != "url"} | {
+        "url": "/api/audio/" + token, "sourceHost": host, "transport": "phone-local",
+        "directOnly": False, "youtubeToDeviceOnly": True, "externalMediaRelay": False,
+    }
+
+
+def audio_token(token):
+    with AUDIO_TOKEN_LOCK:
+        value = AUDIO_TOKENS.get(token)
+        if not value:
+            return None
+        if value[0] <= time.time():
+            AUDIO_TOKENS.pop(token, None)
+            return None
+        return value
+
+
+def allowed_media_url(url):
+    try:
+        parsed = urlparse(url)
+        return (parsed.scheme == "https" and parsed.hostname
+                and parsed.hostname.lower().endswith(".googlevideo.com")
+                and not parsed.username and not parsed.password and parsed.port in (None, 443))
+    except ValueError:
+        return False
+
+
+class GoogleVideoRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Follow redirects only while every hop remains on HTTPS googlevideo."""
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        if not allowed_media_url(newurl):
+            raise ApiError("UPSTREAM_HOST", "YouTube redirected the stream to an unsupported host.", 502)
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+def open_audio(url, range_header=None):
+    if not allowed_media_url(url):
+        raise ApiError("UPSTREAM_HOST", "The stream host is not permitted.", 502)
+    request = urllib.request.Request(url, headers={"Accept": "*/*"})
+    if range_header:
+        request.add_header("Range", range_header)
+    opener = urllib.request.build_opener(GoogleVideoRedirectHandler())
+    return opener.open(request, timeout=STREAM_TIMEOUT)
+
+
+def parse_audio_range(value):
+    if value is None:
+        return None
+    if len(value) > 80:
+        raise ApiError("RANGE", "Use one valid byte range.", 416)
+    match = re.fullmatch(r"bytes=(\d*)-(\d*)", value.strip())
+    if not match or not any(match.groups()) or (match.group(1) and match.group(2) and int(match.group(1)) > int(match.group(2))):
+        raise ApiError("RANGE", "Use one valid byte range.", 416)
+    return "bytes=" + match.group(1) + "-" + match.group(2)
 
 
 class QuietLogger:
@@ -286,7 +364,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Referrer-Policy", "no-referrer")
         self.send_header("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
         script = "'self' 'unsafe-inline'" if self.path.split("?")[0] in ("/report.html", "/certificate.html", "/phone.html", "/phone-help.html") else "'self'"
-        self.send_header("Content-Security-Policy", "default-src 'self'; script-src " + script + "; style-src 'self' 'unsafe-inline'; img-src 'self' https://i.ytimg.com data:; media-src https://*.googlevideo.com; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; worker-src 'self'; manifest-src 'self'")
+        self.send_header("Content-Security-Policy", "default-src 'self'; script-src " + script + "; style-src 'self' 'unsafe-inline'; img-src 'self' https://i.ytimg.com data:; media-src 'self' https://*.googlevideo.com; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; worker-src 'self'; manifest-src 'self'")
         self.end_headers()
         self.wfile.write(body)
 
@@ -304,6 +382,9 @@ class Handler(BaseHTTPRequestHandler):
             self.json(403, {"error": "Host not permitted.", "code": "HOST"})
             return
         path = urlparse(self.path).path
+        if path.startswith("/api/audio/") and getattr(self.server, "runtime", "") == "android-local":
+            self.stream_audio(path, head=False)
+            return
         if path in ("/download-certificate", "/blackyt-local-ca.cer"):
             certificate = PUBLIC / "blackyt-local-ca.cer"
             if not certificate.is_file():
@@ -324,10 +405,14 @@ class Handler(BaseHTTPRequestHandler):
                 ready = True
             except importlib.metadata.PackageNotFoundError:
                 version, ready = None, False
-            self.json(200, {"ok": ready, "resolver": "yt-dlp metadata only", "version": version,
-                            "product": "BlackYT", "runtime": getattr(self.server, "runtime", "desktop-local"),
-                            "directOnly": True, "mediaRelay": False,
-                            "androidLocalTest": "pending-device-test"})
+            phone = getattr(self.server, "runtime", "desktop-local") == "android-local"
+            state = {"ok": ready, "resolver": "yt-dlp metadata only", "version": version,
+                     "product": "BlackYT", "runtime": getattr(self.server, "runtime", "desktop-local"),
+                     "directOnly": not phone, "mediaRelay": phone,
+                     "androidLocalTest": "pending-device-test"}
+            if phone:
+                state.update(relayLocation="this-device", youtubeToDeviceOnly=True, externalMediaRelay=False)
+            self.json(200, state)
             return
         if path == "/manifest.webmanifest" and getattr(self.server, "runtime", "") == "android-local":
             manifest = json.loads((PUBLIC / "manifest.webmanifest").read_text())
@@ -336,7 +421,7 @@ class Handler(BaseHTTPRequestHandler):
             self.reply(200, json.dumps(manifest).encode(), "application/manifest+json")
             return
         if path.startswith("/api/"):
-            self.json(404, {"error": "No such route. Media relay is not provided.", "code": "NOT_FOUND"})
+            self.json(404, {"error": "No such route.", "code": "NOT_FOUND"})
             return
         if path == "/blackyt-poc.zip" and (ROOT / "blackyt-poc.zip").is_file():
             self.reply(200, (ROOT / "blackyt-poc.zip").read_bytes(), "application/zip")
@@ -377,8 +462,10 @@ class Handler(BaseHTTPRequestHandler):
                 result = search(body)
             elif route == "/api/resolve":
                 result = resolve(body)
+                if getattr(self.server, "runtime", "") == "android-local":
+                    result = phone_audio_result(result)
             else:
-                raise ApiError("NOT_FOUND", "No such route. Media relay is not provided.", 404)
+                raise ApiError("NOT_FOUND", "No such route.", 404)
             self.json(200, result)
         except ApiError as error:
             self.failure(error)
@@ -388,6 +475,78 @@ class Handler(BaseHTTPRequestHandler):
             pass
         except Exception:
             self.failure(ApiError("INTERNAL", "The local resolver could not complete this request.", 500))
+
+    def do_HEAD(self):
+        if not self.valid_host():
+            self.json(403, {"error": "Host not permitted.", "code": "HOST"})
+            return
+        path = urlparse(self.path).path
+        if path.startswith("/api/audio/") and getattr(self.server, "runtime", "") == "android-local":
+            self.stream_audio(path, head=True)
+            return
+        self.json(404, {"error": "No such route.", "code": "NOT_FOUND"})
+
+    def stream_audio(self, path, *, head):
+        if "?" in self.path or "/" in path.removeprefix("/api/audio/"):
+            self.json(404, {"error": "Audio token not found.", "code": "NOT_FOUND"})
+            return
+        token = path.removeprefix("/api/audio/")
+        entry = audio_token(token)
+        if not entry:
+            self.json(404, {"error": "Audio token expired or not found. Resolve again to retry.", "code": "AUDIO_TOKEN"})
+            return
+        try:
+            range_header = parse_audio_range(self.headers.get("Range"))
+        except ApiError as error:
+            self.failure(error)
+            return
+        if not AUDIO_STREAMS.acquire(timeout=1):
+            self.json(503, {"error": "Phone audio stream is busy. Retry shortly.", "code": "AUDIO_BUSY"})
+            return
+        response = None
+        try:
+            _expiry, url, expected_mime, _video_id = entry
+            try:
+                response = open_audio(url, range_header)
+            except urllib.error.HTTPError as error:
+                error.close()
+                self.json(502, {"error": "YouTube refused the phone-local audio request. Resolve again to retry.", "code": "UPSTREAM_DENIED"})
+                return
+            except ApiError as error:
+                self.failure(error)
+                return
+            except Exception:
+                self.json(502, {"error": "The phone-local audio request could not complete.", "code": "UPSTREAM_ERROR"})
+                return
+            status = getattr(response, "status", response.getcode())
+            content_type = response.headers.get_content_type()
+            if status not in (200, 206) or content_type not in ("audio/mp4", "audio/webm") or content_type != expected_mime:
+                self.json(502, {"error": "YouTube returned an unsupported audio response.", "code": "UPSTREAM_RESPONSE"})
+                return
+            self.send_response(status)
+            self.send_header("Content-Type", content_type)
+            for name in ("Content-Length", "Content-Range"):
+                value = response.headers.get(name)
+                if value and re.fullmatch(r"(?:bytes )?[0-9*/ -]+", value):
+                    self.send_header(name, value)
+            self.send_header("Accept-Ranges", response.headers.get("Accept-Ranges", "bytes"))
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.send_header("Referrer-Policy", "no-referrer")
+            self.send_header("Content-Security-Policy", "default-src 'none'; media-src 'self'")
+            self.end_headers()
+            if not head:
+                while True:
+                    chunk = response.read(64 * 1024)
+                    if not chunk:
+                        break
+                    self.wfile.write(chunk)
+        except (BrokenPipeError, ConnectionResetError):
+            pass
+        finally:
+            if response:
+                response.close()
+            AUDIO_STREAMS.release()
 
 
 def main():
@@ -411,7 +570,8 @@ def main():
         context.load_cert_chain(args.cert, args.key)
         server.socket = context.wrap_socket(server.socket, server_side=True)
     scheme = "https" if args.cert else "http"
-    print(f"BlackYT: {scheme}://{args.listen}:{args.port} — metadata only; no media relay", flush=True)
+    mode = "phone-local audio; no external relay" if args.phone else "metadata only; no media relay"
+    print(f"BlackYT: {scheme}://{args.listen}:{args.port} — {mode}", flush=True)
     print("Use the same public network exit for resolver and player; direct URLs may be IP-bound.", flush=True)
     try:
         server.serve_forever()
