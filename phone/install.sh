@@ -1,19 +1,35 @@
 #!/usr/bin/env bash
 set -eu
 
-# Usage: bash install.sh http://192.168.1.228:8765/path/blackyt-phone.tar.gz
-BUNDLE_URL=${1-}
+# Usage: bash install.sh https://host/path/blackyt-phone.tar.gz
+#    or: bash install.sh --local /absolute/path/blackyt-phone.tar.gz
+mode=url
+BUNDLE_URL=''
+BUNDLE_PATH=''
+if [ "$#" -eq 1 ]; then
+  BUNDLE_URL=$1
+elif [ "$#" -eq 2 ] && [ "$1" = '--local' ]; then
+  mode=local
+  BUNDLE_PATH=$2
+else
+  printf 'Usage: bash install.sh https://host/path/bundle.tar.gz\n   or: bash install.sh --local /absolute/path/bundle.tar.gz\n' >&2
+  exit 1
+fi
 BUNDLE_SHA256='__BUNDLE_SHA256__'
 APP_HOME="$HOME/blackyt"
 PREFIX_BIN="${PREFIX:-/data/data/com.termux/files/usr}/bin"
 
 fail() { printf 'BlackYT installer: %s\n' "$*" >&2; exit 1; }
-[ "$#" -eq 1 ] || fail 'supply the bundle URL as the only argument.'
-case "$BUNDLE_URL" in
-  https://*|http://*) ;;
-  *) fail 'bundle URL must use HTTP or HTTPS.';;
-esac
-case "$BUNDLE_URL" in http://*) printf 'Notice: this transfer uses HTTP; the pinned SHA-256 check authenticates the bundle bytes.\n';; esac
+if [ "$mode" = url ]; then
+  case "$BUNDLE_URL" in
+    https://*|http://*) ;;
+    *) fail 'bundle URL must use HTTP or HTTPS.';;
+  esac
+  case "$BUNDLE_URL" in http://*) printf 'Notice: this transfer uses HTTP; the pinned SHA-256 check authenticates the bundle bytes.\n';; esac
+else
+  case "$BUNDLE_PATH" in /*) ;; *) fail 'local bundle path must be absolute.';; esac
+  [ -f "$BUNDLE_PATH" ] && [ ! -L "$BUNDLE_PATH" ] || fail 'local bundle must be an existing regular file, not a symlink.'
+fi
 case "$BUNDLE_SHA256" in
   *[!0-9a-fA-F]*) fail 'bundle SHA-256 was not set by the packager.';;
 esac
@@ -28,7 +44,11 @@ cleanup() { [ -n "${work-}" ] && [ -d "$work" ] && rm -rf -- "$work"; }
 trap cleanup EXIT
 trap 'exit 130' HUP INT TERM
 archive="$work/bundle.tar.gz"
-curl --fail --location --silent --show-error --retry 3 --retry-delay 2 --retry-connrefused --max-time 180 --output "$archive" "$BUNDLE_URL" || fail 'download failed after bounded retries.'
+if [ "$mode" = local ]; then
+  cp "$BUNDLE_PATH" "$archive" || fail 'could not copy the local bundle into private staging.'
+else
+  curl --fail --location --silent --show-error --retry 3 --retry-delay 2 --retry-connrefused --max-time 180 --output "$archive" "$BUNDLE_URL" || fail 'download failed after bounded retries.'
+fi
 actual=$(sha256sum "$archive" | cut -d ' ' -f 1)
 [ "${actual}" = "$(printf '%s' "$BUNDLE_SHA256" | tr 'A-F' 'a-f')" ] || fail 'bundle SHA-256 does not match the pinned value.'
 
@@ -109,4 +129,8 @@ finally:
         os.unlink(next_link)
 PYSELECT
 printf 'Installed BlackYT in %s. Start it in the foreground with: blackyt\n' "$APP_HOME"
-printf 'For the initial transfer, use the phone address and port shown by the bundle provider; SHA-256 is checked before extraction.\n'
+if [ "$mode" = local ]; then
+  printf 'Local bundle SHA-256 was checked before extraction.\n'
+else
+  printf 'For the initial transfer, use the phone address and port shown by the bundle provider; SHA-256 is checked before extraction.\n'
+fi

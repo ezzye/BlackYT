@@ -17,13 +17,14 @@ RUNTIME = ['server.py', 'public/index.html', 'public/app.js', 'public/sw.js',
            'public/icons/icon.svg', 'public/icons/icon-192.png', 'public/icons/icon-512.png',
            'phone/blackyt.sh', 'phone/requirements.txt']
 def digest(data): return hashlib.sha256(data).hexdigest()
-def build(transfer_url):
+def build(transfer_url, destination=None):
     url = urlparse(transfer_url)
     if url.scheme not in ('http', 'https') or not url.hostname or url.username or url.password or url.query or url.fragment:
         raise ValueError('Use an HTTP(S) transfer origin without credentials, query or fragment')
     base = transfer_url.rstrip('/')
-    output = ROOT / 'public/phone'
-    output.mkdir(exist_ok=True)
+    public_root = Path(destination) if destination else ROOT / 'public'
+    output = public_root / 'phone'
+    output.mkdir(parents=True, exist_ok=True)
     raw = io.BytesIO()
     with tarfile.open(fileobj=raw, mode='w', format=tarfile.USTAR_FORMAT) as archive:
         for name in RUNTIME:
@@ -50,15 +51,18 @@ def build(transfer_url):
               'INSTALL_SHA': installer_sha, 'BUNDLE_SHA': checksum, 'BUILD': checksum[:16]}
     for key, value in values.items():
         guide = guide.replace('__' + key + '__', html.escape(value, quote=True))
-    (ROOT / 'public/phone.html').write_text(guide)
+    (public_root / 'phone.html').write_text(guide)
     metadata = {'build': checksum[:16], 'bundle': bundle_name, 'bundleSha256': checksum,
                 'installer': installer_name, 'installerSha256': installer_sha,
                 'transferOrigin': base, 'runtimeOrigin': 'http://127.0.0.1:8765',
                 'files': RUNTIME, 'command': command, 'mediaRelay': True, 'relayLocation': 'this-device', 'externalMediaRelay': False,
-                'deviceTest': 'Owner confirmed Pixel phone-local playback and manual queue; locked mobile-data duration not separately confirmed'}
+                'deviceTest': 'Owner confirmed Pixel phone-local playback and manual queue; two-minute screen-lock playback confirmed; locked queue transition not separately confirmed'}
     (output / 'build.json').write_text(json.dumps(metadata, indent=2) + '\n')
     print(json.dumps({k:v for k,v in metadata.items() if k not in ('files','command')}, indent=2))
+    return metadata
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--transfer-url', required=True)
-    build(parser.parse_args().transfer_url)
+    parser.add_argument('--output', type=Path, help='Optional build destination; defaults to public/')
+    args = parser.parse_args()
+    build(args.transfer_url, args.output)

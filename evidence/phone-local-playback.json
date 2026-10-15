@@ -20,9 +20,13 @@
     "localRoute": true
   },
   "physicalListening": "Owner confirmed: It works!",
-  "unpluggedAndScreenOff": "User was instructed to test with USB disconnected and Wi-Fi off; exact two-minute locked duration and locked queue transition were not separately confirmed.",
+  "unpluggedAndScreenOff": "Owner confirmed two minutes with screen locked during the requested phone-only check. Exact mobile-data/USB-disconnected conditions and locked queue transition were not separately restated.",
   "manualQueue": {
     "ownerConfirmed": true,
     "ownerReply": "It is working I was tapping the wrong button"
+  },
+  "screenLockTwoMinutes": {
+    "ownerConfirmed": true,
+    "ownerReply": "It ran for two minutes with screen lock on"
   }
 }

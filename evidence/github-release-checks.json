@@ -1,0 +1,10 @@
+{
+  "backendTests": "22 passed",
+  "installerChecks": "7 passed, including local bundle install and altered local archive rejection",
+  "portablePackageChecks": "Passed: ZIP/tar whitelist, internal and outer checksums, installer pin, shell syntax, mocked setup and tamper rejection, paths with spaces, deterministic repeated builds",
+  "guideBrowser": "Opened new HTTP guide in browser; Save HTML downloaded standalone file; content verified",
+  "nativeShareSheet": "Not sent; save-and-attach fallback documented",
+  "cleanPhoneReleaseInstall": "Not repeated; current Pixel runtime installed by earlier USB route",
+  "screenLock": "Owner confirmed two minutes",
+  "githubPublication": "Pending upload and readback"
+}

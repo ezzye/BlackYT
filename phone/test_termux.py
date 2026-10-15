@@ -88,13 +88,30 @@ exec python3 "$@"
     tampered = subprocess.run(command, env=env, text=True, capture_output=True)
     assert tampered.returncode != 0 and "SHA-256 does not match" in tampered.stderr
     assert os.readlink(home / "blackyt" / "current") == second_release
+
+    bundle.write_bytes(original)
+    local_command = ["bash", str(installer_path), "--local", str(bundle)]
+    local_install = subprocess.run(local_command, env=env, text=True, capture_output=True)
+    assert local_install.returncode == 0, local_install.stderr
+    local_release = os.readlink(home / "blackyt" / "current")
+    assert local_release.startswith("releases/") and local_release != second_release
+    assert "Local bundle SHA-256 was checked" in local_install.stdout
+    RESULT["checks"]["mock_local_bundle_install"] = "passed"
+
+    bundle.write_bytes(b"tampered local bundle")
+    local_tampered = subprocess.run(local_command, env=env, text=True, capture_output=True)
+    assert local_tampered.returncode != 0 and "SHA-256 does not match" in local_tampered.stderr
+    assert os.readlink(home / "blackyt" / "current") == local_release
+    RESULT["checks"]["tampered_local_bundle_rejected"] = "passed"
+
+    bundle.write_bytes(original)
     with tarfile.open(bundle, "w:gz") as archive:
         member = tarfile.TarInfo("../escape"); member.size = 1
         archive.addfile(member, io.BytesIO(b"x"))
     installer_path.write_text((HERE / "install.sh").read_text().replace("__BUNDLE_SHA256__", hashlib.sha256(bundle.read_bytes()).hexdigest()))
     traversal = subprocess.run(command, env=env, text=True, capture_output=True)
     assert traversal.returncode != 0 and "unsafe path" in traversal.stderr
-    assert os.readlink(home / "blackyt" / "current") == second_release
+    assert os.readlink(home / "blackyt" / "current") == local_release
     assert not (root / "escape").exists()
     RESULT["checks"]["tampered_bytes_and_traversal_rejected"] = "passed"
 
