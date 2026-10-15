@@ -73,7 +73,7 @@ def music_category(info):
 
 def direct_url(raw):
     if not isinstance(raw, str):
-        raise ApiError("HOST", "No direct YouTube media URL was returned.", 502)
+        raise ApiError("HOST", "No direct YT media URL was returned.", 502)
     try:
         parsed = urlparse(raw)
         valid = (parsed.scheme == "https" and parsed.hostname
@@ -83,7 +83,7 @@ def direct_url(raw):
     except ValueError:
         valid = False
     if not valid:
-        raise ApiError("HOST", "The resolver returned a non-YouTube media host; playback was blocked.", 502)
+        raise ApiError("HOST", "The resolver returned a non-YT media host; playback was blocked.", 502)
     expiry = parse_qs(parsed.query).get("expire", [None])[0]
     try:
         expiry = int(expiry) if expiry else None
@@ -138,7 +138,7 @@ class GoogleVideoRedirectHandler(urllib.request.HTTPRedirectHandler):
     """Follow redirects only while every hop remains on HTTPS googlevideo."""
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         if not allowed_media_url(newurl):
-            raise ApiError("UPSTREAM_HOST", "YouTube redirected the stream to an unsupported host.", 502)
+            raise ApiError("UPSTREAM_HOST", "YT redirected the stream to an unsupported host.", 502)
         return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
@@ -193,21 +193,21 @@ def extract(target, *, flat=False):
         with yt_dlp.YoutubeDL(opts) as ydl:
             info = ydl.extract_info(target, download=False)
         if not info:
-            raise ApiError("NOT_FOUND", "YouTube returned no usable metadata.", 502)
+            raise ApiError("NOT_FOUND", "YT returned no usable metadata.", 502)
         return info
     except ApiError:
         raise
     except Exception as error:
         message = str(error).lower()
         if "429" in message or "too many requests" in message:
-            raise ApiError("RATE_LIMITED", "YouTube is limiting requests. Wait before retrying.", 429)
+            raise ApiError("RATE_LIMITED", "YT is limiting requests. Wait before retrying.", 429)
         if "sign in" in message or "bot" in message or "403" in message:
-            raise ApiError("YOUTUBE_ACCESS", "YouTube refused access from this connection.", 502,
+            raise ApiError("YOUTUBE_ACCESS", "YT refused access from this connection.", 502,
                            "This proof of concept does not use account cookies or route media through a proxy.")
         if "format" in message:
-            raise ApiError("NOT_FOUND", "YouTube did not provide a supported direct audio format.", 502,
+            raise ApiError("NOT_FOUND", "YT did not provide a supported direct audio format.", 502,
                            "Try another public video or update the local resolver. No relay fallback is used.")
-        raise ApiError("YOUTUBE_ACCESS", "The public YouTube request could not complete.", 502,
+        raise ApiError("YOUTUBE_ACCESS", "The public YT request could not complete.", 502,
                        "Check the connection and resolver version, then retry.")
     finally:
         EXTRACT_SLOTS.release()
@@ -244,7 +244,7 @@ def search(body):
     rules = filters(body)
     query = body.get("query", "")
     if not isinstance(query, str) or not 1 <= len(query.strip()) <= 180:
-        raise ApiError("INPUT", "Enter a search or a public YouTube video link (up to 180 characters).")
+        raise ApiError("INPUT", "Enter a search or a public YT video link (up to 180 characters).")
     query = query.strip()
     # A link is normalized to a video ID; arbitrary fetch URLs never reach the extractor.
     video_id = None
@@ -259,7 +259,7 @@ def search(body):
         elif parsed.hostname == "youtu.be":
             video_id = parsed.path.lstrip("/").split("/")[0]
         if not video_id or not VIDEO_ID.fullmatch(video_id):
-            raise ApiError("INPUT", "Use a public YouTube video link, video ID, or plain search words.")
+            raise ApiError("INPUT", "Use a public YT video link, video ID, or plain search words.")
     if video_id:
         info = cache_get("video:" + video_id)
         if info is None:
@@ -285,14 +285,14 @@ def search(body):
                       "duration": duration_text(entry.get("duration")), "thumbnail": thumbnail(vid),
                       "url": "https://www.youtube.com/watch?v=" + vid,
                       "matchBasis": "Music category checked on Play" if rules["mode"] == "music" else "Title/channel interest rules"})
-    return {"items": items, "notice": f"{len(items)} results. " + ("Music search is a candidate list; Play verifies YouTube's Music category. " if rules["mode"] == "music" else "") + "Include matches any phrase; exclude wins. Rules inspect title and channel, not the audio."}
+    return {"items": items, "notice": f"{len(items)} results. " + ("Music search is a candidate list; Play verifies YT's Music category. " if rules["mode"] == "music" else "") + "Include matches any phrase; exclude wins. Rules inspect title and channel, not the audio."}
 
 
 def resolve(body):
     rules = filters(body)
     video_id = body.get("id")
     if not isinstance(video_id, str) or not VIDEO_ID.fullmatch(video_id):
-        raise ApiError("INPUT", "A valid YouTube video ID is required.")
+        raise ApiError("INPUT", "A valid YT video ID is required.")
     fresh = body.get("fresh", False)
     if not isinstance(fresh, bool):
         raise ApiError("INPUT", "fresh must be true or false.")
@@ -307,7 +307,7 @@ def resolve(body):
     if not text_matches(info, rules):
         raise ApiError("FILTER", "This item no longer matches your include/exclude rules.", 422)
     if rules["mode"] == "music" and not music_category(info):
-        raise ApiError("CATEGORY", "This video is not labelled Music by YouTube.", 422,
+        raise ApiError("CATEGORY", "This video is not labelled Music by YT.", 422,
                        "Choose another result or switch to Interests.")
     if info.get("is_live") or info.get("live_status") == "is_live":
         raise ApiError("UNSUPPORTED", "Live broadcasts are outside this first direct-audio test.", 422)
@@ -324,7 +324,7 @@ def resolve(body):
         if not text_matches(info, rules):
             raise ApiError("FILTER", "This item no longer matches your filters.", 422)
         if rules["mode"] == "music" and not music_category(info):
-            raise ApiError("CATEGORY", "This video is not labelled Music by YouTube.", 422)
+            raise ApiError("CATEGORY", "This video is not labelled Music by YT.", 422)
         host, expiry = direct_url(info.get("url"))
         cache_put("video:" + video_id, info, 120)
     ext = info.get("ext")
@@ -334,7 +334,7 @@ def resolve(body):
             "url": info["url"], "mime": "audio/mp4" if ext == "m4a" else "audio/webm",
             "host": host, "expiresAt": dt.datetime.fromtimestamp(expiry, dt.timezone.utc).isoformat() if expiry else None,
             "duration": info.get("duration"), "sourceUrl": "https://www.youtube.com/watch?v=" + video_id,
-            "categories": info.get("categories") or [], "matchBasis": "YouTube Music category + title/channel rules" if rules["mode"] == "music" else "Title/channel rules",
+            "categories": info.get("categories") or [], "matchBasis": "YT Music category + title/channel rules" if rules["mode"] == "music" else "Title/channel rules",
             "directOnly": True}
 
 
@@ -510,7 +510,7 @@ class Handler(BaseHTTPRequestHandler):
                 response = open_audio(url, range_header)
             except urllib.error.HTTPError as error:
                 error.close()
-                self.json(502, {"error": "YouTube refused the phone-local audio request. Resolve again to retry.", "code": "UPSTREAM_DENIED"})
+                self.json(502, {"error": "YT refused the phone-local audio request. Resolve again to retry.", "code": "UPSTREAM_DENIED"})
                 return
             except ApiError as error:
                 self.failure(error)
@@ -521,7 +521,7 @@ class Handler(BaseHTTPRequestHandler):
             status = getattr(response, "status", response.getcode())
             content_type = response.headers.get_content_type()
             if status not in (200, 206) or content_type not in ("audio/mp4", "audio/webm") or content_type != expected_mime:
-                self.json(502, {"error": "YouTube returned an unsupported audio response.", "code": "UPSTREAM_RESPONSE"})
+                self.json(502, {"error": "YT returned an unsupported audio response.", "code": "UPSTREAM_RESPONSE"})
                 return
             self.send_response(status)
             self.send_header("Content-Type", content_type)

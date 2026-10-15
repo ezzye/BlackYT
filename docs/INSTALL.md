@@ -1,19 +1,25 @@
-# Install and use BlackYT on Android
+# Legacy Termux + Chrome install guide
 
-This guide provides a new portable phone-only installation route and the earlier Mac-assisted transfer. Runtime playback, manual queueing and two minutes with the screen locked were confirmed on a Pixel 10 Pro XL. A fresh phone installation using the new portable ZIP has not been repeated physically. The source repository is private; use your own GitHub account with access. BlackYT is not a standalone APK. It uses Termux for the local Python/Node runtime and Chrome for the separate PWA icon.
+## Current native app
+
+The native app is the primary Android install. The public release is [v0.3.1](https://github.com/ezzye/BlackYT/releases/tag/v0.3.1), with **BlackYT-Android-v0.3.1.apk**. Download it from the release page without GitHub sign-in; the APK runs without Termux or Chrome. Native v0.3.0 physical evidence is described in [README.md](../README.md) and is not a device test of the wording-only v0.3.1 update.
+
+## About this legacy guide
+
+The rest of this page documents the older v0.2.0 Termux and Chrome PWA route. It remains available for users who need that setup. The repository and release assets are public, so GitHub sign-in is not required to read or download them. Legacy PWA playback, manual queueing, and two minutes with the screen locked were confirmed on a Pixel 10 Pro XL. A fresh phone installation using the portable ZIP has not been repeated physically. This legacy route uses Termux for its local Python/Node runtime and Chrome for the separate PWA icon; it is not the native APK.
 
 ## How it works
 
-During setup only, the Mac serves a generated installer and app bundle to the phone over the same home Wi-Fi. The command in the generated phone guide checks the installer SHA-256, and the installer checks the bundle SHA-256 before unpacking it. After installation, Termux runs the search and stream helper on the phone at `127.0.0.1:8765`. Chrome opens the PWA at `http://127.0.0.1:8765`. Termux resolves a selected public YouTube music result and requests its audio directly from YouTube; Chrome reads the audio over phone loopback. The search request and audio connection both use the phone's network. No Mac, cloud server, or off-device audio relay carries the phone-mode audio. The app does not download tracks for offline playback.
+During setup only, the Mac serves a generated installer and app bundle to the phone over the same home Wi-Fi. The command in the generated phone guide checks the installer SHA-256, and the installer checks the bundle SHA-256 before unpacking it. After installation, Termux runs the search and stream helper on the phone at `127.0.0.1:8765`. Chrome opens the PWA at `http://127.0.0.1:8765`. Termux resolves a selected public YT music result and requests its audio directly from YT; Chrome reads the audio over phone loopback. The search request and audio connection both use the phone's network. No Mac, cloud server, or off-device audio relay carries the phone-mode audio. The app does not download tracks for offline playback.
 
 The loopback site uses plain HTTP; the phone does not need the Mac's private test certificate or a certificate authority. Keep the resolver running in its foreground Termux session while listening.
 
 ## Phone-only release installation
 
-This route does not require a computer. GitHub authentication happens in Chrome; never paste a GitHub token into Termux.
+This legacy route does not require a computer. The public release downloads without GitHub sign-in. Never paste a GitHub token into Termux.
 
 1. Install and open [Termux from its official F-Droid page](https://f-droid.org/en/packages/com.termux/). Keep the same distribution if Termux is already installed; different sources use different signatures.
-2. In Chrome, sign into your GitHub account with repository access. Open [release v0.2.0](https://github.com/ezzye/BlackYT/releases/tag/v0.2.0). Download **BlackYT-Phone-v0.2.0.zip** from Assets, not the generic “Source code” ZIP. Keep that exact filename in Downloads. If Chrome adds `(1)` to the filename, rename the new file to match before using these commands.
+2. In Chrome, open the public [v0.2.0 release](https://github.com/ezzye/BlackYT/releases/tag/v0.2.0). Download **BlackYT-Phone-v0.2.0.zip** from Assets, not the generic “Source code” ZIP. Keep that exact filename in Downloads. If Chrome adds `(1)` to the filename, rename the new file to match before using these commands.
 3. In Termux, prepare packages together:
 
    ```sh
@@ -33,32 +39,32 @@ This route does not require a computer. GitHub authentication happens in Chrome;
    mkdir -p "$HOME/blackyt-setup-v0.2.0" && unzip -o "$HOME/storage/downloads/BlackYT-Phone-v0.2.0.zip" -d "$HOME/blackyt-setup-v0.2.0" && bash "$HOME/blackyt-setup-v0.2.0/setup-phone.sh"
    ```
 
-   The setup script verifies the bundled installer fingerprint. The installer then verifies the bundled runtime archive and rejects unsafe paths before changing the managed installation. The private ZIP is downloaded through your signed-in browser; these internal hashes are not an independent signature.
+   The setup script verifies the bundled installer fingerprint. The installer then verifies the bundled runtime archive and rejects unsafe paths before changing the managed installation. These internal hashes detect accidental mismatch; they are not an independent signature.
 6. Wait for the dependency setup and Chrome to open `http://127.0.0.1:8765/`. Look for **Running on this phone**. Chrome ⋮ → **Add to Home screen** → **Install**, if offered. Use the separate **BlackYT Phone** icon. No custom certificate is required.
 7. Keep Termux running. If your Android settings offer it, allow Termux background activity or unrestricted battery use. Run `blackyt` after each phone restart or if Android stops its process.
 
 For updates, stop BlackYT using Ctrl+C first, download the new release, and use that release’s exact ZIP name and guide. Do not overwrite a running installation with mismatched release files. Your currently working installation does not need to be replaced merely to test this packaging.
 
-The download also contains `START-HERE.html`, and the release has **BlackYT-Guide.html** as a separate asset. Save and attach that HTML to share the guide privately. Sharing it does not grant access to the private GitHub repository.
+The download also contains `START-HERE.html`, and the release has **BlackYT-Guide.html** as a separate asset. Save and attach that HTML to share the guide as a file.
 
 ## Mac-assisted prerequisites
 
 - A Mac with Git, Python 3.10 or newer, and internet access for the first setup; the Mac and phone must be on the same trusted home Wi-Fi during transfer.
-- Your own GitHub account with access to the private `ezzye/BlackYT` repository. Do not paste an access token into a command or share it with anyone.
+- Git and internet access. The public `ezzye/BlackYT` repository can be cloned without signing in. Do not paste an access token into a command or share it with anyone.
 - Use the official [Termux F-Droid distribution](https://f-droid.org/en/packages/com.termux/). Termux installs from different sources have different signing keys; do not replace an existing Termux installation from another source without checking its origin first.
 - Have internet access and allow time and mobile data for Termux package updates, Python/Node installation, and the BlackYT package download.
 - Do not use a setup command copied from another Wi-Fi address or an earlier generated build. It contains the current Mac address and exact checksum-pinned filenames.
 
 ## Mac-assisted first transfer
 
-1. In GitHub, confirm that your own account can open the private repository. In Terminal, clone it using your normal GitHub sign-in or credential helper:
+1. In Terminal, clone the public repository:
 
    ```sh
    git clone https://github.com/ezzye/BlackYT.git
    cd BlackYT
    ```
 
-   GitHub may ask you to authenticate. Never put a password or access token directly in the clone URL or paste one into the setup commands.
+   No GitHub authentication is required for this public repository. Never put a password or access token into the clone URL or setup commands.
 2. In the repository folder, prepare the Mac environment:
 
    ```sh
@@ -79,7 +85,7 @@ The download also contains `START-HERE.html`, and the release has **BlackYT-Guid
    ./start.sh --listen 0.0.0.0 --allow-host YOUR_MAC_WIFI_IP
    ```
 
-   Leave this Terminal window open. On the Pixel, open Chrome to `http://YOUR_MAC_WIFI_IP:8765/phone.html`, replacing the placeholder with the same address. This is the private setup guide hosted by your Mac; it contains the current installer command and hashes.
+   Leave this Terminal window open. On the Pixel, open Chrome to `http://YOUR_MAC_WIFI_IP:8765/phone.html`, replacing the placeholder with the same address. This is the setup guide hosted by your Mac; it contains the current installer command and hashes.
 6. Install and open Termux from F-Droid. If Android asks whether Chrome may install an APK downloaded from F-Droid, allow it for that installation. In the phone guide, tap **Copy setup command**, switch to Termux, paste, and press Enter. Do not edit the checksums or substitute a URL from another build.
 7. Let the command finish. It runs `apt update` and `apt full-upgrade` before installing `curl`, then verifies the downloaded installer and app bundle with SHA-256 before installing them. This order matters: Termux package libraries can be inconsistent after a partial upgrade, causing errors such as curl failing to link.
 8. When the command starts BlackYT, Chrome should open `http://127.0.0.1:8765/`. Confirm the page says **Running on this phone**. In Chrome's ⋮ menu choose **Add to Home screen** and **Install** if offered. Open the new **BlackYT Phone** icon. An older BlackYT icon pointing to a Mac's LAN address is a different setup.
@@ -146,7 +152,7 @@ Then uninstall **BlackYT Phone** from Android/Chrome. If you no longer use the s
 | Installer says the bundle checksum or paths are invalid | Stop. On the Mac, regenerate the matching installer and app bundle, then retry using the command from the regenerated phone guide. The installer rejects modified bytes and unsafe archive paths. |
 | `blackyt` says the server is not ready | Keep the Termux session visible, check the full error above the prompt, then retry `blackyt`. Use `blackyt status`. If the install is incomplete, regenerate the bundle on the Mac and rerun its phone-guide command. |
 | Port 8765 is occupied by a service that is not BlackYT | BlackYT leaves that service running. Do not kill an unknown process. Identify and stop the service you recognize, then retry. |
-| Search or playback returns HTTP 403 | This is a response from YouTube/media access, not a local certificate warning. Confirm the phone is online, try a fresh search, then choose **Retry track**. YouTube can change or block this unofficial route; a 403 may persist. |
+| Search or playback returns HTTP 403 | This is a response from YT/media access, not a local certificate warning. Confirm the phone is online, try a fresh search, then choose **Retry track**. YT can change or block this unofficial route; a 403 may persist. |
 | Browser reports a certificate warning on `127.0.0.1` | Phone mode uses loopback HTTP and should not need a custom certificate. Check that the address is exactly `http://127.0.0.1:8765/`, not the older Mac LAN/HTTPS address. |
 | Playback stops when the screen locks or app is backgrounded | Check Android's Termux battery/background setting, reopen Termux, and run `blackyt` again. Keep its foreground session open. Android may still stop background work. |
 | The next track does not start | Confirm it was added with **Add**, keep Termux running, then try the queue's track button or **Next**. Manual queue playback was confirmed by the owner; locked-screen queue transition has not been separately confirmed. |

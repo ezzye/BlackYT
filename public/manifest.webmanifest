@@ -2,7 +2,7 @@
   "id": "/",
   "name": "BlackYT — listen your way",
   "short_name": "BlackYT",
-  "description": "A direct-stream audio player for YouTube-hosted audio.",
+  "description": "A direct-stream audio player for YT-hosted audio.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

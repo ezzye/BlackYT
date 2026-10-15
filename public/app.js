@@ -53,7 +53,7 @@
       RATE_LIMITED: 'The stream service is busy. Wait a moment, then retry.',
       UNSUPPORTED: 'The returned stream format cannot be played by this browser.',
       PLAY_REJECTED: 'Your browser did not start playback. Tap Play on the audio controls to try again.',
-      HOST: 'The service returned a stream outside the allowed YouTube audio host. Playback was blocked.'
+      HOST: 'The service returned a stream outside the allowed YT audio host. Playback was blocked.'
     };
     return messages[code] || (error && error.message) || 'Could not start this track. Try again or choose another result.';
   }
@@ -103,7 +103,7 @@
       const phoneLocal = state.runtime === 'android-local' && result.transport === 'phone-local' && result.youtubeToDeviceOnly === true && result.externalMediaRelay === false && parsed.origin === location.origin && /^\/api\/audio\/[A-Za-z0-9_-]{24,80}$/.test(parsed.pathname) && !parsed.search && !parsed.hash;
       const googleDirect = parsed.protocol === 'https:' && parsed.hostname.toLowerCase().endsWith('.googlevideo.com') && !parsed.username && !parsed.password && (!parsed.port || parsed.port === '443');
       if (!phoneLocal && !googleDirect) throw Object.assign(new Error('Stream host validation failed.'), { code: 'HOST' });
-      const sourceHost = phoneLocal ? safeText(result.sourceHost || result.host, 'YouTube') : parsed.hostname;
+      const sourceHost = phoneLocal ? safeText(result.sourceHost || result.host, 'YT') : parsed.hostname;
       if (!result.mime || !/^audio\//i.test(result.mime) && !/^video\/mp4/i.test(result.mime)) throw Object.assign(new Error('The stream format is not a supported audio source.'), { code: 'UNSUPPORTED' });
       audio.src = parsed.href; audio.load();
       if (resume > 0) audio.addEventListener('loadedmetadata', () => {
@@ -194,11 +194,11 @@
     if (location.hostname === '127.0.0.1' || location.hostname === 'localhost') state.runtime = 'android-local';
     try {
       const info = await api('/api/status'); state.runtime = info.runtime || 'desktop-local';
-      $('system-note').textContent = info.ok && (info.directOnly === true || (info.runtime === 'android-local' && info.youtubeToDeviceOnly === true && info.externalMediaRelay === false && info.relayLocation === 'this-device')) ? (state.runtime === 'android-local' ? 'Running on this phone. Termux streams YouTube audio to the player locally. Keep Termux running while listening.' : `Player service ready${info.version ? ` · ${info.version}` : ''}. Direct stream mode is enabled.`) : 'Player service is not ready. Start BlackYT in Termux and try again.';
+      $('system-note').textContent = info.ok && (info.directOnly === true || (info.runtime === 'android-local' && info.youtubeToDeviceOnly === true && info.externalMediaRelay === false && info.relayLocation === 'this-device')) ? (state.runtime === 'android-local' ? 'Running on this phone. Termux streams YT audio to the player locally. Keep Termux running while listening.' : `Player service ready${info.version ? ` · ${info.version}` : ''}. Direct stream mode is enabled.`) : 'Player service is not ready. Start BlackYT in Termux and try again.';
     }
     catch (error) { $('system-note').textContent = `Player service unavailable. Search and playback need the service: ${mediaError(error)}`; }
     if (state.runtime === 'android-local') {
-      document.title = 'BlackYT Phone'; $('stream-mode').textContent = 'Phone player'; $('intro-description').textContent = 'Your phone fetches audio from YouTube and plays it locally. Keep Termux running while listening.'; $('stream-label').textContent = 'YouTube source:'; $('device-test-note').textContent = 'Use the BlackYT Phone icon for listening away from home. The earlier Wi-Fi app connects to your Mac.'; $('help-link').href = '/phone-help.html'; $('help-link').textContent = 'Phone help';
+      document.title = 'BlackYT Phone'; $('stream-mode').textContent = 'Phone player'; $('intro-description').textContent = 'Your phone fetches audio from YT and plays it locally. Keep Termux running while listening.'; $('stream-label').textContent = 'YT source:'; $('device-test-note').textContent = 'Use the BlackYT Phone icon for listening away from home. The earlier Wi-Fi app connects to your Mac.'; $('help-link').href = '/phone-help.html'; $('help-link').textContent = 'Phone help';
       $('install-help').textContent = 'In Android Chrome at http://127.0.0.1:8765, open the ⋮ menu and choose Add to Home screen or Install app. Use the new BlackYT Phone icon; the earlier Wi-Fi icon connects to your Mac. No local certificate is needed for this phone address.';
     }
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) navigator.serviceWorker.register('/sw.js').catch(() => {});

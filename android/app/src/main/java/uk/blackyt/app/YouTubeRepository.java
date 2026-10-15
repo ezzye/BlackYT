@@ -214,7 +214,7 @@ public final class YouTubeRepository {
         } catch (Exception failure) {
             Diagnostics.failure("search-error",failure);
             if (BuildConfig.DEBUG) android.util.Log.w("BlackYTNetwork", "Search error=" + failure.getClass().getSimpleName());
-            throw new IOException("YouTube search failed. Check your connection and retry.");
+            throw new IOException("YT search failed. Check your connection and retry.");
         }
     }
 
@@ -279,7 +279,7 @@ public final class YouTubeRepository {
             Diagnostics.failure("resolve-error",failure);
             if (BuildConfig.DEBUG) android.util.Log.w("BlackYTNetwork", "Resolve error=" + failure.getClass().getSimpleName());
             invalidate(id);
-            throw new IOException("YouTube stream resolution failed. Check your connection and retry.");
+            throw new IOException("YT stream resolution failed. Check your connection and retry.");
         }
     }
 
@@ -307,7 +307,7 @@ public final class YouTubeRepository {
 
     public static String normalizeVideoId(String input) {
         if (input == null) {
-            throw new IllegalArgumentException("Invalid YouTube item.");
+            throw new IllegalArgumentException("Invalid YT item.");
         }
         String value = input.trim();
         if (value.matches("[A-Za-z0-9_-]{11}")) {
@@ -317,11 +317,11 @@ public final class YouTubeRepository {
             URI uri = new URI(value);
             if (!"https".equalsIgnoreCase(uri.getScheme())
                     || uri.getUserInfo() != null || (uri.getPort() != -1 && uri.getPort() != 443)) {
-                throw new IllegalArgumentException("Invalid YouTube item.");
+                throw new IllegalArgumentException("Invalid YT item.");
             }
             String host = uri.getHost();
             if (host == null) {
-                throw new IllegalArgumentException("Invalid YouTube item.");
+                throw new IllegalArgumentException("Invalid YT item.");
             }
             host = host.toLowerCase(Locale.ROOT);
             String id = null;
@@ -351,7 +351,7 @@ public final class YouTubeRepository {
         } catch (URISyntaxException ignored) {
             // Use the same safe public error for malformed URLs and unsupported hosts.
         }
-        throw new IllegalArgumentException("Invalid YouTube item.");
+        throw new IllegalArgumentException("Invalid YT item.");
     }
 
     private static StreamingService youtubeService() throws Exception {
@@ -372,15 +372,15 @@ public final class YouTubeRepository {
             String host = uri.getHost();
             if (!"https".equalsIgnoreCase(uri.getScheme()) || host == null
                     || uri.getUserInfo() != null || (uri.getPort() != -1 && uri.getPort() != 443)) {
-                throw new IOException("YouTube returned an unsupported media host.");
+                throw new IOException("YT returned an unsupported media host.");
             }
             String lowerHost = host.toLowerCase(Locale.ROOT);
             if (!(lowerHost.equals("googlevideo.com") || lowerHost.endsWith(GOOGLEVIDEO_SUFFIX))) {
-                throw new IOException("YouTube returned an unsupported media host.");
+                throw new IOException("YT returned an unsupported media host.");
             }
             return lowerHost;
         } catch (URISyntaxException e) {
-            throw new IOException("YouTube returned an unsupported media host.");
+            throw new IOException("YT returned an unsupported media host.");
         }
     }
 

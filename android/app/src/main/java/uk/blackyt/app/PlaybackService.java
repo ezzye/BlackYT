@@ -45,7 +45,7 @@ public final class PlaybackService extends MediaSessionService {
             try {
                 YouTubeRepository.Resolved result = repository.resolve(item.id, item.rules, false);
                 // The repository validates this host against googlevideo.com; never log its URL.
-                Log.i(TAG, "Resolved YouTube audio source host=" + result.sourceHost);
+                Log.i(TAG, "Resolved YT audio source host=" + result.sourceHost);
                 return dataSpec.withUri(android.net.Uri.parse(result.url));
             } catch (Exception failure) {
                 Log.w(TAG, "Resolution failed (" + failure.getClass().getSimpleName() + ")");
@@ -150,7 +150,7 @@ public final class PlaybackService extends MediaSessionService {
             } catch (RuntimeException invalid) {
                 Log.w(TAG, "Rejected unsupported queue media items");
                 return Futures.immediateFailedFuture(
-                        new IllegalArgumentException("Only BlackYT YouTube queue items are supported."));
+                        new IllegalArgumentException("Only BlackYT YT queue items are supported."));
             }
         }
     }

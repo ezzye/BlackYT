@@ -121,12 +121,15 @@ public final class MainActivity extends android.app.Activity {
         brand.setLetterSpacing(.08f);
         root.addView(brand, lp(-1, -2, 0, 0, 0, 8));
         root.addView(text("Find your next\nfavourite.", 31, CREAM, true), lp(-1, -2, 0, 0, 0, 16));
-        root.addView(text("Search YouTube or paste a video link. Play starts now; Add queues it after songs already lined up.",
+        root.addView(text("Search YT or paste a video link. Play starts now; Add queues it after songs already lined up.",
                 15, MUTED, false), lp(-1, -2, 0, 0, 0, 18));
+
+        root.addView(text("Educational use only. Do not use BlackYT to break the law. Respect copyright, licences and permissions.",
+                12, MUTED, false), lp(-1, -2, 0, 0, 0, 14));
 
         LinearLayout searchCard = panel(root);
         searchCard.addView(label("SEARCH", 11));
-        queryInput = input("Song, artist, or YouTube link");
+        queryInput = input("Song, artist, or YT link");
         searchCard.addView(queryInput, lp(-1, dp(54), 0, 8, 0, 10));
         musicOnly = new CheckBox(this);
         musicOnly.setText("Music results only");
@@ -251,9 +254,9 @@ public final class MainActivity extends android.app.Activity {
     private void search() {
         final long generation = ++searchGeneration;
         String query = queryInput.getText().toString().trim();
-        if (query.isEmpty()) { status.setText("Enter a song, artist, or YouTube link."); return; }
+        if (query.isEmpty()) { status.setText("Enter a song, artist, or YT link."); return; }
         YouTubeRepository.Rules rules = currentRules();
-        setSearching(true, "Searching YouTube…");
+        setSearching(true, "Searching YT…");
         io.execute(() -> {
             try {
                 List<YouTubeRepository.Track> found = new ArrayList<>();
@@ -365,7 +368,7 @@ public final class MainActivity extends android.app.Activity {
         } else {
             CharSequence title = current.mediaMetadata.title;
             CharSequence artist = current.mediaMetadata.artist;
-            nowTitle.setText(title == null || title.length() == 0 ? "YouTube track" : title);
+            nowTitle.setText(title == null || title.length() == 0 ? "YT track" : title);
             nowChannel.setText(artist == null ? "" : artist);
         }
         boolean isPlaying = controller.isPlaying();
@@ -417,7 +420,7 @@ public final class MainActivity extends android.app.Activity {
 
     private String titleOf(MediaItem item) {
         CharSequence title = item.mediaMetadata.title;
-        return title == null || title.length() == 0 ? "YouTube track" : title.toString();
+        return title == null || title.length() == 0 ? "YT track" : title.toString();
     }
 
     private void setSearching(boolean value, String message) {
