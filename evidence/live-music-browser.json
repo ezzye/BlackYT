@@ -1,0 +1,84 @@
+{
+  "checkedAt": "2026-10-15T18:48:34.677Z",
+  "testVideo": "sMcWOaJFuw0",
+  "testContent": "Public Kevin MacLeod music; Music category enforced",
+  "actualDirectPlayback": true,
+  "media": {
+    "time": 5.018716,
+    "duration": 205.310839,
+    "paused": false,
+    "readyState": 4,
+    "error": null,
+    "host": "rr1---sn-jvhh4pcgx-ajtl.googlevideo.com"
+  },
+  "mediaResponses": [
+    {
+      "host": "rr1---sn-jvhh4pcgx-ajtl.googlevideo.com",
+      "status": 206,
+      "contentType": "audio/mp4"
+    }
+  ],
+  "requests": [
+    {
+      "host": "localhost",
+      "path": "/",
+      "type": "document"
+    },
+    {
+      "host": "localhost",
+      "path": "/icons/icon.svg",
+      "type": "image"
+    },
+    {
+      "host": "localhost",
+      "path": "/app.js",
+      "type": "script"
+    },
+    {
+      "host": "localhost",
+      "path": "/api/status",
+      "type": "fetch"
+    },
+    {
+      "host": "localhost",
+      "path": "/icons/icon.svg",
+      "type": "other"
+    },
+    {
+      "host": "localhost",
+      "path": "/api/search",
+      "type": "fetch"
+    },
+    {
+      "host": "i.ytimg.com",
+      "type": "image"
+    },
+    {
+      "host": "localhost",
+      "path": "/api/resolve",
+      "type": "fetch"
+    },
+    {
+      "host": "rr1---sn-jvhh4pcgx-ajtl.googlevideo.com",
+      "type": "media"
+    },
+    {
+      "host": "i.ytimg.com",
+      "type": "other"
+    },
+    {
+      "host": "localhost",
+      "path": "/icons/icon.svg",
+      "type": "other"
+    },
+    {
+      "host": "i.ytimg.com",
+      "type": "other"
+    }
+  ],
+  "errors": [],
+  "horizontalOverflow": false,
+  "physicalAndroidTest": false,
+  "screenOffTest": "pending",
+  "audioAuditedByHuman": false
+}

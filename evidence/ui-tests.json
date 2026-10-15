@@ -1,0 +1,21 @@
+{
+  "testBasis": "Synthetic API/audio fixtures for controls only; separate live-browser files establish YouTube playback",
+  "addDoesNotAutoPlay": true,
+  "queueAutomaticallyAdvanced": true,
+  "staleResolutionDiscarded": true,
+  "installGuidanceOpened": true,
+  "evidenceExportDownloaded": true,
+  "evidenceContainsNoURLs": true,
+  "offlineShellOpened": true,
+  "cachedShell": [
+    "/",
+    "/index.html",
+    "/app.js",
+    "/manifest.webmanifest",
+    "/icons/icon.svg",
+    "/icons/icon-192.png",
+    "/icons/icon-512.png"
+  ],
+  "horizontalOverflow": false,
+  "errors": []
+}

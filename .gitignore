@@ -1,0 +1,24 @@
+.venv/
+__pycache__/
+.tls/
+public/blackyt-local-ca.crt
+public/blackyt-local-ca.cer
+evidence/*raw.json
+evidence/*resolve.json
+evidence/*url*.txt
+
+# Local trust, secrets, generated archives and private usage records
+*.pem
+*.key
+*.crt
+*.cer
+.env
+.env.*
+!.env.example
+.DS_Store
+*.zip
+*.log
+.local/
+evidence/*usage*.json
+evidence/cloud-state*.json
+research/src/

@@ -1,0 +1,33 @@
+{
+  "checkedAt": "2026-10-15T18:51:44.474908+00:00",
+  "source": "Direct user answer in this chat",
+  "route": "Android Chrome, same Wi-Fi, http://192.168.1.228:8765",
+  "testPrompt": "Does music keep playing with screen locked for two minutes?",
+  "ownerResponse": "Yes, it keeps playing",
+  "screenOffAudio": "Owner-reported pass",
+  "instrumentedDeviceEvidence": false,
+  "installedPWA": "Owner-reported pass",
+  "headsetControls": "Not tested",
+  "lockedScreenQueueTransition": "Not tested",
+  "installationUpdate": {
+    "checkedAt": "2026-10-15T19:19:04.872504+00:00",
+    "source": "Direct user report in this chat",
+    "device": "Google Pixel 10 Pro XL",
+    "ownerResponse": "OK it opens without a warning and I have installed the app.",
+    "httpsWithoutCertificateWarning": "Owner-reported pass",
+    "installedPWA": "Owner-reported pass",
+    "standaloneScreenOffPlayback": "Pending",
+    "lockedScreenQueueTransition": "Pending",
+    "headsetControls": "Pending"
+  },
+  "installedListeningUpdate": {
+    "checkedAt": "2026-10-15T19:23:14.211506+00:00",
+    "source": "Direct owner report after the installed-app listening test instructions",
+    "device": "Google Pixel 10 Pro XL",
+    "ownerResponse": "It works. I am playing U2 with or Without you.",
+    "installedAudioPlayback": "Owner-reported pass",
+    "trackReported": "U2 - With or Without You",
+    "screenOffAndQueueContext": "Owner said the test works; individual queue-transition and headset outcomes were not separately stated",
+    "instrumentedDeviceEvidence": false
+  }
+}

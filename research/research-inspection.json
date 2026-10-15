@@ -1,0 +1,59 @@
+{
+  "scope": "Read-only inspection of official upstream repositories for BlackYT Android PWA PoC; no upstream code copied into PoC.",
+  "as_of": "2026-10-15",
+  "acquisition": {
+    "method": "Read-only shallow checkouts of all three official repositories at their current branch HEADs; code inspected locally with exact line ranges and cross-checked against project docs.",
+    "clone_status": "completed after approved read-only network escalation; checkouts are under research/src/"
+  },
+  "repositories": [
+    {
+      "name": "NewPipe",
+      "url": "https://github.com/TeamNewPipe/NewPipe",
+      "branch": "dev",
+      "head_sha": "6f6b5fb9961c525c046f197636eaf587110e93ab",
+      "license": "GPL-3.0",
+      "evidence": [
+        {"path": "README.md", "finding": "Supported YouTube frontend; documents background audio, queues, subscriptions, channel groups, and group feeds."},
+        {"path": "app/src/main/java/org/schabi/newpipe/player/PlayerService.java:87-121,124-178", "finding": "onCreate creates MediaSessionCompat and connector; onStartCommand handles service intents and playback controls. This is native Android service/session behavior."},
+        {"path": "app/src/main/java/org/schabi/newpipe/player/playback/MediaSourceManager.java:422-450", "finding": "getLoadedMediaSource resolves a stream's source, caches it with service-specific expiry, and emits failures for extraction/network errors."},
+        {"path": "app/src/main/java/org/schabi/newpipe/player/datasource/YoutubeHttpDataSource.java:600-685", "finding": "makeConnection handles byte range requests, YouTube origin/referer and fetch headers, user-agent and request method. These native HTTP controls are not all available to browser JavaScript."}
+      ]
+    },
+    {
+      "name": "NewPipeExtractor",
+      "url": "https://github.com/TeamNewPipe/NewPipeExtractor",
+      "branch": "dev",
+      "head_sha": "8443c91bf4276c326f7b33e30a36d88e0ab94cfe",
+      "license": "GPL-3.0",
+      "evidence": [
+        {"path": "extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeStreamExtractor.java:652-671", "finding": "getAudioStreams, getVideoStreams and getVideoOnlyStreams call getItags over regular/adaptive formats and build direct stream objects after page extraction."},
+        {"path": "extractor/src/main/java/org/schabi/newpipe/extractor/stream/VideoStream.java", "finding": "Stream descriptor has URL/content, video-only flag, resolution and format metadata."},
+        {"path": "extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/YoutubeJavaScriptExtractor.java", "finding": "Player JavaScript extraction dependency, illustrating maintenance burden when YouTube changes."}
+      ]
+    },
+    {
+      "name": "LibreTube",
+      "url": "https://github.com/libre-tube/LibreTube",
+      "branch": "master",
+      "head_sha": "caf18f6b21a574e440432d453d2a0c0b527f3345",
+      "license": "GPL-3.0",
+      "evidence": [
+        {"path": "PRIVACY_POLICY.md", "finding": "Defines Full Local Mode as connecting directly to YouTube; alternate mode routes requests through a chosen Piped instance; direct mode exposes requester IP to YouTube."},
+        {"path": "app/src/main/java/com/github/libretube/api/NewPipeMediaServiceRepository.kt:256-259,287-324,325-350", "finding": "NewPipeMediaServiceRepository initializes the extractor's PoTokenProvider; getStreams calls StreamInfo.getInfo on a YouTube URL and maps metadata, audio/video stream objects, HLS/DASH and subtitles into app models."},
+        {"path": "app/src/main/java/com/github/libretube/api/MediaServiceRepository.kt:45-48", "finding": "Repository singleton getter currently constructs NewPipeMediaServiceRepository."},
+        {"path": "app/src/main/java/com/github/libretube/services/OnlinePlayerService.kt:128-175,179-196,219-316", "finding": "startPlayback fetches streams through the repository; setStreamSource configures direct audio/DASH/HLS media sources, then prepare/configurePlayer starts playback."},
+        {"path": "app/src/main/java/com/github/libretube/services/AbstractPlayerService.kt:53-57,347-356,394-418", "finding": "Native MediaLibraryService owns ExoPlayer/MediaLibrarySession, returns the session to controllers, creates the player/session, and installs the notification provider."},
+        {"path": "app/src/main/java/com/github/libretube/db/obj/SubscriptionGroup.kt:11-", "finding": "Room entity stores channel groups; SubscriptionsBottomSheet.kt:142-168 filters subscriptions by the selected group's channel IDs."},
+        {"path": "app/src/main/res/values/strings.xml:520-521 and PRIVACY_POLICY.md:31", "finding": "Full Local Mode is described as directly fetching everything from YouTube without Piped; privacy policy notes direct requests expose the device IP. At this observed HEAD, repository singleton points at NewPipeMediaServiceRepository."}
+      ]
+    }
+  ],
+  "pwa_assessment": {
+    "metadata_resolver": "Local Python + yt-dlp can resolve metadata and direct media URLs and expose JSON to a localhost PWA. This is a practical clean-room PoC, but it is a different stack from upstream Java NewPipeExtractor and inherits yt-dlp maintenance/YouTube breakage.",
+    "direct_media": "Using the returned googlevideo URL as <audio>/<video> source avoids a stream proxy. The browser can request media cross-origin through a media element; JavaScript fetch/readback is subject to CORS and cannot be assumed. Validate supported codecs, range/seek behavior and browser playback per target browser.",
+    "url_lifetime_and_network_identity": "Resolver output may be signed/expiring (often represented by an expire query parameter) and may depend on the network/IP context in which it was resolved. Re-resolve on expiry/failure. If resolver and browser have different egress IPs, or request moves to another network, direct playback can fail; avoid persisting resolved URLs as durable library data.",
+    "full_local_mode": "LibreTube Full Local Mode is the end-user client calling YouTube directly; it does not mean the app embeds an HTTP media proxy. A localhost metadata resolver still makes upstream requests from its host, while playback is requested by the browser.",
+    "background_and_groups": "PWA Media Session API can supply OS metadata/actions in supported browser contexts, but it is not an Android foreground service or app-owned MediaLibraryService and cannot promise persistent background playback. Native service/session requires a native wrapper or app. Channel filters/groups and subscriptions are feasible in PWA storage; NewPipe documents groups/feeds and LibreTube has Room-backed groups with channel-ID filtering."
+  },
+  "licensing_boundary": "Do not copy NewPipe, NewPipeExtractor, or LibreTube application code into BlackYT PoC. The research/src checkouts are for source inspection only; keep the PoC a clean-room implementation. GPL-3.0 applies to the inspected repositories."
+}

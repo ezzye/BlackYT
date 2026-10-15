@@ -1,0 +1,30 @@
+[
+  {
+    "path": "/",
+    "status": 200,
+    "bytes": 9887
+  },
+  {
+    "path": "/manifest.webmanifest",
+    "status": 200,
+    "bytes": 485
+  },
+  {
+    "path": "/sw.js",
+    "status": 200,
+    "bytes": 856
+  },
+  {
+    "path": "/blackyt-local-ca.crt",
+    "status": 200,
+    "bytes": 1233
+  },
+  {
+    "path": "/.tls/server-key.pem",
+    "status": 404
+  },
+  {
+    "path": "/../.tls/server-key.pem",
+    "status": 404
+  }
+]

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#102625">
+  <meta name="description" content="A quiet, direct-stream music player for YouTube-hosted audio.">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+  <title>BlackYT — listen your way</title>
+  <style>
+    :root{color-scheme:dark;--ink:#f3f0e8;--muted:#aab8b1;--bg:#102625;--panel:#193432;--panel2:#21413c;--line:#35544d;--lime:#d2ef91;--mint:#90d4b0;--red:#ffc1aa;font:16px/1.45 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    *{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 100% 0,#28493f 0,transparent 36rem),var(--bg);color:var(--ink);min-height:100vh}button,input,select{font:inherit}button{cursor:pointer;color:inherit}a{color:var(--lime)}.shell{max-width:1040px;margin:auto;padding:20px clamp(16px,4vw,42px) 46px}.top{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:32px}.brand{display:flex;align-items:center;gap:11px;font-weight:750;letter-spacing:.02em}.brand img{width:40px;height:40px}.eyebrow,.tag{font-size:.72rem;text-transform:uppercase;letter-spacing:.13em;color:var(--mint);font-weight:700}.top-actions{display:flex;align-items:center;gap:12px}.pill{border:1px solid var(--line);border-radius:999px;padding:7px 11px;font-size:.78rem;color:var(--muted);white-space:nowrap}.intro{max-width:690px;margin:0 0 25px}.intro h1{font-size:clamp(2.4rem,7vw,4.4rem);line-height:.98;letter-spacing:-.055em;margin:8px 0 14px}.intro p{color:var(--muted);max-width:600px;margin:0}.layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:19px;align-items:start}.panel{background:color-mix(in srgb,var(--panel),transparent 7%);border:1px solid var(--line);border-radius:22px;padding:20px;box-shadow:0 18px 50px #06131240}.search h2,.queue h2{font-size:1.1rem;margin:0 0 15px}.field{display:block;margin:0 0 14px}.field label,.field legend{display:block;font-size:.8rem;color:var(--muted);margin-bottom:7px}.field input,.field select{width:100%;background:#0e211f;border:1px solid var(--line);border-radius:12px;padding:12px 13px;color:var(--ink);outline:none}.field input:focus,.field select:focus,button:focus-visible,a:focus-visible{outline:3px solid var(--lime);outline-offset:2px}.filters{display:grid;grid-template-columns:1fr 1fr;gap:12px}.helper{font-size:.76rem;color:var(--muted);margin:-7px 0 14px}.primary{border:0;border-radius:13px;background:var(--lime);color:#11231e;font-weight:760;padding:12px 18px;min-height:46px}.primary:disabled{opacity:.55;cursor:wait}.line-button{border:1px solid var(--line);border-radius:11px;background:#17302d;padding:9px 12px}.notice{min-height:1.4em;color:var(--muted);font-size:.88rem;margin:12px 0 0}.notice.error{color:var(--red)}.results{margin-top:17px;display:grid;gap:10px}.track{display:grid;grid-template-columns:55px minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px;background:#112826;border:1px solid #2d4843;border-radius:15px}.thumb{width:55px;height:55px;object-fit:cover;border-radius:10px;background:var(--panel2)}.track-title{font-weight:650;overflow-wrap:anywhere}.track-sub{font-size:.78rem;color:var(--muted);margin-top:3px}.add{font-size:.8rem}.player{position:sticky;top:12px}.art{display:grid;place-items:center;min-height:184px;border-radius:16px;background:linear-gradient(135deg,#244840,#122421);margin-bottom:18px;color:var(--lime);font-size:3.3rem}.now-title{font-size:1.25rem;font-weight:720;line-height:1.2;overflow-wrap:anywhere;margin:8px 0 4px}.now-sub{color:var(--muted);font-size:.86rem}.player audio{width:100%;margin:18px 0 10px;accent-color:var(--lime)}.transport{display:flex;justify-content:center;gap:12px}.transport button{min-width:54px;min-height:46px}.hostline{margin-top:15px;padding-top:12px;border-top:1px solid var(--line);font-size:.75rem;color:var(--muted);overflow-wrap:anywhere}.hostline strong{color:var(--mint);font-weight:600}.queue{margin-top:19px}.queue-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.queue-items{display:grid;gap:7px;margin-top:13px}.queue-row{display:flex;justify-content:space-between;gap:8px;align-items:center;color:var(--muted);font-size:.82rem}.queue-select{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left;color:var(--muted);background:none;border:0;padding:5px;min-width:0;flex:1}.queue-row button{background:none;border:0;color:#ffb6a2;padding:5px}.foot{border-top:1px solid var(--line);margin-top:24px;padding-top:18px;color:var(--muted);font-size:.8rem}.foot p{margin:5px 0}.footlinks{display:flex;gap:16px;margin-top:12px;flex-wrap:wrap}.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+    .layout>*{min-width:0}.filters{grid-template-columns:repeat(2,minmax(0,1fr))}.field input,.field select{min-width:0}.track-sub{overflow-wrap:anywhere}.track>div{min-width:0}
+    @media(max-width:780px){.layout{grid-template-columns:minmax(0,1fr)}.player{position:static;grid-row:1}.search{grid-row:2}.shell{padding-top:16px}.top{margin-bottom:24px}.art{min-height:126px;margin-bottom:13px}.player.panel{padding:17px}.transport button{min-height:48px}.filters{gap:9px}}
+    @media(max-width:420px){.shell{padding-inline:13px}.panel{padding:16px}.top-actions .pill{display:none}.track{grid-template-columns:48px minmax(0,1fr) auto;padding:8px;gap:9px}.thumb{width:48px;height:48px}.track .line-button{padding:8px}.intro h1{font-size:2.65rem}}
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="top"><div class="brand"><img src="/icons/icon.svg" alt=""><span>BLACKYT</span></div><div class="top-actions"><span class="pill" id="net-pill">Checking connection…</span><span class="pill">Direct audio</span></div></header>
+    <section class="intro"><div class="eyebrow">Your listening corner</div><h1>Find a sound.<br>Keep it playing.</h1><p>Search YouTube-hosted audio and listen through a direct stream. No video embeds or media relay.</p></section>
+    <div class="layout">
+      <section class="panel search" aria-labelledby="search-title">
+        <h2 id="search-title">Find something to play</h2>
+        <form id="search-form">
+          <div class="field"><label for="query">Search</label><input id="query" name="query" type="search" autocomplete="off" placeholder="Artist, song, or a mood…" required></div>
+          <div class="field"><label for="mode">Listening focus</label><select id="mode" name="mode"><option value="music">Music</option><option value="interests">Interests</option></select></div>
+          <div class="filters"><div class="field"><label for="include">Include words</label><input id="include" type="text" placeholder="live, jazz" autocomplete="off"></div><div class="field"><label for="exclude">Exclude words</label><input id="exclude" type="text" placeholder="cover, reaction" autocomplete="off"></div></div>
+          <p class="helper">Separate words with commas. Music category is checked when a result is played; search matches are best-effort.</p>
+          <button class="primary" id="search-button" type="submit">Search tracks</button><p class="notice" id="search-notice" role="status" aria-live="polite"></p>
+        </form>
+        <div class="results" id="results" aria-live="polite"></div>
+      </section>
+      <aside>
+        <section class="panel player" aria-label="Audio player">
+          <div class="art" aria-hidden="true">♫</div><div class="tag">Now playing</div><div class="now-title" id="now-title">Choose a track</div><div class="now-sub" id="now-sub">Your queue is ready when you are.</div>
+          <audio id="audio" controls preload="none" playsinline></audio>
+          <div class="transport"><button class="line-button" id="previous" type="button" aria-label="Previous track">⏮</button><button class="line-button" id="next" type="button" aria-label="Next track">⏭</button></div>
+          <div class="hostline">Stream host: <strong id="stream-host">No stream loaded</strong></div>
+        </section>
+        <section class="panel queue"><div class="queue-head"><h2>Up next <span id="queue-count">(0)</span></h2><button class="line-button" id="clear-queue" type="button">Clear</button></div><div class="queue-items" id="queue-items"><p class="notice">Add a search result to start a queue.</p></div></section>
+      </aside>
+    </div>
+    <footer class="foot"><p id="system-note">Connecting to the local player service…</p><p>Offline mode saves this interface only. Search and direct streams need an internet connection, and stream links can expire or become unavailable.</p><p><strong>Android screen-off audio: owner-reported pass.</strong> Music continued for two minutes with the screen locked in Android Chrome over Wi-Fi. Installation and installed-app listening are also confirmed by the owner. Queue transitions and headset controls have not been separately confirmed.</p><div class="footlinks"><a href="/report.html">Project report</a><button class="line-button" id="export-evidence" type="button">Export phone test evidence</button><button class="line-button" id="install-app" type="button">Install app</button></div></footer>
+  </main>
+  <dialog id="install-dialog" style="max-width:420px;border:1px solid #35544d;border-radius:18px;background:#193432;color:#f3f0e8;padding:22px">
+    <h2 style="margin:0 0 10px">Add BlackYT to your home screen</h2>
+    <p id="install-help" style="color:#aab8b1">In Android Chrome, open the ⋮ menu, choose <strong>Add to Home screen</strong> or <strong>Install app</strong>, then follow the prompt. This option appears when the app is opened over a secure connection.</p>
+    <button class="primary" id="close-install" type="button">Got it</button>
+  </dialog>
+  <script src="/app.js" defer></script>
+</body>
+</html>

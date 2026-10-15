@@ -1,0 +1,20 @@
+{
+  "checkedAt": "2026-10-15T19:31:35.516019+00:00",
+  "activeRepository": "/Users/errolelliott/IdeaProjects/BlackYT",
+  "checks": [
+    {
+      "url": "http://192.168.1.228:8765/api/status",
+      "status": 200,
+      "resolverReady": true,
+      "directOnly": true
+    },
+    {
+      "url": "https://192.168.1.228:8766/api/status",
+      "status": 200,
+      "resolverReady": true,
+      "directOnly": true
+    }
+  ],
+  "existingPhoneCertificateRetained": true,
+  "privateKeysTracked": false
+}

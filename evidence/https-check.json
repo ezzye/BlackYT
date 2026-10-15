@@ -1,0 +1,8 @@
+{
+  "tlsValidatedAgainstGeneratedCA": true,
+  "hostnameValidated": true,
+  "httpsStatus": 200,
+  "resolverReady": true,
+  "deviceTrustInstalled": false,
+  "androidInstalledPWA": "pending"
+}
