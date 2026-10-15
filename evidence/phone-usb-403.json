@@ -1,0 +1,18 @@
+{
+  "device": "Pixel 10 Pro XL",
+  "connection": "Owner-authorized USB debugging; scoped to BlackYT local tab",
+  "runtime": "android-local at127.0.0.1:8765",
+  "track": "UG3VcCAlUgE Prince When Doves Cry official",
+  "phoneMediaResponse": {
+    "status": 403,
+    "mime": "text/plain",
+    "error": "NotSupportedError; MEDIA_ELEMENT_ERROR Format error; ERR_BLOCKED_BY_ORB"
+  },
+  "freshRetry": "Same phone403",
+  "macProbe": "Exact phone-resolved URL gives206audio/mp4, including AndroidUA andRangeheaders; CLIcomparison does notisolateOS",
+  "vpn": "Ownerreportsdisabled",
+  "remaining": "Owner mobiledataretry requested. Errorclassificationfixed in source; phone update pending",
+  "anonymousCorsTest": "Phone still403; temporary audio crossOrigin setting restored",
+  "requestHeaders": "Mac AndroidUA/Range replay206; later fullheaderreplay403 confounded by changing URL response; no definitive OS/header isolation",
+  "certificateAssessment": "Phone receivedHTTP403 andORB; no certificate-error evidence. LocalCA isforMacLAN origin, notGooglemediahost"
+}

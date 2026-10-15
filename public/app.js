@@ -2,7 +2,7 @@
   'use strict';
   const $ = (id) => document.getElementById(id);
   const audio = $('audio');
-  const state = { queue: [], index: -1, resolution: 0, searching: false, runtime: 'unknown', evidence: [] };
+  const state = { queue: [], index: -1, resolution: 0, searching: false, runtime: 'unknown', evidence: [], mediaErrorTicket: 0 };
   const prefsKey = 'blackyt.preferences.v1';
   const prefFields = ['mode', 'include', 'exclude'];
   const safeText = (value, fallback = '') => typeof value === 'string' ? value : fallback;
@@ -42,6 +42,9 @@
   function notice(id, text, error = false) { const el = $(id); el.textContent = text; el.classList.toggle('error', error); }
   function mediaError(error) {
     const code = error && error.code;
+    if (code === 'PLAY_NOT_ALLOWED') return 'Playback was blocked by the browser. Tap Play on the audio controls to try again.';
+    if (code === 'PLAY_UNSUPPORTED' || code === 'MEDIA_LOAD_FAILED') return 'The browser could not load this audio stream. Try again or choose another track.';
+    if (code === 'PLAY_INTERRUPTED') return 'Playback was interrupted. Tap Retry track to try again.';
     const messages = {
       NETWORK: state.runtime === 'android-local' ? 'Open Termux and run blackyt, then return here. The phone player must be running.' : 'Could not reach the player. Check your connection and retry.',
       NOT_FOUND: 'No playable stream was found for this track. Try another result.',
@@ -106,7 +109,15 @@
       $('now-title').textContent = safeText(result.title, item.title); $('now-sub').textContent = `${safeText(result.channel, item.channel)} · Direct stream${result.expiresAt ? ` · Expires ${new Date(result.expiresAt).toLocaleTimeString()}` : ''}`;
       setMediaMetadata({ title: $('now-title').textContent, channel: safeText(result.channel, item.channel), thumbnail: item.thumbnail });
       try { await audio.play(); setPlaybackState('playing'); notice('search-notice', 'Playing direct audio.'); log('play', { position: index + 1, host: parsed.hostname, mode: $('mode').value }); }
-      catch (error) { if (ticket !== state.resolution) return; setPlaybackState('paused'); throw Object.assign(new Error(error.message || 'Tap Play on the audio controls.'), { code: 'PLAY_REJECTED' }); }
+      catch (error) {
+        if (ticket !== state.resolution) return;
+        setPlaybackState('paused');
+        const name = error?.name || 'UNKNOWN', mediaCode = audio.error?.code ?? null;
+        log('play-promise-rejected', { name, mediaError: mediaCode, readyState: audio.readyState, networkState: audio.networkState, host: parsed.hostname });
+        if (state.mediaErrorTicket === ticket) return;
+        const code = mediaCode != null || name === 'NotSupportedError' ? 'PLAY_UNSUPPORTED' : name === 'NotAllowedError' ? 'PLAY_NOT_ALLOWED' : name === 'AbortError' ? 'PLAY_INTERRUPTED' : 'PLAY_REJECTED';
+        throw Object.assign(new Error('Playback did not start.'), { code });
+      }
     } catch (error) {
       if (ticket !== state.resolution) return;
       $('now-sub').textContent = mediaError(error); $('stream-host').textContent = 'No playable stream'; notice('search-notice', mediaError(error), true); log('play-error', { code: safeText(error.code, 'UNKNOWN'), position: index + 1 });
@@ -142,10 +153,18 @@
   $('previous').addEventListener('click', () => { if (audio.currentTime > 3) { audio.currentTime = 0; return; } if (state.index > 0) startAt(state.index - 1); });
   $('clear-queue').addEventListener('click', () => { ++state.resolution; state.queue = []; state.index = -1; $('retry-track').disabled = true; audio.pause(); audio.removeAttribute('src'); audio.load(); $('now-title').textContent = 'Choose a track'; $('now-sub').textContent = 'Your queue is ready when you are.'; $('stream-host').textContent = 'No stream loaded'; setPlaybackState('none'); if ('mediaSession' in navigator) { try { navigator.mediaSession.metadata = null; } catch (_) {} } drawQueue(); log('queue-clear'); });
   audio.addEventListener('ended', () => { setPlaybackState('none'); log('ended', { position: state.index + 1 }); if (state.index + 1 < state.queue.length) startAt(state.index + 1); else notice('search-notice', 'Track finished. Add another track to keep listening.'); });
+  audio.addEventListener('error', () => {
+    const ticket = state.resolution, host = (() => { try { return new URL(audio.currentSrc).hostname; } catch (_) { return ''; } })();
+    const mediaCode = audio.error?.code ?? null;
+    log('audio-error', { mediaError: mediaCode, readyState: audio.readyState, networkState: audio.networkState, host });
+    if (!audio.currentSrc || ticket !== state.resolution || mediaCode == null) return;
+    state.mediaErrorTicket = ticket;
+    const failure = Object.assign(new Error('Audio media load failed.'), { code: 'MEDIA_LOAD_FAILED' });
+    $('now-sub').textContent = mediaError(failure); notice('search-notice', mediaError(failure), true); setPlaybackState('paused');
+  });
   audio.addEventListener('play', () => { setPlaybackState('playing'); log('audio-play-request'); });
   audio.addEventListener('playing', () => { log('playing'); });
   audio.addEventListener('pause', () => { setPlaybackState('paused'); log('pause'); });
-  audio.addEventListener('error', () => { if (audio.currentSrc) { notice('search-notice', 'This stream stopped. If you changed Wi-Fi or mobile data, tap Retry track for a fresh link.', true); $('now-sub').textContent = 'This browser could not play the direct stream.'; log('audio-error', { mediaError: audio.error?.code || null }); } });
   audio.addEventListener('timeupdate', () => { if ('mediaSession' in navigator && Number.isFinite(audio.duration) && audio.duration > 0) { try { navigator.mediaSession.setPositionState({ duration: audio.duration, playbackRate: audio.playbackRate, position: audio.currentTime }); } catch (_) {} } });
   if ('mediaSession' in navigator) for (const [action, handler] of Object.entries({ play: () => audio.play().catch(error => { log('media-session-play-error', { code: error?.name || 'UNKNOWN' }); notice('search-notice', 'Your browser could not resume playback. Use the player controls to retry.', true); }), pause: () => audio.pause(), nexttrack: () => $('next').click(), previoustrack: () => $('previous').click(), seekto: details => { if (Number.isFinite(details.seekTime)) audio.currentTime = details.seekTime; } })) { try { navigator.mediaSession.setActionHandler(action, handler); } catch (_) {} }
   function connection() { const online = navigator.onLine; $('net-pill').textContent = online ? 'Online' : 'Offline · streams unavailable'; $('net-pill').style.color = online ? 'var(--mint)' : 'var(--red)'; }
