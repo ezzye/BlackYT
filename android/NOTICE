@@ -1,0 +1,5 @@
+BlackYT Android component: GPL-3.0-or-later, selected by the owner on 15 October 2026.
+NewPipeExtractor v0.26.5 is used under GPL-3.0-or-later.
+https://github.com/TeamNewPipe/NewPipeExtractor/tree/v0.26.5
+AndroidX Media3 and OkHttp retain their Apache-2.0 notices. Other dependency notices will be recorded from the resolved build.
+This licensing decision applies to the Android component and combined APK; the earlier separate PWA files retain their existing project status.

@@ -28,3 +28,14 @@ public/phone/
 *.tar.gz
 
 phone/test-results.json
+
+# Android builds and local signing material
+android/.gradle/
+android/local.properties
+android/**/build/
+*.jks
+*.keystore
+*.apk
+*.aab
+*.p12
+*.pfx

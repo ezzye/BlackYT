@@ -1,50 +1,51 @@
 # BlackYT
 
-BlackYT is a small, locally run music-search and playback PWA. The current Android setup runs the app and its YouTube audio resolver on a Pixel phone with Termux. The browser connects to `http://127.0.0.1:8765`; Termux requests media directly from YouTube and serves audio to Chrome over phone loopback. Audio does not pass through a Mac, cloud server, or off-device relay. After installation, the Mac can be switched off.
+BlackYT is a native Android app for finding and playing YouTube music links. The phone extracts a stream URL directly and plays audio through Android's native media service. Normal use needs one app: no Termux, Chrome, local server, Mac, account, or cloud relay.
 
-The PWA searches public YouTube music results, applies include/exclude words, and lets you play a result now or add it to a manual queue. It includes next/previous, seeking, retry after a network change, browser media controls, and an installable home-screen shell. Search and audio need an internet connection; the offline shell does not make tracks available offline. This is an unofficial YouTube access route and can stop working if YouTube changes its service.
+## Install the native Android app
 
-## Install on Android
+The private native preview is [v0.3.0-native](https://github.com/ezzye/BlackYT/releases/tag/v0.3.0-native), with the asset **BlackYT-Android-v0.3.0.apk** (about 5.5 MB). Download the APK and the standalone HTML guide from that private release. This first native release is a preview; its validation and current limits are below.
 
-**Phone-only:** sign into GitHub in Android Chrome, open [release v0.2.0](https://github.com/ezzye/BlackYT/releases/tag/v0.2.0), and download **BlackYT-Phone-v0.2.0.zip**. Follow the [detailed installation guide](docs/INSTALL.md#phone-only-release-installation) or download **BlackYT-Guide.html** from the release for an offline guide with copy buttons. Termux needs no GitHub token. A Mac is not required for this route.
+1. On the Android phone, sign in to GitHub with an account that can access this private repository and open the release link above.
+2. Download **BlackYT-Android-v0.3.0.apk** and open the completed download.
+3. If Android asks, allow the browser or file manager to install apps, return to the installer, and tap **Install**.
+4. Open **BlackYT** from the launcher. The older PWA home-screen app was labelled **BlackYT Phone**.
 
-**Alternative:** clone this private repository on your Mac, build the checksum-pinned phone bundle and transfer it once over home Wi-Fi. See [Mac-assisted installation](docs/INSTALL.md#mac-assisted-first-transfer). Daily use stays on the phone.
-
-This is a private repository. A 404 usually means the browser is signed out or the account does not have access. Share the HTML guide as a file; that does not grant software access.
+See the [native Android guide](android/docs/native-android.html) for step-by-step installation, use, and recovery details, and [android/README.md](android/README.md) for source builds and signing. The Android component is GPL-3.0-or-later; see [android/LICENSE](android/LICENSE) and [android/NOTICE](android/NOTICE).
 
 ## Daily use
 
-Open Termux and run `blackyt`. Keep that foreground session open while listening. Open the **BlackYT Phone** home-screen app in Chrome; if Android restarts Termux or stops it in the background, run `blackyt` again. Stop the helper by returning to Termux and pressing **Ctrl+C**.
+Use the search box to enter a song, artist, or paste a YouTube video link, then tap **Search**. The **Music results only** checkbox is enabled by default. If it hides something you want, uncheck it. Optional comma-separated **Include any words** and **Exclude any words** fields narrow results by available title/channel text. Include keeps a match if any entered word appears; Exclude removes a match if any entered word appears.
 
-Search for a track, then choose **Play** to start it immediately or **Add** to put it in the queue. The queue exists only in the current page session; include/exclude words and search mode are saved by that browser on that phone. See [docs/INSTALL.md](docs/INSTALL.md) for update, backup, recovery, and uninstall steps.
+Tap **Play** on a result to start it immediately. Tap **Add** to place it at the end of the first-in, first-out queue. The queue exists only for the current app session. Player controls include Previous, Stop, Play/Pause, Next, seeking, and Retry current song. Android's notification and lock-screen media controls use the same native player session. If a stream fails after a network change, reconnect and tap **Retry current song** to extract a fresh link.
 
-## What has been verified
+Music classification depends on YouTube metadata and is not guaranteed. BlackYT has no offline downloads or sign-in. It plays audio directly from YouTube's Googlevideo stream host; no BlackYT cloud relay is involved. YouTube may change its service and break extraction or playback. BlackYT does not add a separate advertising layer.
 
-On a physical Pixel 10 Pro XL, phone-local playback of Prince's “When Doves Cry” returned HTTP 206 audio/mp4 and advanced in the player; the owner confirmed audible playback. The owner also confirmed that adding and using the manual queue worked. Automated backend checks (22 tests) and mocked installer checks (install/rerun, checksum and unsafe-path rejection, launcher start, and port-collision handling) passed.
+## Current validation
 
-The owner also confirmed two minutes of playback with the screen locked on the phone-local version. A queue transition while locked and the exact mobile-data/USB-disconnected conditions were not separately restated. The new portable release ZIP is checked structurally and through mocked local-install tests; a clean installation from that exact ZIP has not yet been physically repeated. A mocked installer test is not a physical-device test. The release is not a single APK: Termux is the runtime and the home-screen PWA is installed separately in Chrome.
+The signed native release builds and is installed on the Pixel 10 Pro XL; its installed APK hash matches the release file. Five unit checks pass, and release lint reports zero errors with routine warnings. Direct native Googlevideo audio returned HTTP 200. The owner confirmed audible native playback, continued playback with the screen locked, and automatic playback of the next queued song while locked. Those owner checks used the pre-release build; the final signed release has the same playback engine. A fresh-song check on mobile data with USB disconnected is pending owner confirmation.
+
+## Legacy alternative: Termux + Chrome PWA (v0.2.0)
+
+The earlier [v0.2.0 PWA release](https://github.com/ezzye/BlackYT/releases/tag/v0.2.0) is a separate two-part install: a Termux helper and a Chrome home-screen app labelled **BlackYT Phone**. It is not the native APK. Its setup and evidence are documented in the [legacy installation guide](docs/INSTALL.md). Choose it only if you need that older route; native Android is the primary install.
 
 ## Development
 
-For local development on a computer with Python 3, create the environment and run the server:
+The Python web app remains available for local development. With Python 3:
 
 ```sh
 ./setup.sh
 ./start.sh
 ```
 
-Then open <http://localhost:8765>. This is the computer-assisted development mode, not the phone-only release setup. See the [phone installation guide](docs/INSTALL.md) for the Android architecture and [official Termux installation guidance](https://github.com/termux/termux-app#installation).
+Then open <http://localhost:8765>. The [architecture notes](docs/ARCHITECTURE.md) describe the native app and legacy PWA data paths.
 
-## Architecture and a single Android app
-
-See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for the current data path, security boundaries and staged single-APK plan. A real one-app version should own extraction and playback in an Android Media3 service. Merely wrapping the PWA would still leave the Termux helper separate. No APK is included in this release.
-
-## Maintainer checks and releases
+## Maintainer checks
 
 ```sh
 .venv/bin/python -m unittest -v test_server test_phone_audio
 .venv/bin/python phone/test_termux.py
-.venv/bin/python phone/package_release.py --version v0.2.0 --output .local/release-v0.2.0
+cd android && ./gradlew assembleDebug testDebugUnitTest lintRelease
 ```
 
-The portable ZIP contains only the pinned runtime archive, installer, setup script, checksums and standalone guide. Dependencies are installed from their normal package sources. It excludes local credentials, certificates, virtual environments, usage records and research source checkouts. See [third-party notices](THIRD_PARTY_NOTICES.md). No redistribution licence has been selected for the original private BlackYT code.
+The private release uses a signing key outside the repository. Keep a protected backup of that key; updates must use the same key. Never publish the key or commit it to Git.

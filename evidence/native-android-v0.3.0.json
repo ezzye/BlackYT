@@ -1,0 +1,88 @@
+{
+  "version": "0.3.0-native",
+  "package": "uk.blackyt.app",
+  "recordedUtc": "2026-10-15T21:48:45.230063+00:00",
+  "build": {
+    "java": 17,
+    "compileSdk": 36,
+    "targetSdk": 36,
+    "minSdk": 26,
+    "gradle": "8.13",
+    "androidGradlePlugin": "8.13.2",
+    "tasks": [
+      "assembleRelease",
+      "lintRelease",
+      "testReleaseUnitTest"
+    ],
+    "status": "passed",
+    "unitTests": {
+      "tests": 5,
+      "failures": 0,
+      "errors": 0
+    },
+    "lint": {
+      "errors": 0,
+      "warnings": 24
+    }
+  },
+  "apk": {
+    "filename": "BlackYT-Android-v0.3.0.apk",
+    "bytes": 5472132,
+    "sha256": "3f4d65868a8a96ab5329472ec443427d3867df3112986907d2adc433a74e1c83",
+    "signatureVerified": true,
+    "signingCertificateSha256": "6a475af54a417cdcf425f38bd599227d29b6cd8d4e31ddc1346fe00d475bacf8",
+    "installedReleaseHashMatched": true,
+    "installedDebuggable": false
+  },
+  "upstream": {
+    "NewPipeExtractor": {
+      "version": "v0.26.5",
+      "commit": "f9e6bb808f82bf3e4dc1f2a29a16fd376931c8ef",
+      "jarSha256": "923bf0a60938d570ad176ed7b08fa9fec7d0772d7a386ca89a2dd3b9212979c7"
+    },
+    "Media3": "1.9.3"
+  },
+  "physicalDevice": {
+    "model": "Pixel 10 Pro XL",
+    "androidApi": 37,
+    "directNativeAudio": {
+      "hostFamily": "googlevideo.com",
+      "contentType": "audio/mp4",
+      "status": 200
+    },
+    "preReleaseDebugBuild": {
+      "ownerConfirmedAudible": true,
+      "ownerConfirmedScreenLockedPlayback": true,
+      "ownerConfirmedQueuedNextSongWhileLocked": true,
+      "ownerStatement": "it plays and plays next song when the lock screen is on"
+    },
+    "finalSignedRelease": {
+      "installed": true,
+      "freshMobileDataWithUsbDisconnected": "owner check pending",
+      "screenOffMobileData": "owner check pending"
+    }
+  },
+  "architecture": {
+    "resolver": "on-device NewPipeExtractor",
+    "player": "native Media3 foreground service",
+    "audioPath": "phone to YouTube Googlevideo over HTTPS",
+    "separateTermuxDependency": false,
+    "macOrCloudRelayDependency": false
+  },
+  "htmlGuide": {
+    "browserRendered": true,
+    "saveHtmlDownloadVerified": true,
+    "shareFileDownloadFallbackVerified": true,
+    "nativeFileShareUnavailableInTestBrowser": true
+  },
+  "limits": [
+    "Queue is held in session memory, not restored after process death.",
+    "No offline downloads, account login, or guarantee for restricted videos.",
+    "YouTube changes can disrupt extraction or playback."
+  ],
+  "publication": {
+    "visibility": "private",
+    "tag": "v0.3.0-native",
+    "status": "prepared for private preview; verify the GitHub release page for publication"
+  }
+}

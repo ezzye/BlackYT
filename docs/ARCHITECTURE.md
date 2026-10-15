@@ -1,53 +1,36 @@
-# Architecture and the one-app path
+# BlackYT architecture
 
-## Current phone version
+BlackYT now has a self-contained native Android app as its primary phone route. The v0.2.0 Termux and Chrome PWA remains available as a legacy alternative. These are separate implementations and their device results must be reported separately.
+
+## Native Android app (primary)
 
 ```mermaid
 flowchart LR
-  UI[Chrome PWA on Pixel] -->|search and resolve| API[Python helper in Termux]
-  API -->|metadata only| EX[yt-dlp + EJS + Node]
-  EX --> YT[YouTube]
-  YT -->|HTTPS audio| API
-  API -->|phone loopback audio token| UI
+  UI[BlackYT Android UI] -->|search| NP[NewPipe Extractor on phone]
+  UI -->|queue YouTube ID and filters| S[Media3 PlaybackService]
+  S -->|resolve when playback opens| NP
+  NP -->|HTTPS metadata requests| YT[YouTube]
+  NP -->|fresh Googlevideo audio URL| S
+  S -->|direct HTTPS audio| GV[Googlevideo stream]
+  S -->|MediaSession| OS[Android notification and lock screen]
 ```
 
-`server.py --phone --listen 127.0.0.1` binds only to phone loopback. The Mac development mode keeps its separate direct-browser streaming behavior. In phone mode, `/api/resolve` replaces the signed YouTube URL with a short-lived opaque `/api/audio/<token>` route. The helper requests the audio over normal verified HTTPS and streams bounded chunks to the same phone's browser. Byte-range requests and seeking are supported. Every media URL and redirect is restricted to HTTPS Googlevideo hosts; there is no arbitrary-URL proxy API.
+The Java app uses NewPipe Extractor `v0.26.5` for on-device search, filtering, and stream extraction. Media3 `1.9.3` plays the selected progressive audio URL in an Android foreground media service with a native media session. Audio requests go directly from the phone to YouTube's Googlevideo host; BlackYT has no cloud relay or separate advertising layer. There is no sign-in or offline audio download. YouTube can change its service and break search, extraction, or playback.
 
-The phone adapter exists because the physical Pixel's direct browser request for Prince returned HTTP 403, while native Termux HTTPS requests returned valid audio. The local adapter then played that track, confirmed by player time advancing and owner listening. This evidence supports the current route; it does not establish one universal reason for every YouTube 403.
+The screen has a search box, **Music results only** checkbox, comma-separated include and exclude word fields, result actions, player controls, and a session queue. Search results and filter matching use available YouTube metadata; the music classification is not guaranteed. Include words match if any supplied word occurs in the searchable title/channel text. Exclude words remove a result when any supplied word occurs. **Play** starts a result now; **Add** appends it to the FIFO queue. The queue is held in current app memory; filter settings persist. Retry extracts a fresh URL after a network change or expired stream. No external Open or Share intent is implemented; users paste links into the search field.
 
-The service worker caches the application shell only. Search and API replies, signed media addresses, and audio are not stored for offline listening. Preferences are Chrome local storage; the queue is page-session memory. `phone/blackyt.sh` owns its server process, waits for the expected status identity, opens the browser, and keeps a Termux wake lock until exit. Android may still stop Termux.
+Android notification and lock-screen controls share the Media3 session. Code and build configuration for the single APK live in `android/`; the app label is **BlackYT**. The retired PWA launcher label was **BlackYT Phone**. The private native preview is [v0.3.0-native](https://github.com/ezzye/BlackYT/releases/tag/v0.3.0-native), asset `BlackYT-Android-v0.3.0.apk`. The exact device results and limits are recorded below.
 
-## Distribution
+## Native build and evidence
 
-The portable release contains an original-code runtime archive, a hash-pinned installer, a setup script and offline guide. `setup-phone.sh` verifies the installer, then calls its explicit `--local` mode. The installer verifies the archive and checks extraction paths before atomically selecting a managed release under `~/blackyt/releases`. Dependencies are installed separately from their normal sources. Download the private release through signed-in Chrome; no GitHub token is needed by Termux.
+The project uses Java 17, Android SDK 36, Build Tools 35, Android Gradle Plugin 8.13.2, and Gradle 8.13. The signed native release builds and is installed on the Pixel 10 Pro XL; its installed APK hash matches the release file. Five unit checks pass, and release lint reports zero errors with routine warnings. Direct native Googlevideo audio returned HTTP 200. The owner confirmed audible native playback, continued playback with the screen locked, and automatic playback of the next queued song while locked. Those owner checks used the pre-release build; the final signed release has the same playback engine. A fresh-song check on mobile data with USB disconnected is pending owner confirmation.
 
-`phone/package_release.py` builds in a temporary destination, so it does not overwrite the developer's LAN transfer guide. The alternative `phone/build_phone.py` generates the one-time Mac transfer flow. Both routes use the same runtime whitelist. No GitHub Actions workflow is automatically enabled by this project.
+Build and installation details, signing backup guidance, and recovery steps are in [`android/README.md`](../android/README.md) and the [native Android guide](../android/docs/native-android.html). The native code is GPL-3.0-or-later; see [`android/LICENSE`](../android/LICENSE) and [`android/NOTICE`](../android/NOTICE). The NewPipe Extractor upstream version is [v0.26.5](https://github.com/TeamNewPipe/NewPipeExtractor/releases/tag/v0.26.5). Android documents Media3 service-based background playback in its [background playback guide](https://developer.android.com/media/media3/session/background-playback).
 
-## One icon versus one installed application
+## Legacy Termux + Chrome PWA (v0.2.0)
 
-| Route | Requirements | Status |
-| --- | --- | --- |
-| Termux + Chrome PWA | Start `blackyt`, then use the PWA | Implemented; physical playback, manual queue and two-minute screen lock confirmed |
-| Launcher APK | Still installs Termux and Chrome; uses a controlled external command | Proposed only; not a single-app runtime |
-| Self-contained Android APK | Resolver and player inside BlackYT's process/service lifecycle | Recommended next development stage; not built |
+The legacy app uses a Python helper in Termux and a Chrome PWA. In phone mode, `server.py --phone --listen 127.0.0.1` resolves media and streams bounded HTTPS Googlevideo byte ranges through an opaque phone-loopback audio route. It has no cloud relay. The service worker caches only the app shell; audio is not available offline. The manual queue is page-session memory. The installed Chrome home-screen app was labelled **BlackYT Phone**.
 
-A small launcher can use Termux's [RUN_COMMAND intent](https://github.com/termux/termux-app/wiki/RUN_COMMAND-Intent), but requires the owner to grant its command permission and enable external commands. It reduces taps while retaining the Termux dependency. Do not grant general command access to an untrusted launcher.
+The owner confirmed audible phone-local Prince playback, manual queue use, and two minutes of screen-locked playback for the legacy route. The locked queue transition was not separately confirmed. This is not evidence for the native APK. Legacy install and troubleshooting instructions remain in [`INSTALL.md`](INSTALL.md); the [v0.2.0 release](https://github.com/ezzye/BlackYT/releases/tag/v0.2.0) ships the portable PWA/Termux bundle, not a single-app APK.
 
-A [Trusted Web Activity](https://developer.android.com/develop/ui/views/layout/webapps/trusted-web-activities) displays web content using the browser. It does not automatically include Python, Node, yt-dlp or the phone helper. That is why a plain PWA wrapper is insufficient here.
-
-## Recommended single-APK work packages
-
-This is a proposed design based on Android's documented components, not a tested native implementation:
-
-1. Build an Android app in Kotlin. Keep the current HTML/CSS interface through [WebViewAssetLoader](https://developer.android.com/develop/ui/views/layout/webapps/load-local-content) if useful, or rebuild the interface natively. Route explicit search/play/queue actions through a narrow application interface.
-2. Place player and media session in [Media3 MediaSessionService](https://developer.android.com/media/media3/session/background-playback). Let that service own playback, audio focus, notifications, lock-screen controls and the queue. A hidden WebView should not own long-running playback.
-3. Evaluate [NewPipeExtractor](https://github.com/TeamNewPipe/NewPipeExtractor) as the native extraction layer. Re-test the same tracks, filters, source-host checks and network changes. Alternatively, prototype embedding Python and a supported JavaScript runtime; this preserves more current backend code but adds runtime packaging and maintenance. Neither route is established by the present PWA tests.
-4. Persist queue/preferences deliberately; refresh expiring media links; handle phone calls, headset changes, loss of network and restarts. Keep all YouTube requests on the phone.
-5. Test screen lock, a queue transition while locked, mobile-data playback without any Mac connection, low battery/background restrictions and recovery on the actual Pixel.
-6. Deliver a signed APK, source/build instructions, dependency notices and a tested update path. Choose the project's licence before including GPL-covered upstream code.
-
-Termux is [GPLv3](https://github.com/termux/termux-app/blob/master/LICENSE.md); NewPipeExtractor includes its own GPL licence. Their source is not silently re-licensed by BlackYT. The current repository inspected those projects but did not copy their application/extractor code. A native port has a separate dependency and distribution review before release.
-
-## Verification boundary
-
-The owner confirmed phone-local audio, manual queueing and two minutes with the screen locked. A locked queue transition and the exact mobile-data/USB-disconnected conditions were not separately restated. The new portable ZIP has automated package and mocked installer checks; its fresh-phone setup has not been repeated physically. No one-app APK exists in this repository.
+The Mac development mode still serves the PWA at `http://localhost:8765`. It is a development path, not a playback dependency of the native APK.
