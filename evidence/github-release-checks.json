@@ -6,5 +6,30 @@
   "nativeShareSheet": "Not sent; save-and-attach fallback documented",
   "cleanPhoneReleaseInstall": "Not repeated; current Pixel runtime installed by earlier USB route",
   "screenLock": "Owner confirmed two minutes",
-  "githubPublication": "Pending upload and readback"
+  "githubPublication": {
+    "private": true,
+    "repository": "https://github.com/ezzye/BlackYT",
+    "release": "https://github.com/ezzye/BlackYT/releases/tag/v0.2.0",
+    "releaseSourceCommit": "937848b",
+    "assetsDownloadedBackAndMatched": [
+      {
+        "asset": "BlackYT-Phone-v0.2.0.zip",
+        "bytes": 33332,
+        "sha256": "76006fa6fb233338ee33495c9029da89bf40697e422898160b0087e6bd0288e6",
+        "githubReadbackMatches": true
+      },
+      {
+        "asset": "BlackYT-Guide.html",
+        "bytes": 14552,
+        "sha256": "804a2c7173dfee951354f5b9231554ef5539fb9fbe9c59714c3a83a2c5f99ded",
+        "githubReadbackMatches": true
+      },
+      {
+        "asset": "SHA256SUMS",
+        "bytes": 91,
+        "sha256": "f47140bc307c6beca233408e5b70d13ba01227c1bb3d050674ffc71fed4de9b7",
+        "githubReadbackMatches": true
+      }
+    ]
+  }
 }
