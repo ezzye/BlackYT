@@ -1,20 +1,63 @@
-# Legacy Termux + Chrome install guide
+# Install BlackYT on Android
 
-## Current native app
+BlackYT v0.3.1 is a native Android app. This guide walks through the ordinary phone install and first playback. The older Termux and Chrome instructions are retained at the bottom under the clearly labelled legacy section.
 
-The native app is the primary Android install. The public release is [v0.3.1](https://github.com/ezzye/BlackYT/releases/tag/v0.3.1), with **BlackYT-Android-v0.3.1.apk**. Download it from the release page without GitHub sign-in; the APK runs without Termux or Chrome. Native v0.3.0 physical evidence is described in [README.md](../README.md) and is not a device test of the wording-only v0.3.1 update.
+## Before you begin
 
-## About this legacy guide
+- Use an Android phone or tablet running Android 8.0 or newer. The app is Android only; iPhone and iPad are not supported yet. An iOS version is planned, with no release date.
+- You need an internet connection to download the app, search, and play. Streaming over mobile data may count against your mobile plan. There is no BlackYT account or paid hosting account to set up.
+- The public release is [BlackYT v0.3.1](https://github.com/ezzye/BlackYT/releases/tag/v0.3.1). Download the asset named **BlackYT-Android-v0.3.1.apk**. GitHub sign-in is not needed.
+- The release page may also offer a source-code ZIP. Do not choose that for installation; choose the exact `.apk` file under **Assets**.
 
-The rest of this page documents the older v0.2.0 Termux and Chrome PWA route. It remains available for users who need that setup. The repository and release assets are public, so GitHub sign-in is not required to read or download them. Legacy PWA playback, manual queueing, and two minutes with the screen locked were confirmed on a Pixel 10 Pro XL. A fresh phone installation using the portable ZIP has not been repeated physically. This legacy route uses Termux for its local Python/Node runtime and Chrome for the separate PWA icon; it is not the native APK.
+The minimum Android version comes from the app's declared Android 8.0 requirement. The owner physically checked v0.3.0, which uses the same playback engine as v0.3.1, on one Pixel 10 Pro XL. Other phone models and Android versions have not all been tested.
 
-## How it works
+## Install the app
+
+1. On your phone, open the [v0.3.1 release page](https://github.com/ezzye/BlackYT/releases/tag/v0.3.1) in Chrome or another browser.
+2. Scroll to **Assets** and tap **BlackYT-Android-v0.3.1.apk**. Wait for the download to finish. If you do not see it, open the browser menu and choose **Downloads**. You can also find completed downloads in the phone's **Files** app under **Downloads**.
+3. Tap the APK in the download list. Android normally opens its app installer. If it asks which app to use, choose the package installer.
+4. If Android says the browser cannot install apps from this source, open that screen's settings. On a Pixel, the path is **Settings → Apps → Special app access → Install unknown apps → Chrome → Allow from this source**. If you opened the file in Files, select Files instead of Chrome. The setting applies to that one app; Android's labels may differ on other brands. [Google's Pixel help for installing apps from other sources](https://support.google.com/pixelphone/answer/7391672) explains the setting.
+5. Return to the download and tap **Install**. When installation finishes, tap **Open** or find **BlackYT** in your app list. You can turn off **Allow from this source** again after installation.
+
+This standard installation does not require Developer options, USB debugging, root access, unlocking the bootloader, or a custom certificate. USB debugging is only for developers who install or inspect a test build from a computer. Do not disable Play Protect or ignore a security warning to continue. If Android blocks the app with a Play Protect, “not verified,” developer-verification, work, or school policy warning, stop and contact the project maintainer or your device administrator. Do not try to bypass the block. Android's [developer verification FAQ](https://developer.android.com/developer-verification/guides/faq?hl=en) describes verification notices.
+
+While music plays, look for Android’s media controls in its notification area and lock screen. Their visibility depends on your device settings. BlackYT needs internet access for search and audio. It does not need access to your microphone, contacts, or photos. It does not request general file access for normal listening.
+
+## Play your first song
+
+1. Open the app named **BlackYT**. The old Chrome home-screen app was called **BlackYT Phone** and belongs to the legacy PWA setup; it is a different app.
+2. Tap the search box, type a song or artist, or paste a YT link, then tap **Search**.
+3. **Music results only** is checked at first. If it hides a result, uncheck it. This filter relies on available labels and cannot always tell music from other videos.
+4. To narrow results, type comma-separated terms in **Include any words** or **Exclude any words**. A result stays when it contains at least one include term (or the field is empty). A result is removed if it contains any exclude term. Exclude takes priority if a word appears in both fields.
+5. Tap **Play** beside a result to start it now. Tap **Add** to place it at the end of the queue. The queue is first in, first out: the next added song follows the current song. If nothing is playing yet, **Add** only fills the queue; press the large **Play** button in **Now Playing** to start the queued songs.
+
+Use Previous, Stop, Play/Pause, Next, and the seek bar in the player. Android's playback notification and lock-screen controls use the same player. BlackYT does not automatically search for more songs or run a radio station.
+
+## Try a short playback check
+
+Play a song for about two minutes. Lock the screen and check that sound continues. If you have added another track, wait for the current one to end and check whether the next track starts while the screen stays locked. Those checks were confirmed on v0.3.0 on the owner's Pixel 10 Pro XL; v0.3.1 changes wording and the disclaimer on the same playback engine, and has not been separately tested on that phone. You can optionally try a new search on mobile data with Wi-Fi off; streaming can use your mobile data allowance.
+
+## What to expect
+
+BlackYT streams audio directly from YT to your phone. It does not save songs for offline listening and does not need a BlackYT sign-in or separate paid hosting account. Mobile-data charges may still apply through your phone plan, and audio uses battery. The app does not require Termux, a Mac, or a separate Chrome installation for playback. Search or streams can stop working if YT changes its service. Playback availability is not guaranteed for age-restricted or otherwise restricted videos.
+
+The queue lasts only while the app session is running. Force-stopping the app, restarting the phone, or Android ending its process can clear it. Pressing Home or locking the screen during playback is supported. Search filters are saved on the phone. Updates need the same signing key as the installed release; install the newer APK over the current one and do not uninstall first if you want to preserve the app installation.
+
+## FAQ and help
+
+See the [FAQ](FAQ.md) for common questions and [troubleshooting guide](TROUBLESHOOTING.md) for step-by-step fixes. The [offline HTML guide](../android/docs/native-android.html) includes the same install steps, FAQ, and troubleshooting advice in one shareable file.
+
+## Legacy Termux + Chrome PWA (v0.2.0)
+
+Everything below this heading describes the older PWA and is not needed for the native app. The public v0.2.0 release used Termux for its Python/Node runtime and Chrome for the separate **BlackYT Phone** icon. Its audio and device evidence belongs to that older route, not to the native APK.
+
+### How the legacy route works
 
 During setup only, the Mac serves a generated installer and app bundle to the phone over the same home Wi-Fi. The command in the generated phone guide checks the installer SHA-256, and the installer checks the bundle SHA-256 before unpacking it. After installation, Termux runs the search and stream helper on the phone at `127.0.0.1:8765`. Chrome opens the PWA at `http://127.0.0.1:8765`. Termux resolves a selected public YT music result and requests its audio directly from YT; Chrome reads the audio over phone loopback. The search request and audio connection both use the phone's network. No Mac, cloud server, or off-device audio relay carries the phone-mode audio. The app does not download tracks for offline playback.
 
 The loopback site uses plain HTTP; the phone does not need the Mac's private test certificate or a certificate authority. Keep the resolver running in its foreground Termux session while listening.
 
-## Phone-only release installation
+### Phone-only legacy release installation
 
 This legacy route does not require a computer. The public release downloads without GitHub sign-in. Never paste a GitHub token into Termux.
 
@@ -47,7 +90,7 @@ For updates, stop BlackYT using Ctrl+C first, download the new release, and use 
 
 The download also contains `START-HERE.html`, and the release has **BlackYT-Guide.html** as a separate asset. Save and attach that HTML to share the guide as a file.
 
-## Mac-assisted prerequisites
+### Mac-assisted prerequisites
 
 - A Mac with Git, Python 3.10 or newer, and internet access for the first setup; the Mac and phone must be on the same trusted home Wi-Fi during transfer.
 - Git and internet access. The public `ezzye/BlackYT` repository can be cloned without signing in. Do not paste an access token into a command or share it with anyone.
@@ -55,7 +98,7 @@ The download also contains `START-HERE.html`, and the release has **BlackYT-Guid
 - Have internet access and allow time and mobile data for Termux package updates, Python/Node installation, and the BlackYT package download.
 - Do not use a setup command copied from another Wi-Fi address or an earlier generated build. It contains the current Mac address and exact checksum-pinned filenames.
 
-## Mac-assisted first transfer
+### Mac-assisted first transfer
 
 1. In Terminal, clone the public repository:
 
@@ -92,7 +135,7 @@ The download also contains `START-HERE.html`, and the release has **BlackYT-Guid
 9. In Android Settings, open Termux's app information and allow background activity or unrestricted battery use if that control is available. This reduces the chance that Android stops playback, but it cannot guarantee background execution on every device or power setting.
 10. Once installation succeeds, stop the Mac transfer server with **Ctrl+C**. The phone's daily search and audio do not depend on it. The phone setup guide may be saved as HTML before stopping the server.
 
-## Listen and use the queue
+### Listen and use the queue
 
 Open Termux and run:
 
@@ -104,7 +147,7 @@ Keep the Termux session running and switch to the BlackYT Phone icon. Search for
 
 If a track stops after switching between Wi-Fi and mobile data, use **Retry track**. It asks for a fresh media link and attempts to resume. A new search and playback over mobile data with the Mac unavailable are the meaningful independence check; an already-buffered track continuing by itself does not prove that.
 
-## Start, check, and stop
+### Start, check, and stop
 
 After a phone restart, or if Android stops Termux, reopen Termux and run `blackyt` again. The launcher starts the server in the foreground, acquires a Termux wake lock for that session, checks that the local service identifies as BlackYT, and opens the player. The foreground session must remain active.
 
@@ -117,7 +160,7 @@ blackyt open
 
 `status` checks the service on loopback; `open` asks Android to open the local player or prints its address. To stop the server, return to the running Termux session and press **Ctrl+C** (the Termux extra-key row can send Ctrl+C). The launcher releases its wake lock when it exits.
 
-## Update using the Mac route
+### Update using the Mac route
 
 On the Mac, enter the repository folder and update it:
 
@@ -130,7 +173,7 @@ python3 phone/build_phone.py --transfer-url "http://YOUR_MAC_WIFI_IP:8765"
 
 Replace `YOUR_MAC_WIFI_IP` with the Mac's current Wi-Fi address in both commands. Open `http://YOUR_MAC_WIFI_IP:8765/phone.html` on the Pixel and use the exact command from that guide. Close the running `blackyt` session with Ctrl+C first. The installer verifies the package, creates a new managed release under `~/blackyt/releases`, and switches `~/blackyt/current` to it. It reuses the Termux virtual environment and installs the pinned Python requirements. If the browser shows an older app shell, reload after Chrome completes the update. Do not manually replace `~/blackyt/current` or the launcher. Stop the Mac transfer server when the update finishes.
 
-## Back up settings and remove BlackYT
+### Back up settings and remove the legacy app
 
 The current app stores only its search mode and include/exclude words in Chrome local storage. Those preferences are not exported by BlackYT; note them down if you want to restore them. The manual queue is session state, not a persistent playlist. There are no user audio files or account credentials in the install tree.
 
@@ -143,7 +186,7 @@ rm -f "${PREFIX:-/data/data/com.termux/files/usr}/bin/blackyt"
 
 Then uninstall **BlackYT Phone** from Android/Chrome. If you no longer use the separate Mac-assisted version, you may remove only the certificate named **BlackYT local test CA - remove after testing** from Android's user credentials. Do not remove unrelated certificates. Finally, uninstall Termux only if you no longer need it for anything else. Removing the BlackYT directory also removes its managed release history and virtual environment.
 
-## Troubleshooting
+### Troubleshooting the legacy PWA
 
 | What you see | What to do |
 | --- | --- |
@@ -157,7 +200,7 @@ Then uninstall **BlackYT Phone** from Android/Chrome. If you no longer use the s
 | Playback stops when the screen locks or app is backgrounded | Check Android's Termux battery/background setting, reopen Termux, and run `blackyt` again. Keep its foreground session open. Android may still stop background work. |
 | The next track does not start | Confirm it was added with **Add**, keep Termux running, then try the queue's track button or **Next**. Manual queue playback was confirmed by the owner; locked-screen queue transition has not been separately confirmed. |
 
-## Verification and limits
+### Legacy verification and limits
 
 The repository records 22 passing backend tests, passing mocked installer checks, and physical Pixel evidence for phone-local Prince playback (HTTP 206, audio/mp4, advancing playback) plus the owner's confirmation that it was audible. The owner also confirmed that the manual queue worked after tapping the correct control. The owner subsequently confirmed two minutes with the screen locked on the phone-local version. A locked queue transition and exact disconnected/mobile-data conditions were not separately restated. The portable ZIP is a new installation route with mocked installer and package checks; a clean physical-phone install from that exact release has not been repeated. Review the `evidence/` files for detail.
 

@@ -1,15 +1,12 @@
 # BlackYT for Android
 
-BlackYT is the primary Android app for finding and playing YT music links. It extracts stream URLs on the phone with NewPipe Extractor and plays them through AndroidX Media3. The app label is **BlackYT**. Normal playback needs no Termux, Chrome, local server, Mac, account, or cloud relay.
+**Android only (Android 8.0 or newer). An iOS app for iPhone and iPad is planned for later; no release date yet.**
 
-## Public release and installation
+BlackYT is an Android-only app for finding and playing YT music links. It extracts stream URLs on the phone with NewPipe Extractor and plays them through AndroidX Media3. It requires Android 8.0 or newer. iPhone and iPad support is planned for later with no release date. The app label is **BlackYT**; normal playback needs no Termux, Chrome, local server, Mac, account, or cloud relay.
 
-The public native release is [v0.3.1](https://github.com/ezzye/BlackYT/releases/tag/v0.3.1), containing **BlackYT-Android-v0.3.1.apk**. It updates the app wording and disclaimer on the v0.3.0 playback engine; playback behavior has not changed. Download the APK and offline HTML guide from the release page:
+## Public release
 
-1. On the Android phone, open the public BlackYT release page.
-2. Open v0.3.1 and download **BlackYT-Android-v0.3.1.apk**. No GitHub sign-in is needed.
-3. Open the downloaded APK. If Android asks, allow the browser or file manager to install apps, return to the installer, and tap **Install**.
-4. Open **BlackYT** from the app launcher.
+The public native release is [v0.3.1](https://github.com/ezzye/BlackYT/releases/tag/v0.3.1), with **BlackYT-Android-v0.3.1.apk**. It updates app wording and the disclaimer on the v0.3.0 playback engine. For beginner installation steps, questions, and recovery help, see the [Android install guide](../docs/INSTALL.md), [FAQ](../docs/FAQ.md), and [troubleshooting guide](../docs/TROUBLESHOOTING.md). The [standalone HTML guide](docs/native-android.html) is convenient for offline reading and sharing.
 
 The old Chrome PWA home-screen app was labelled **BlackYT Phone** and belongs to the separate legacy v0.2.0 Termux setup. The native APK does not need that installation.
 
@@ -21,7 +18,7 @@ The old Chrome PWA home-screen app was labelled **BlackYT Phone** and belongs to
 4. Tap **Play** on a result to start it immediately. Tap **Add** to append it to the FIFO queue, after items already lined up.
 5. Use the player controls for Previous, Stop, Play/Pause, Next, and seeking. **Retry current song** re-extracts a fresh stream link, which can help after a network change or an expired link.
 
-Android's notification and lock-screen controls use the native media session. Queue contents last only for the current app session; search filter settings persist across launches. There is no sign-in and no offline download. Audio goes directly from the phone to YT's Googlevideo stream host, without a BlackYT cloud relay or separate advertising layer. YT may change its service and disrupt search or playback.
+Android's notification and lock-screen controls use the native media session. Queue contents last only for the current app session; search filter settings persist across launches. There is no sign-in and no offline download. Audio goes directly from the phone to YT's Googlevideo stream host without a BlackYT cloud relay. YT may change its service and disrupt search or playback.
 
 ## Recovery
 

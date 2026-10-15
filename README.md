@@ -1,17 +1,14 @@
 # BlackYT
 
-BlackYT is a native Android app for finding and playing YT music links. The phone extracts a stream URL directly and plays audio through Android's native media service. Normal use needs one app: no Termux, Chrome, local server, Mac, account, or cloud relay.
+**Android only (Android 8.0 or newer). An iOS app for iPhone and iPad is planned for later; no release date yet.**
+
+BlackYT is an Android app for finding and playing YT music links. It extracts a stream URL on the phone and plays it through Android's media player.
+
+<img src="assets/blackyt-mascot-v1.png" alt="BlackYT’s joyful songbird mascot, enjoying music with open wings" width="170">
 
 ## Install the native Android app
 
-The public native release is [v0.3.1](https://github.com/ezzye/BlackYT/releases/tag/v0.3.1), with the asset **BlackYT-Android-v0.3.1.apk**. It contains wording and disclaimer updates on the v0.3.0 playback engine; playback behavior has not changed. Download the APK and standalone HTML guide from the release page. No GitHub sign-in is needed for a public release.
-
-1. On the Android phone, open the public release link above.
-2. Download **BlackYT-Android-v0.3.1.apk** and open the completed download.
-3. If Android asks, allow the browser or file manager to install apps, return to the installer, and tap **Install**.
-4. Open **BlackYT** from the launcher. The older PWA home-screen app was labelled **BlackYT Phone**.
-
-See the [native Android guide](android/docs/native-android.html) for step-by-step installation, use, and recovery details, and [android/README.md](android/README.md) for source builds and signing. The Android component is GPL-3.0-or-later; see [android/LICENSE](android/LICENSE) and [android/NOTICE](android/NOTICE).
+The public release is [v0.3.1](https://github.com/ezzye/BlackYT/releases/tag/v0.3.1), with asset **BlackYT-Android-v0.3.1.apk**. Start with the detailed [Android installation guide](docs/INSTALL.md), or use the downloadable [offline HTML guide](android/docs/native-android.html). No GitHub sign-in, developer settings, USB debugging, Termux, or Mac is needed for normal installation. Android 8 or newer is required; only a Pixel 10 Pro XL running v0.3.0 with the same playback engine has been physically checked. See [FAQ](docs/FAQ.md), [troubleshooting](docs/TROUBLESHOOTING.md), and [android/README.md](android/README.md) for source builds and signing. The Android component is GPL-3.0-or-later; see [android/LICENSE](android/LICENSE) and [android/NOTICE](android/NOTICE).
 
 ## Daily use
 
@@ -19,11 +16,11 @@ Use the search box to enter a song, artist, or paste a YT video link, then tap *
 
 Tap **Play** on a result to start it immediately. Tap **Add** to place it at the end of the first-in, first-out queue. The queue exists only for the current app session. Player controls include Previous, Stop, Play/Pause, Next, seeking, and Retry current song. Android's notification and lock-screen media controls use the same native player session. If a stream fails after a network change, reconnect and tap **Retry current song** to extract a fresh link.
 
-Music classification depends on YT metadata and is not guaranteed. BlackYT has no offline downloads or sign-in. It plays audio directly from YT's Googlevideo stream host; no BlackYT cloud relay is involved. YT may change its service and break extraction or playback. BlackYT does not add a separate advertising layer.
+Music classification depends on YT metadata and is not guaranteed. BlackYT has no offline downloads or sign-in. It plays audio directly from YT's Googlevideo stream host; no BlackYT cloud relay is involved. YT may change its service and break extraction or playback.
 
 ## About BlackYT
 
-BlackYT is an independent educational project about making music easier to discover and enjoy. Its creator uses BlackYT to listen to songs they wrote and perform. The project aims to help students explore and learn about music regardless of their socioeconomic circumstances, with fewer advertising interruptions and low running costs.
+BlackYT is an independent educational project. Its creator uses it to listen to songs they wrote and perform. The project aims to help students explore and learn about music regardless of socioeconomic circumstances, with fewer advertising interruptions and low running costs.
 
 ## Disclaimer
 
