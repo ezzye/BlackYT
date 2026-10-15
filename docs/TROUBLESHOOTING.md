@@ -6,7 +6,7 @@ Start with the issue that best matches what you see. For safety warnings about t
 
 | What you see | What to do |
 | --- | --- |
-| Release page or APK is missing | Open the public [v0.3.1 release page](https://github.com/ezzye/BlackYT/releases/tag/v0.3.1), scroll to **Assets**, and choose **BlackYT-Android-v0.3.1.apk**. The source-code ZIP is not the installer. If the release is temporarily unavailable, try again later or contact the maintainer. |
+| Release page or APK is missing | Use the [v0.4.0 release page](https://github.com/ezzye/BlackYT/releases/tag/v0.4.0) and choose **BlackYT-Android-v0.4.0.apk** under **Assets**, not the source-code ZIP. |
 | I cannot find the downloaded APK | In Chrome, open **⋮ → Downloads**. Or open Android's **Files** app and choose **Downloads**. Look for the exact `.apk` filename. Wait for the download to finish before opening it. |
 | Android says Chrome or Files cannot install apps from this source | Android controls this separately for each app that opens an APK. On a Pixel, go to **Settings → Apps → Special app access → Install unknown apps → Chrome → Allow from this source**. If Files opened the APK, choose Files instead. Return to Downloads and open the APK again. Labels differ on other phones. You can turn the permission off after installation. [Google Pixel help](https://support.google.com/pixelphone/answer/7391672). |
 | Android shows a Play Protect, “not verified,” developer-verification, work, or school warning or block | Stop. Do not turn off Play Protect or bypass the warning. Contact the project maintainer, your organization administrator, or consult the [Android developer verification FAQ](https://developer.android.com/developer-verification/guides/faq?hl=en). |
@@ -18,14 +18,17 @@ Start with the issue that best matches what you see. For safety warnings about t
 
 | What you see | What to do |
 | --- | --- |
-| Search returns no results | Check internet access, try a shorter song or artist name, uncheck **Music results only**, and clear or broaden the include/exclude words. Include words allow a match if any term appears. Exclude words remove a result if any term appears. Exclude takes priority. |
-| A result is missing | Turn off **Music results only**. YT labels are not always complete, and this filter cannot perfectly identify music. |
+| Search returns no results | Check internet access, try a shorter song or artist name, choose **All videos**, and clear or broaden terms in **Filters**. Include-any keeps a result if any term appears; exclude-any removes it if any term appears. Exclude takes priority. |
+| Recent searches or played tracks should be cleared | Use **Clear** for search history or **Home → More (⋮) → Clear listening history** for played tracks. Up to eight search phrases and 12 recently played public-metadata entries are stored locally. |
+| Load more stops returning items | Results are paged up to a cap of 200. Try a shorter or more specific search phrase. |
+| A result is missing | Choose **All videos**. YT labels are not always complete, so Music classification may omit a wanted result. |
 | A result does not start, or you see an HTTP 403/network error | Check that the phone is online and tap **Retry current song**. Retry asks for a fresh stream link. Try another result if it remains unavailable. Some videos may be restricted or blocked, and YT can change its service. |
 | The song is playing but I hear nothing | Check the phone's media volume, mute setting, Bluetooth output, connected headphones, and the app's Play/Pause control. Check whether Android routed audio to another connected device. Then try another result. |
 | Playback stops when the screen turns off | Reopen BlackYT and resume. Check only BlackYT's app-specific battery setting, if your phone provides one: **Settings → Apps → BlackYT → App battery usage**. On Pixels this may be shown as **Allow background usage**. Keep the general battery optimization setting at its recommended value; do not disable optimization for all apps. Android and manufacturers may still stop background work. [Google Pixel battery guidance](https://support.google.com/pixelphone/answer/6090599). |
-| Next does nothing, or the queue is empty | **Add** places a song at the end of the queue; it does not start playback when nothing is already playing. Tap **Play** on a result first, then Add songs. Next moves to the next queued song. |
-| My queue disappeared | The queue lasts only for the current app session. Force-stopping BlackYT, the phone restarting, or Android ending its process can clear it. Pressing Home or locking the screen while music plays is supported. Search filters are saved separately. |
+| Next does nothing, or the queue is empty | **Add** appends to the FIFO queue; it does not start playback. Tap a result to start it, then add more. Next advances through queued tracks. |
+| My queue disappeared | The queue lasts only for the current app session. Force-stopping BlackYT, the phone restarting, or Android ending its process can clear it. Pressing Home or locking the screen while music plays is supported. Recent search phrases are saved separately, up to eight. |
 | Mobile-data playback uses too much data | Streaming uses your phone's data plan. Prefer Wi-Fi when available or stop playback. BlackYT does not save music for offline listening. |
+
 
 ## App and device questions
 

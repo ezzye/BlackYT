@@ -1,51 +1,38 @@
 # Install BlackYT on Android
 
-BlackYT v0.3.1 is a native Android app. This guide walks through the ordinary phone install and first playback. The older Termux and Chrome instructions are retained at the bottom under the clearly labelled legacy section.
+BlackYT is an Android app for Android 8.0 or newer. The v0.4.0 release (versionCode 40) provides **BlackYT-Android-v0.4.0.apk**. This guide describes installation and everyday listening. The older Termux and Chrome instructions below are a separate legacy option.
 
 ## Before you begin
 
-- Use an Android phone or tablet running Android 8.0 or newer. The app is Android only; iPhone and iPad are not supported yet. An iOS version is planned, with no release date.
-- You need an internet connection to download the app, search, and play. Streaming over mobile data may count against your mobile plan. There is no BlackYT account or paid hosting account to set up.
-- The public release is [BlackYT v0.3.1](https://github.com/ezzye/BlackYT/releases/tag/v0.3.1). Download the asset named **BlackYT-Android-v0.3.1.apk**. GitHub sign-in is not needed.
-- The release page may also offer a source-code ZIP. Do not choose that for installation; choose the exact `.apk` file under **Assets**.
+- Android 8.0 or newer is required. An iOS app is planned for later, with no release date.
+- You need internet to download, search, and stream. Mobile-data use may count against your plan. No BlackYT account is needed.
+- When v0.4.0 is published, its APK will be linked from the [v0.4.0 release page](https://github.com/ezzye/BlackYT/releases/tag/v0.4.0). It is not available for download yet.
+- Normal phone installation needs no Developer options, USB debugging, computer, Termux, or Mac.
 
-The minimum Android version comes from the app's declared Android 8.0 requirement. The owner physically checked v0.3.0, which uses the same playback engine as v0.3.1, on one Pixel 10 Pro XL. Other phone models and Android versions have not all been tested.
+## Install when the release is available
 
-## Install the app
+1. Open the v0.4.0 release page in Chrome or another browser and download **BlackYT-Android-v0.4.0.apk** under **Assets**. Do not choose the source-code ZIP.
+2. Open the completed download from Chrome Downloads or Files → Downloads.
+3. If Android asks permission for Chrome or Files to install apps from that source, allow it for that app only. On a Pixel: **Settings → Apps → Special app access → Install unknown apps → Chrome → Allow from this source** (choose Files if Files opened the APK). Labels vary by phone. You can revoke the permission after installation. See [Google Pixel install help](https://support.google.com/pixelphone/answer/7391672).
+4. Tap **Install**, then **Open**. Find **BlackYT** in the app list.
 
-1. On your phone, open the [v0.3.1 release page](https://github.com/ezzye/BlackYT/releases/tag/v0.3.1) in Chrome or another browser.
-2. Scroll to **Assets** and tap **BlackYT-Android-v0.3.1.apk**. Wait for the download to finish. If you do not see it, open the browser menu and choose **Downloads**. You can also find completed downloads in the phone's **Files** app under **Downloads**.
-3. Tap the APK in the download list. Android normally opens its app installer. If it asks which app to use, choose the package installer.
-4. If Android says the browser cannot install apps from this source, open that screen's settings. On a Pixel, the path is **Settings → Apps → Special app access → Install unknown apps → Chrome → Allow from this source**. If you opened the file in Files, select Files instead of Chrome. The setting applies to that one app; Android's labels may differ on other brands. [Google's Pixel help for installing apps from other sources](https://support.google.com/pixelphone/answer/7391672) explains the setting.
-5. Return to the download and tap **Install**. When installation finishes, tap **Open** or find **BlackYT** in your app list. You can turn off **Allow from this source** again after installation.
+Do not disable Play Protect or bypass a security warning. If Android shows a Play Protect, verification, work, or school restriction, stop and contact the maintainer or device administrator. See Android's [developer verification FAQ](https://developer.android.com/developer-verification/guides/faq?hl=en).
 
-This standard installation does not require Developer options, USB debugging, root access, unlocking the bootloader, or a custom certificate. USB debugging is only for developers who install or inspect a test build from a computer. Do not disable Play Protect or ignore a security warning to continue. If Android blocks the app with a Play Protect, “not verified,” developer-verification, work, or school policy warning, stop and contact the project maintainer or your device administrator. Do not try to bypass the block. Android's [developer verification FAQ](https://developer.android.com/developer-verification/guides/faq?hl=en) describes verification notices.
+## Home, search, and playback
 
-While music plays, look for Android’s media controls in its notification area and lock screen. Their visibility depends on your device settings. BlackYT needs internet access for search and audio. It does not need access to your microphone, contacts, or photos. It does not request general file access for normal listening.
+Bottom navigation has **Home**, **Search**, and **Queue**. Home includes a small mascot, **Jump back in** with up to 12 recently played tracks, and colorful interest tiles that trigger actual searches. Recently played history stores public track metadata and original artwork references locally; **Home → More (⋮) → Clear listening history** removes it. BlackYT does not create fake playlists or fetch recommendations automatically.
 
-## Play your first song
+Search uses a compact field with a Search action and keyboard Search/Enter submission. Choose **Music** or **All videos**, and open **Filters** for optional include-any and exclude-any terms. The last eight search phrases are stored locally and can be cleared. Use **Load more** for further results, up to 200 matches; tapping a result plays it immediately, while **Add** appends it to the FIFO queue. Queue tracks can be removed.
 
-1. Open the app named **BlackYT**. The old Chrome home-screen app was called **BlackYT Phone** and belongs to the legacy PWA setup; it is a different app.
-2. Tap the search box, type a song or artist, or paste a YT link, then tap **Search**.
-3. **Music results only** is checked at first. If it hides a result, uncheck it. This filter relies on available labels and cannot always tell music from other videos.
-4. To narrow results, type comma-separated terms in **Include any words** or **Exclude any words**. A result stays when it contains at least one include term (or the field is empty). A result is removed if it contains any exclude term. Exclude takes priority if a word appears in both fields.
-5. Tap **Play** beside a result to start it now. Tap **Add** to place it at the end of the queue. The queue is first in, first out: the next added song follows the current song. If nothing is playing yet, **Add** only fills the queue; press the large **Play** button in **Now Playing** to start the queued songs.
+A miniplayer appears above the bottom navigation only while a track is current. Tap it to open full **Now Playing**; Back returns. The full player provides seeking, Previous, Play/Pause, Next, Queue, and **More**, with Stop and Retry under More. The queue lasts for the current app session.
 
-Use Previous, Stop, Play/Pause, Next, and the seek bar in the player. Android's playback notification and lock-screen controls use the same player. BlackYT does not automatically search for more songs or run a radio station.
+Audio streams directly over HTTPS from YT's Googlevideo host to the phone. There are no offline downloads or sign-in; YT can change its service and availability.
 
-## Try a short playback check
+## Historical checks and current verification
 
-Play a song for about two minutes. Lock the screen and check that sound continues. If you have added another track, wait for the current one to end and check whether the next track starts while the screen stays locked. Those checks were confirmed on v0.3.0 on the owner's Pixel 10 Pro XL; v0.3.1 changes wording and the disclaimer on the same playback engine, and has not been separately tested on that phone. You can optionally try a new search on mobile data with Wi-Fi off; streaming can use your mobile data allowance.
+v0.4.0 automated checks passed on the Pixel 10 Pro XL: nine unit tests in each build type, release lint with zero errors, live search/link/filter/paging/artwork checks, and the native Home/Search/Now Playing/history/queue controls. The exact signed release played silently for two minutes with the existing lock and display off, then moved automatically to the next queued song. Its installed APK hash matched the release file. The owner has not yet reviewed or listened to v0.4.0, and a fresh mobile-data check for this version has not been performed. Other phones are unverified. Historical v0.3.0 owner acceptance is separate.
 
-## What to expect
-
-BlackYT streams audio directly from YT to your phone. It does not save songs for offline listening and does not need a BlackYT sign-in or separate paid hosting account. Mobile-data charges may still apply through your phone plan, and audio uses battery. The app does not require Termux, a Mac, or a separate Chrome installation for playback. Search or streams can stop working if YT changes its service. Playback availability is not guaranteed for age-restricted or otherwise restricted videos.
-
-The queue lasts only while the app session is running. Force-stopping the app, restarting the phone, or Android ending its process can clear it. Pressing Home or locking the screen during playback is supported. Search filters are saved on the phone. Updates need the same signing key as the installed release; install the newer APK over the current one and do not uninstall first if you want to preserve the app installation.
-
-## FAQ and help
-
-See the [FAQ](FAQ.md) for common questions and [troubleshooting guide](TROUBLESHOOTING.md) for step-by-step fixes. The [offline HTML guide](../android/docs/native-android.html) includes the same install steps, FAQ, and troubleshooting advice in one shareable file.
+See the [FAQ](FAQ.md), [troubleshooting guide](TROUBLESHOOTING.md), and [offline HTML guide](../android/docs/native-android.html). Updates require the same signing key as the installed release; install over the existing app instead of uninstalling if you want to retain app data.
 
 ## Legacy Termux + Chrome PWA (v0.2.0)
 

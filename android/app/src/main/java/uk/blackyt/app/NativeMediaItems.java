@@ -2,6 +2,7 @@
 package uk.blackyt.app;
 
 import android.net.Uri;
+import android.os.Bundle;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.MediaMetadata;
 
@@ -18,9 +19,14 @@ public final class NativeMediaItems {
         Uri uri = new Uri.Builder().scheme(SCHEME).authority(AUTHORITY).appendPath(id)
                 .appendQueryParameter("music", safe.musicOnly ? "1" : "0")
                 .appendQueryParameter("include", safe.include).appendQueryParameter("exclude", safe.exclude).build();
-        MediaMetadata metadata = new MediaMetadata.Builder()
+        Bundle extras = new Bundle();
+        extras.putLong("blackyt_duration_seconds", Math.max(0, track.durationSeconds));
+        MediaMetadata.Builder metadataBuilder = new MediaMetadata.Builder()
                 .setTitle(track.title == null ? "" : track.title)
-                .setArtist(track.channel == null ? "" : track.channel).build();
+                .setArtist(track.channel == null ? "" : track.channel).setExtras(extras);
+        String artwork = YouTubeRepository.safeArtworkUrl(track.artworkUrl);
+        if (!artwork.isEmpty()) metadataBuilder.setArtworkUri(Uri.parse(artwork));
+        MediaMetadata metadata = metadataBuilder.build();
         return new MediaItem.Builder().setMediaId(id).setUri(uri).setMediaMetadata(metadata).build();
     }
 

@@ -143,8 +143,13 @@ public final class PlaybackService extends MediaSessionService {
                     String title = item.mediaMetadata.title == null ? "" : item.mediaMetadata.title.toString();
                     String artist = item.mediaMetadata.artist == null ? "" : item.mediaMetadata.artist.toString();
                     // Rebuild to discard arbitrary headers, tags, and external playback configuration.
+                    String artwork = item.mediaMetadata.artworkUri == null ? ""
+                            : item.mediaMetadata.artworkUri.toString();
+                    long duration = item.mediaMetadata.extras == null ? 0
+                            : item.mediaMetadata.extras.getLong("blackyt_duration_seconds", 0);
+                    duration = Math.max(0, Math.min(duration, 864000));
                     accepted.add(NativeMediaItems.fromTrack(
-                            new YouTubeRepository.Track(owned.id, title, artist, 0), owned.rules));
+                            new YouTubeRepository.Track(owned.id, title, artist, duration, artwork), owned.rules));
                 }
                 return Futures.immediateFuture(accepted);
             } catch (RuntimeException invalid) {

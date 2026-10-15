@@ -2,7 +2,7 @@
 
 ## Which devices can run BlackYT?
 
-BlackYT is for Android only and requires Android 8.0 or newer. iPhone and iPad are not supported now. An iOS app is planned for later, with no release date. The owner physically tested v0.3.0 on a Pixel 10 Pro XL. v0.3.1 uses the same playback engine with updated wording; this does not establish support for every Android phone or a separate v0.3.1 device test.
+BlackYT is for Android only and requires Android 8.0 or newer. iPhone and iPad are not supported now. An iOS app is planned for later, with no release date. The owner physically tested v0.3.0 on a Pixel 10 Pro XL. Separate v0.4.0 automated search, UI, direct playback and locked/screen-off queue checks passed on that Pixel. The owner has not yet reviewed this update; other devices are unverified.
 
 ## Do I need Developer options, USB debugging, or a computer?
 
@@ -16,19 +16,23 @@ If you see a Play Protect, “not verified,” developer-verification, work, or 
 
 ## How do I install it?
 
-Use the public [v0.3.1 release page](https://github.com/ezzye/BlackYT/releases/tag/v0.3.1), download **BlackYT-Android-v0.3.1.apk** from Assets, then open it from Chrome Downloads or Files → Downloads. Choose the APK asset, not GitHub's source-code ZIP. The full steps are in [INSTALL.md](INSTALL.md).
+Open the public [v0.4.0 release page](https://github.com/ezzye/BlackYT/releases/tag/v0.4.0) and download **BlackYT-Android-v0.4.0.apk** from Assets. See [INSTALL.md](INSTALL.md) for steps.
 
 ## Why is the app called BlackYT when my old icon says BlackYT Phone?
 
 **BlackYT** is the native Android app. **BlackYT Phone** is an older home-screen PWA shortcut that needs Termux and Chrome. The native app does not need either one. You can leave the old shortcut installed while trying the native app.
 
+## What is new in v0.4.0?
+
+The v0.4.0 flow has Home, Search, and Queue in bottom navigation. Home shows Jump back in with up to 12 locally saved recent tracks and colorful interest tiles that start actual searches. Search has Music/All videos choices, optional Filters, eight recent search phrases, and paged results up to 200. A miniplayer appears only while a track is current and opens full Now Playing. The full player has seeking, Previous, Play/Pause, Next, Queue, and More (Stop and Retry).
+
 ## How do Play and Add differ?
 
-**Play** starts that result now. **Add** puts it at the end of the current queue. The queue plays in the order songs were added. If nothing is playing, Add fills the queue but does not start it; press the large Play button in the Now Playing controls to start the queued songs. BlackYT does not automatically choose more songs.
+**Play** starts that result now. **Add** puts it at the end of the current queue. The queue plays in the order songs were added. If nothing is playing, Add fills the queue but does not start it; open the miniplayer/Now Playing when a track is current, or choose a result to start playback. Queue items can be removed and are played FIFO. BlackYT does not automatically choose songs or fetch recommendations.
 
 ## What do the filters do?
 
-**Music results only** is a best-effort filter based on labels supplied by YT. Turn it off if a wanted result is missing. Include terms keep results containing any listed word; exclude terms remove results containing any listed word. Exclude takes priority when a word appears in both fields. Matching uses available title and channel text.
+Choose **Music** or **All videos** in Search. Music classification depends on YT metadata and can be incomplete. Include terms keep results containing any listed word; exclude terms remove results containing any listed word. Exclude takes priority when a word appears in both fields. Matching uses available title and channel text.
 
 ## Does BlackYT download songs or need an account?
 
@@ -40,7 +44,7 @@ It needs internet access to search and stream. While music plays, Android can sh
 
 ## Why does playback stop after I close the app?
 
-The current queue is kept in the running app session. The queue is not saved permanently and can be lost if Android stops BlackYT, you force-stop it, or the phone restarts. Pressing Home or locking the screen while music plays lets playback continue. Search filter settings persist. To listen in the background, leave playback running and use Android's playback notification or lock-screen controls.
+The queue is kept in the running app session and can be lost if Android stops BlackYT, you force-stop it, or the phone restarts. Recent search phrases (up to eight) and recently played public track metadata (up to 12) are stored locally; search history has Clear; listening history is cleared from **Home → More (⋮) → Clear listening history**. No automatic recommendation service fills Home.
 
 ## Can I install an update over my existing copy?
 

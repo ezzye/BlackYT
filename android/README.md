@@ -6,23 +6,23 @@ BlackYT is an Android-only app for finding and playing YT music links. It extrac
 
 ## Public release
 
-The public native release is [v0.3.1](https://github.com/ezzye/BlackYT/releases/tag/v0.3.1), with **BlackYT-Android-v0.3.1.apk**. It updates app wording and the disclaimer on the v0.3.0 playback engine. For beginner installation steps, questions, and recovery help, see the [Android install guide](../docs/INSTALL.md), [FAQ](../docs/FAQ.md), and [troubleshooting guide](../docs/TROUBLESHOOTING.md). The [standalone HTML guide](docs/native-android.html) is convenient for offline reading and sharing.
+The public native release is [v0.4.0](https://github.com/ezzye/BlackYT/releases/tag/v0.4.0), with **BlackYT-Android-v0.4.0.apk** (versionCode 40). For beginner installation steps, questions, and recovery help, see the [Android install guide](../docs/INSTALL.md), [FAQ](../docs/FAQ.md), and [troubleshooting guide](../docs/TROUBLESHOOTING.md). The [standalone HTML guide](docs/native-android.html) is convenient for offline reading and sharing.
 
 The old Chrome PWA home-screen app was labelled **BlackYT Phone** and belongs to the separate legacy v0.2.0 Termux setup. The native APK does not need that installation.
 
-## Search, filter, and listen
+## Home, search, and listen
 
-1. Tap the search box. Enter a song or artist, or paste a YT video URL, then tap **Search**. There is no Android Open/Share link intent; paste links into the search box.
-2. **Music results only** starts checked. Uncheck it to see results that the music filter removed. The check is a best-effort metadata filter, not a reliable guarantee of music classification.
-3. Optionally enter comma-separated words in **Include any words** and **Exclude any words**. A result is kept when it matches any included word (or the include field is empty), and removed when it matches any excluded word. Matching uses available title/channel text.
-4. Tap **Play** on a result to start it immediately. Tap **Add** to append it to the FIFO queue, after items already lined up.
-5. Use the player controls for Previous, Stop, Play/Pause, Next, and seeking. **Retry current song** re-extracts a fresh stream link, which can help after a network change or an expired link.
+1. Bottom navigation switches between **Home**, **Search**, and **Queue**. Home shows a small mascot, **Jump back in** with up to 12 recently played tracks, and colorful interest tiles that start real searches.
+2. Recent-play history stores public track metadata and original artwork references locally; **Home → More (⋮) → Clear listening history** removes it. The last eight search phrases are stored locally and can also be cleared. BlackYT does not create fake playlists or automatically fetch recommendations.
+3. Search with the compact search field, its action button, or the keyboard Search/Enter action. Paste a YT link or enter a phrase. Choose **Music** or **All videos**; open **Filters** for optional include-any and exclude-any terms. Music classification depends on YT metadata and is not guaranteed.
+4. Use **Load more** for further pages, up to 200 matches. Tap a result to play it immediately. **Add** appends it to the FIFO queue. Queue items can be removed.
+5. A miniplayer appears above the bottom navigation only when a track is current. Tap it to open full **Now Playing**. Back returns to the previous screen. The full player has seeking, Previous, Play/Pause, Next, Queue, and **More**; More includes Stop and Retry current song.
 
-Android's notification and lock-screen controls use the native media session. Queue contents last only for the current app session; search filter settings persist across launches. There is no sign-in and no offline download. Audio goes directly from the phone to YT's Googlevideo stream host without a BlackYT cloud relay. YT may change its service and disrupt search or playback.
+The queue lasts only for the current app session. Audio streams directly over HTTPS from the phone to YT's Googlevideo stream host, with no BlackYT cloud relay. There is no sign-in or offline download.
 
 ## Recovery
 
-- **No search results:** check the phone's internet connection, try the song title or artist, uncheck **Music results only**, and clear or broaden include/exclude words.
+- **No search results:** check the phone's internet connection, try the song title or artist, choose **All videos**, and clear or broaden include/exclude words.
 - **Playback stops or reports a stream error:** check the connection, then tap **Retry current song**. This requests a fresh stream URL from the phone.
 - **A YT link does not play:** verify it opens in the YT app or site, then paste its full URL into BlackYT's search box. Some videos may be unavailable to the extractor, including age-restricted or otherwise restricted videos; successful playback is not guaranteed.
 - **App cannot update over an installed copy:** updates must be signed with the same release key. A differently signed APK cannot replace the existing installation in place. Do not uninstall if you need app state before you have checked your backup plan.
@@ -30,7 +30,7 @@ Android's notification and lock-screen controls use the native media session. Qu
 
 ## Current validation
 
-The v0.3.0-native signed APK was installed on the Pixel 10 Pro XL and its installed APK hash matched the release file. Five unit checks passed, release lint reported zero errors with routine warnings, and direct native Googlevideo audio returned HTTP 200. The owner confirmed audible playback, continued playback with the screen locked, and automatic playback of the next queued song while locked. The owner also confirmed that v0.3.0-native played a newly searched song on mobile data with USB unplugged and continued with the screen locked. v0.3.1 changes wording and disclaimer only; it uses the same playback engine. These v0.3.0 physical checks are not device tests of v0.3.1. The Mac and Termux are not playback dependencies.
+v0.4.0 automated checks passed on the Pixel 10 Pro XL: nine unit tests in each build type, release lint with zero errors, live search/link/filter/paging/artwork checks, and the native Home/Search/Now Playing/history/queue controls. The exact signed release played silently for two minutes with the existing lock and display off, then moved automatically to the next queued song. Its installed APK hash matched the release file. The owner has not yet reviewed or listened to v0.4.0, and a fresh mobile-data check for this version has not been performed. Other phones are unverified. Historical v0.3.0 owner acceptance is separate. The Mac and Termux are not playback dependencies. See [verification details](docs/verification-v0.4.0.json).
 
 ## Build from source
 
@@ -54,3 +54,15 @@ keyPassword=...
 ```
 
 The properties file and keystore are private secrets. Never commit or publish them. Without the file, debug builds use Android's standard debug key and release builds are unsigned. Updates require the same signing key as the installed APK. Keep a protected backup of the release keystore and its passwords in the owner's secure credential storage, with a second encrypted backup in an access-controlled private location. Verify that the backup can be retrieved before relying on it. Do not put the key, passwords, or backup details in this repository, release assets, or the HTML guide.
+
+## Optional connected-device checks
+
+The nine local unit tests run without a phone. The opt-in instrumentation tests use real public YT search and thumbnail requests and stream audio, so a connected Android phone and internet/data allowance are needed:
+
+```sh
+./gradlew connectedDebugAndroidTest
+```
+
+These checks replace and clear BlackYT's in-memory queue. The playback check mutes only BlackYT, streams for two minutes, checks automatic movement to the next queued song, then stops and clears playback before restoring app volume. It does not change global media volume or bypass the screen lock. The UI check also mutes BlackYT before invoking its controls and renders only the app's content, including when the phone is already locked. It verifies Home/Search/Queue navigation, search submission, result artwork, Load more, the full player and registered modern Back callback, listening history, Music learning search, Add/Remove, and Clear results. Real search results can change; unavailable upstream content or network restrictions can fail these checks.
+
+For a screen-off check, lock the phone normally before running the playback test and add the runner argument `expect_screen_off=true`. This requires the test to observe both the existing lock and the display off. A silent automated pass does not establish audible quality, everyday touch usability, or support for every phone.

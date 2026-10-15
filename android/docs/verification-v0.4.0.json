@@ -1,0 +1,40 @@
+{
+  "version": "0.4.0-native",
+  "versionCode": 40,
+  "apkSha256": "6662e13ca53acb114302890346f8fae00f71ff051371e1494bac64b9c51201e1",
+  "bytes": 7094324,
+  "certificateSha256": "6a475af54a417cdcf425f38bd599227d29b6cd8d4e31ddc1346fe00d475bacf8",
+  "design": "Spotify-guided Home/Search/Queue/full Now Playing",
+  "installedApkSha256": "6662e13ca53acb114302890346f8fae00f71ff051371e1494bac64b9c51201e1",
+  "installedHashMatches": true,
+  "checkedUtc": "2026-10-15T23:15:19.849627+00:00",
+  "device": "Pixel 10 Pro XL",
+  "androidApi": 37,
+  "unitTestsPerBuildType": 9,
+  "unitBuildTypes": [
+    "debug",
+    "release"
+  ],
+  "lintErrors": 0,
+  "lintWarnings": 18,
+  "deviceChecks": {
+    "realMusicArtistAndVideoSearch": true,
+    "pastedLink": true,
+    "includeExcludeFilters": true,
+    "queryAndFilterBoundPagination": true,
+    "thumbnailFetchDecode": true,
+    "homeCompactSearchFullPlayerMiniplayerQueue": true,
+    "musicLearningShortcut": true,
+    "localActualPlayHistory": true,
+    "modernBackCallback": true,
+    "directHttpsGooglevideoPlayback": true,
+    "appMuted": true,
+    "lockedTwoMinuteSample": true,
+    "displayOffObserved": true,
+    "automaticNextTrack": true
+  },
+  "ownerAcceptance": "Pending review and audible listening of v0.4.0; v0.3.0 historical owner checks are separate.",
+  "otherAndroidDevices": "Not tested",
+  "freshMobileDataCheckForThisVersion": "Not performed",
+  "captures": "Own-app view renders only; existing lock screen was never bypassed."
+}

@@ -17,16 +17,20 @@ import org.schabi.newpipe.extractor.downloader.Request;
 import org.schabi.newpipe.extractor.downloader.Response;
 import org.schabi.newpipe.extractor.localization.ContentCountry;
 import org.schabi.newpipe.extractor.localization.Localization;
+import org.schabi.newpipe.extractor.Page;
 import org.schabi.newpipe.extractor.search.SearchExtractor;
 import org.schabi.newpipe.extractor.services.youtube.linkHandler.YoutubeSearchQueryHandlerFactory;
 import org.schabi.newpipe.extractor.stream.AudioStream;
+import org.schabi.newpipe.extractor.stream.ContentAvailability;
 import org.schabi.newpipe.extractor.stream.DeliveryMethod;
 import org.schabi.newpipe.extractor.stream.StreamInfo;
 import org.schabi.newpipe.extractor.stream.StreamInfoItem;
+import org.schabi.newpipe.extractor.stream.StreamType;
 
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.IDN;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -115,12 +119,51 @@ public final class YouTubeRepository {
         public final String title;
         public final String channel;
         public final long durationSeconds;
+        public final String artworkUrl;
 
         public Track(String id, String title, String channel, long durationSeconds) {
+            this(id, title, channel, durationSeconds, null);
+        }
+
+        public Track(String id, String title, String channel, long durationSeconds,
+                     String artworkUrl) {
             this.id = id;
             this.title = title;
             this.channel = channel;
             this.durationSeconds = durationSeconds;
+            String safeArtwork = safeArtworkUrl(artworkUrl);
+            String safeId = safeThumbnailId(id);
+            this.artworkUrl = !safeArtwork.isEmpty() ? safeArtwork
+                    : safeId.isEmpty() ? "" : "https://i.ytimg.com/vi/" + safeId + "/hqdefault.jpg";
+        }
+    }
+
+    /** Opaque continuation token bound to the exact query and filters that created it. */
+    public static final class SearchCursor {
+        private final String query;
+        private final boolean musicOnly;
+        private final String include;
+        private final String exclude;
+        private final Page page;
+
+        private SearchCursor(String query, Rules rules, Page page) {
+            this.query = query;
+            this.musicOnly = rules.musicOnly;
+            this.include = rules.include;
+            this.exclude = rules.exclude;
+            this.page = page;
+        }
+    }
+
+    public static final class SearchPage {
+        public final List<Track> tracks;
+        public final SearchCursor next;
+        public final String suggestion;
+
+        private SearchPage(List<Track> tracks, SearchCursor next, String suggestion) {
+            this.tracks = Collections.unmodifiableList(new ArrayList<>(tracks));
+            this.next = next;
+            this.suggestion = suggestion == null ? "" : suggestion;
         }
     }
 
@@ -131,15 +174,23 @@ public final class YouTubeRepository {
         public final String channel;
         public final long durationSeconds;
         public final String sourceHost;
+        public final String artworkUrl;
 
         public Resolved(String url, String mimeType, String title, String channel,
                         long durationSeconds, String sourceHost) {
+            this(url, mimeType, title, channel, durationSeconds, sourceHost, null);
+        }
+
+        public Resolved(String url, String mimeType, String title, String channel,
+                        long durationSeconds, String sourceHost, String artworkUrl) {
             this.url = url;
             this.mimeType = mimeType;
             this.title = title;
             this.channel = channel;
             this.durationSeconds = durationSeconds;
             this.sourceHost = sourceHost;
+            String safeArtwork = safeArtworkUrl(artworkUrl);
+            this.artworkUrl = safeArtwork;
         }
     }
 
@@ -156,14 +207,25 @@ public final class YouTubeRepository {
     }
 
     public List<Track> search(String query, Rules rules) throws Exception {
+        return searchPage(query, rules, null).tracks;
+    }
+
+    public SearchPage searchPage(String query, Rules rules, SearchCursor cursor) throws Exception {
         if (query == null || query.trim().isEmpty()) {
             throw new IOException("Enter a search phrase.");
         }
+        final String cleanedQuery = query.trim();
         Rules safeRules = rules == null ? new Rules(false, "", "") : rules;
+        if (cursor != null && (!cleanedQuery.equals(cursor.query)
+                || safeRules.musicOnly != cursor.musicOnly
+                || !safeRules.include.equals(cursor.include)
+                || !safeRules.exclude.equals(cursor.exclude))) {
+            throw new IOException("Search page does not match the current query and filters.");
+        }
         try {
             String pastedVideoId;
             try {
-                pastedVideoId = normalizeVideoId(query.trim());
+                pastedVideoId = isVideoLinkQuery(cleanedQuery) ? normalizeVideoId(cleanedQuery) : null;
             } catch (IllegalArgumentException notAVideoLink) {
                 pastedVideoId = null;
             }
@@ -175,42 +237,67 @@ public final class YouTubeRepository {
                 boolean musicCategory = isMusicCategory(info.getCategory());
                 if (matches(title, channel, safeRules)
                         && cachedResultAllowed(musicCategory, safeRules.musicOnly)) {
-                    return Collections.singletonList(new Track(
-                            pastedVideoId, title, channel, info.getDuration()));
+                    return new SearchPage(Collections.singletonList(new Track(
+                            pastedVideoId, title, channel, info.getDuration(),
+                            bestSafeThumbnail(info.getThumbnails()))), null, "");
                 }
-                return Collections.emptyList();
+                return new SearchPage(Collections.emptyList(), null, "");
             }
 
             StreamingService youtube = youtubeService();
             List<String> filters = safeRules.musicOnly
                     ? Collections.singletonList(YoutubeSearchQueryHandlerFactory.MUSIC_SONGS)
-                    : Collections.singletonList(YoutubeSearchQueryHandlerFactory.ALL);
+                    : Collections.singletonList(YoutubeSearchQueryHandlerFactory.VIDEOS);
             SearchExtractor extractor = youtube.getSearchExtractor(
-                    youtube.getSearchQHFactory().fromQuery(query.trim(), filters, null));
-            extractor.fetchPage();
-            ListExtractor.InfoItemsPage<InfoItem> page = extractor.getInitialPage();
-            List<Track> tracks = new ArrayList<>();
-            for (InfoItem item : page.getItems()) {
-                if (!(item instanceof StreamInfoItem)) {
-                    continue;
-                }
-                StreamInfoItem stream = (StreamInfoItem) item;
-                String id;
+                    youtube.getSearchQHFactory().fromQuery(cleanedQuery, filters, null));
+            ListExtractor.InfoItemsPage<InfoItem> page;
+            String suggestion = "";
+            if (cursor == null) {
+                extractor.fetchPage();
+                page = extractor.getInitialPage();
                 try {
-                    id = normalizeVideoId(stream.getUrl());
-                } catch (IllegalArgumentException ignored) {
-                    continue;
+                    if (extractor.isCorrectedSearch()) {
+                        suggestion = nullToEmpty(extractor.getSearchSuggestion());
+                    }
+                } catch (Exception ignored) {
+                    // Suggestions are optional; a search result remains useful without one.
                 }
-                String title = nullToEmpty(stream.getName());
-                String channel = nullToEmpty(stream.getUploaderName());
-                if (matches(title, channel, safeRules)) {
-                    tracks.add(new Track(id, title, channel, stream.getDuration()));
-                }
-                if (tracks.size() >= 50) {
-                    break;
-                }
+            } else {
+                page = extractor.getPage(cursor.page);
             }
-            return tracks;
+            List<Track> tracks = new ArrayList<>();
+            java.util.Set<String> seen = new java.util.HashSet<>();
+            int upstreamPages = 0;
+            do {
+                upstreamPages++;
+                for (InfoItem item : page.getItems()) {
+                    if (!(item instanceof StreamInfoItem)) continue;
+                    StreamInfoItem stream = (StreamInfoItem) item;
+                    StreamType type = stream.getStreamType();
+                    if (type != StreamType.VIDEO_STREAM && type != StreamType.AUDIO_STREAM) continue;
+                    if (stream.getContentAvailability() == ContentAvailability.UPCOMING) continue;
+                    String id;
+                    try {
+                        id = normalizeVideoId(stream.getUrl());
+                    } catch (IllegalArgumentException ignored) {
+                        continue;
+                    }
+                    if (!seen.add(id)) continue;
+                    String title = nullToEmpty(stream.getName());
+                    String channel = nullToEmpty(stream.getUploaderName());
+                    if (matches(title, channel, safeRules)) {
+                        tracks.add(new Track(id, title, channel, stream.getDuration(),
+                                bestSafeThumbnail(stream.getThumbnails())));
+                        if (tracks.size() >= 50) break;
+                    }
+                }
+                if (!tracks.isEmpty() || tracks.size() >= 50 || !page.hasNextPage()
+                        || upstreamPages >= 2) break;
+                page = extractor.getPage(page.getNextPage());
+            } while (true);
+            SearchCursor next = page.hasNextPage()
+                    ? new SearchCursor(cleanedQuery, safeRules, page.getNextPage()) : null;
+            return new SearchPage(tracks, next, suggestion);
         } catch (Exception failure) {
             Diagnostics.failure("search-error",failure);
             if (BuildConfig.DEBUG) android.util.Log.w("BlackYTNetwork", "Search error=" + failure.getClass().getSimpleName());
@@ -268,7 +355,7 @@ public final class YouTubeRepository {
             String url = selected.getUrl();
             String host = requireGoogleVideoUrl(url);
             Resolved result = new Resolved(url, selected.getFormat().getMimeType(),
-                    title, channel, info.getDuration(), host);
+                    title, channel, info.getDuration(), host, bestSafeThumbnail(info.getThumbnails()));
             resolvedCache.put(id, new CachedResolved(
                     result, SystemClock.elapsedRealtime(), musicCategory));
             return result;
@@ -303,6 +390,11 @@ public final class YouTubeRepository {
             return false;
         }
         return !hasTerms(current.include) || containsAny(haystack, current.include);
+    }
+
+    // Eleven-character artist names must remain searches, rather than looking like bare video IDs.
+    static boolean isVideoLinkQuery(String input) {
+        return input != null && input.trim().toLowerCase(Locale.ROOT).startsWith("https://");
     }
 
     public static String normalizeVideoId(String input) {
@@ -352,6 +444,52 @@ public final class YouTubeRepository {
             // Use the same safe public error for malformed URLs and unsupported hosts.
         }
         throw new IllegalArgumentException("Invalid YT item.");
+    }
+
+    /** Accept only public HTTPS thumbnails from YouTube's image CDN families. */
+    public static String safeArtworkUrl(String candidate) {
+        if (candidate == null || candidate.trim().isEmpty()) return "";
+        try {
+            URI uri = new URI(candidate.trim());
+            String host = uri.getHost();
+            if (!"https".equalsIgnoreCase(uri.getScheme()) || host == null
+                    || uri.getUserInfo() != null || (uri.getPort() != -1 && uri.getPort() != 443)
+                    || uri.getRawAuthority() == null || uri.getRawAuthority().contains("%")) return "";
+            String normalizedHost = IDN.toASCII(host).toLowerCase(Locale.ROOT);
+            if (!(hostInFamily(normalizedHost, "ytimg.com")
+                    || hostInFamily(normalizedHost, "ggpht.com")
+                    || hostInFamily(normalizedHost, "googleusercontent.com"))) return "";
+            if (uri.getRawPath() == null || !uri.getRawPath().startsWith("/")) return "";
+            return uri.toASCIIString();
+        } catch (Exception ignored) {
+            return "";
+        }
+    }
+
+    private static boolean hostInFamily(String host, String family) {
+        return host.equals(family) || host.endsWith("." + family);
+    }
+
+    // Search metadata often lists a tiny image first. Prefer a safe larger cover for the player.
+    static String bestSafeThumbnail(List<org.schabi.newpipe.extractor.Image> images) {
+        if (images == null) return "";
+        String best = "";
+        long bestScore = -1;
+        for (org.schabi.newpipe.extractor.Image image : images) {
+            if (image == null) continue;
+            String safe = safeArtworkUrl(image.getUrl());
+            if (safe.isEmpty()) continue;
+            int width = image.getWidth(), height = image.getHeight();
+            if (width > 4096 || height > 4096 || (long) Math.max(0, width) * Math.max(0, height) > 16_000_000L) continue;
+            long score = width > 0 && height > 0
+                    ? (long) Math.min(width, 720) * Math.min(height, 720) : 0;
+            if (score > bestScore) { best = safe; bestScore = score; }
+        }
+        return best;
+    }
+
+    private static String safeThumbnailId(String id) {
+        return id != null && id.matches("[A-Za-z0-9_-]{11}") ? id : "";
     }
 
     private static StreamingService youtubeService() throws Exception {

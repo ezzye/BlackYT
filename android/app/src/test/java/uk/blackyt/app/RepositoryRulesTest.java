@@ -44,4 +44,46 @@ public class RepositoryRulesTest {
     public void rejectsLookalikeYoutubeHosts() {
         YouTubeRepository.normalizeVideoId("https://youtube.com.evil.test/watch?v=abc_DEF-123");
     }
+
+    @Test
+    public void artworkAllowsOnlyHttpsUrlsFromPublicImageCdnFamilies() {
+        assertEquals("https://i.ytimg.com/vi/abc_DEF-123/hqdefault.jpg",
+                YouTubeRepository.safeArtworkUrl("https://i.ytimg.com/vi/abc_DEF-123/hqdefault.jpg"));
+        assertEquals("https://lh3.googleusercontent.com/a/photo",
+                YouTubeRepository.safeArtworkUrl("https://lh3.googleusercontent.com/a/photo"));
+        assertEquals("", YouTubeRepository.safeArtworkUrl("http://i.ytimg.com/image.jpg"));
+        assertEquals("", YouTubeRepository.safeArtworkUrl("https://ytimg.com.evil.test/image.jpg"));
+        assertEquals("", YouTubeRepository.safeArtworkUrl("https://user@i.ytimg.com/image.jpg"));
+        assertEquals("", YouTubeRepository.safeArtworkUrl("https://i.ytimg.com:444/image.jpg"));
+    }
+
+    @Test
+    public void trackKeepsCompatibleConstructorAndUsesSafeThumbnailFallback() {
+        YouTubeRepository.Track track = new YouTubeRepository.Track(
+                "abc_DEF-123", "Song", "Artist", 185);
+        assertEquals("https://i.ytimg.com/vi/abc_DEF-123/hqdefault.jpg", track.artworkUrl);
+        YouTubeRepository.Track supplied = new YouTubeRepository.Track(
+                "abc_DEF-123", "Song", "Artist", 185, "https://i.ytimg.com/custom.jpg");
+        assertEquals("https://i.ytimg.com/custom.jpg", supplied.artworkUrl);
+        YouTubeRepository.Track rejected = new YouTubeRepository.Track(
+                "abc_DEF-123", "Song", "Artist", 185, "https://evil.test/custom.jpg");
+        assertEquals("https://i.ytimg.com/vi/abc_DEF-123/hqdefault.jpg", rejected.artworkUrl);
+    }
+    @Test
+    public void playerArtworkPrefersLargerSafeMetadataImage() {
+        org.schabi.newpipe.extractor.Image.ResolutionLevel level =
+                org.schabi.newpipe.extractor.Image.ResolutionLevel.UNKNOWN;
+        java.util.List<org.schabi.newpipe.extractor.Image> images = java.util.Arrays.asList(
+                new org.schabi.newpipe.extractor.Image("https://i.ytimg.com/tiny.jpg", 60, 60, level),
+                new org.schabi.newpipe.extractor.Image("https://evil.test/large.jpg", 1000, 1000, level),
+                new org.schabi.newpipe.extractor.Image("https://i.ytimg.com/cover.jpg", 544, 544, level));
+        assertEquals("https://i.ytimg.com/cover.jpg", YouTubeRepository.bestSafeThumbnail(images));
+        assertEquals("", new YouTubeRepository.Track("invalid", "Song", "Artist", 0).artworkUrl);
+    }
+    @Test
+    public void elevenCharacterArtistNameRemainsTextSearch() {
+        assertFalse(YouTubeRepository.isVideoLinkQuery("Blackstreet"));
+        assertFalse(YouTubeRepository.isVideoLinkQuery("abc_DEF-123"));
+        assertTrue(YouTubeRepository.isVideoLinkQuery(" https://youtu.be/abc_DEF-123 "));
+    }
 }
