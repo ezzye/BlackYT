@@ -20,5 +20,9 @@
     "localRoute": true
   },
   "physicalListening": "Owner confirmed: It works!",
-  "unpluggedAndScreenOff": "pending owner result"
+  "unpluggedAndScreenOff": "User was instructed to test with USB disconnected and Wi-Fi off; exact two-minute locked duration and locked queue transition were not separately confirmed.",
+  "manualQueue": {
+    "ownerConfirmed": true,
+    "ownerReply": "It is working I was tapping the wrong button"
+  }
 }
