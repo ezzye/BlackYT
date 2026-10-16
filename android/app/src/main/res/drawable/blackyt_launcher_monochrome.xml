@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Even-odd cutouts keep the eyes and hooked beak legible when the system tints this mark. -->
+    <path
+        android:fillColor="#FF000000"
+        android:fillType="evenOdd"
+        android:pathData="M22,45
+            C22,39 26,35 32,34
+            C36,25 44,19 54,19
+            C64,19 72,25 76,34
+            C82,35 86,39 86,45
+            L86,64
+            C86,71 82,75 76,75
+            C72,83 64,88 54,88
+            C44,88 36,83 32,75
+            C26,75 22,71 22,64 Z
+
+            M41,47
+            C41,42 44,39 49,39
+            C54,39 57,43 57,48
+            C57,54 53,58 48,58
+            C43,58 41,54 41,47 Z
+
+            M57,47
+            C57,42 60,39 65,39
+            C70,39 73,43 73,48
+            C73,54 69,58 64,58
+            C59,58 57,54 57,47 Z
+
+            M51,61
+            C57,59 68,59 78,62
+            C72,68 65,73 59,76
+            C54,73 50,69 48,65 Z
+
+            M57,64
+            C61,63 67,63 71,63
+            C67,66 63,68 59,70
+            C58,68 57,66 57,64 Z" />
+</vector>

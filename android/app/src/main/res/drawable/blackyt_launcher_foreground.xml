@@ -1,6 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<inset xmlns:android="http://schemas.android.com/apk/res/android"
-    android:insetLeft="18dp" android:insetTop="18dp"
-    android:insetRight="18dp" android:insetBottom="18dp">
-    <bitmap android:src="@drawable/blackyt_mascot" android:gravity="fill" android:filter="true" />
-</inset>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- The mark stays within the adaptive icon safe area (18..90). -->
+    <path android:fillColor="#B7F33B" android:pathData="M31,52 C31,34 43,22 54,22 C65,22 77,34 77,52 L77,65 L31,65 Z" />
+    <path android:fillColor="#B7F33B" android:pathData="M26,43 C26,28 39,18 54,18 C69,18 82,28 82,43 L76,45 C76,33 67,26 54,26 C41,26 32,33 32,45 Z" />
+    <path android:fillColor="#07110E" android:pathData="M34,50 C34,36 43,28 54,28 C65,28 74,36 74,50 L74,61 C74,76 65,84 54,84 C43,84 34,76 34,61 Z" />
+    <path android:fillColor="#07110E" android:pathData="M47,30 L51,22 L55,29 L59,22 L63,31 Z" />
+    <path android:fillColor="#B7F33B" android:pathData="M25,45 C25,40 29,37 34,38 L37,42 L37,68 L33,72 C28,73 25,70 25,65 Z" />
+    <path android:fillColor="#B7F33B" android:pathData="M83,45 C83,40 79,37 74,38 L71,42 L71,68 L75,72 C80,73 83,70 83,65 Z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M42,48 C42,43 45,40 49,40 C53,40 55,44 55,49 C55,53 52,56 48,56 C44,56 42,53 42,48 Z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M58,48 C58,43 61,40 65,40 C69,40 71,44 71,49 C71,53 68,56 64,56 C60,56 58,53 58,48 Z" />
+    <path android:fillColor="#07110E" android:pathData="M47,44 C50,44 52,46 52,49 C52,52 50,54 47,54 C45,54 44,52 44,49 C44,46 45,44 47,44 Z" />
+    <path android:fillColor="#07110E" android:pathData="M63,44 C66,44 68,46 68,49 C68,52 66,54 63,54 C61,54 60,52 60,49 C60,46 61,44 63,44 Z" />
+    <path android:fillColor="#FF9C22" android:pathData="M51,57 L72,59 L58,69 C55,71 51,68 49,65 C48,62 48,59 51,57 Z" />
+</vector>

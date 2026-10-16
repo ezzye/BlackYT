@@ -10,6 +10,8 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.os.SystemClock;
 import android.view.View;
+import android.view.MotionEvent;
+import android.graphics.drawable.RippleDrawable;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -66,6 +68,16 @@ public final class DiscoveryUiDeviceTest {
             await(() -> main(() -> loadedArtworkCount(activity.getWindow().getDecorView())>=2),20000,"Artwork did not load in search");
             capture("discovery-search-view.png");
             main(() -> {
+                assertNativeFeedback("Search YT");
+                assertNativeFeedback("Search tab");
+                assertNativeFeedback("Add ");
+                for (View view : views()) if (description(view).startsWith("Play ") && description(view).contains(" by ")) {
+                    assertTrue("Song rows need native pressed feedback", view.getForeground() instanceof RippleDrawable);
+                    break;
+                }
+                return true;
+            });
+            main(() -> {
                 for(View view:views()) {
                     String description=description(view);
                     if(description.startsWith("Play ") && description.contains(" by ") && view.isClickable()) {
@@ -87,6 +99,7 @@ public final class DiscoveryUiDeviceTest {
             main(() -> {clickDescription("Add ");clickDescription("Queue tab");return true;});
             await(() -> main(() -> player.getMediaItemCount()==2 && countDescription("Remove ")>0),10000,"Add did not append to the queue");
             capture("discovery-queue-view.png");
+            checkPlayerGestures(player);
             main(() -> {clickDescription("Remove ");return true;});
             await(() -> main(() -> player.getMediaItemCount()==1),10000,"Queue removal did not update");
             main(() -> {clickDescription("Home tab");return true;});
@@ -101,11 +114,88 @@ public final class DiscoveryUiDeviceTest {
             main(() -> {clickDescription("Home tab");clickDescription("Search YT for music theory lesson");return true;});
             await(() -> main(() -> countDescription("All videos, selected")>0 && countDescription("Add ")>0),45000,"Music learning did not search educational videos");
             main(() -> {clickDescription("Music");input().setText("U2 With Or Without You");return true;});
-            Diagnostics.event("device-ui-check","search=true tabSwitch=true pagination=true fullPlayer=true miniplayer=true history=true learningSearch=true addRemove=true appMuted=true appViewsOnly=true");
+            Diagnostics.event("device-ui-check","search=true tabSwitch=true pagination=true fullPlayer=true miniplayer=true history=true learningSearch=true addRemove=true swipeNextPrevious=true verticalNoSkip=true shortDragNoSkip=true miniSwipe=true tapAfterSwipe=true nativeRipple=true appMuted=true appViewsOnly=true");
         } finally {
             instrumentation.removeMonitor(monitor);
             main(() -> {player.stop();player.clearMediaItems();player.setVolume(1f);player.release();return true;});
             if(activity!=null)main(() -> {activity.finish();return true;});
+        }
+    }
+
+    private void checkPlayerGestures(MediaController player) throws Exception {
+        assertEquals("Gesture check starts at the first queued song", 0, (int) main(player::getCurrentMediaItemIndex));
+        main(() -> { clickDescription("Open Now Playing"); return true; });
+        main(() -> {
+            View art = findDescription("Current song cover artwork");
+            drag(art, .5f, .2f, .5f, .8f);
+            return true;
+        });
+        SystemClock.sleep(300);
+        assertEquals("Vertical artwork scrolling must never skip a song", 0, (int) main(player::getCurrentMediaItemIndex));
+        // Reopen after the vertical scroll to bring the complete artwork back into view.
+        main(() -> { invokeRegisteredBack(); clickDescription("Open Now Playing"); return true; });
+        main(() -> { drag(findDescription("Current song cover artwork"), .8f, .5f, .2f, .5f); return true; });
+        await(() -> main(() -> player.getCurrentMediaItemIndex() == 1), 10000, "Artwork swipe left did not select next queued song");
+        main(() -> {
+            assertFalse("Next button must be disabled at queue end", findDescription("Next song").isEnabled());
+            drag(findDescription("Current song cover artwork"), .8f, .5f, .2f, .5f);
+            return true;
+        });
+        assertEquals("Swiping at queue end must not wrap or add a song", 1, (int) main(player::getCurrentMediaItemIndex));
+        assertEquals(2, (int) main(player::getMediaItemCount));
+        main(() -> { drag(findDescription("Current song cover artwork"), .2f, .5f, .8f, .5f); return true; });
+        await(() -> main(() -> player.getCurrentMediaItemIndex() == 0), 10000, "Artwork swipe right did not select previous queued song");
+        main(() -> {
+            assertFalse("Previous button must be disabled at queue start", findDescription("Previous song").isEnabled());
+            drag(findDescription("Current song cover artwork"), .5f, .5f, .46f, .5f);
+            return true;
+        });
+        assertEquals("Small artwork drags must not skip", 0, (int) main(player::getCurrentMediaItemIndex));
+        main(() -> { tap(findDescription("Pause current song")); return true; });
+        await(() -> main(() -> !player.getPlayWhenReady()), 5000, "Pause tap stopped responding after artwork gesture");
+        main(() -> { tap(findDescription("Play current song")); return true; });
+        await(() -> main(player::getPlayWhenReady), 5000, "Play tap stopped responding after artwork gesture");
+        main(() -> { invokeRegisteredBack(); return true; });
+        main(() -> { drag(findDescription("Open Now Playing"), .58f, .5f, .1f, .5f); return true; });
+        await(() -> main(() -> player.getCurrentMediaItemIndex() == 1), 10000, "Miniplayer swipe left did not select next song");
+        assertTrue("Miniplayer swipes must not also open the full player", main(() -> countDescription("Back") == 0));
+        main(() -> { drag(findDescription("Open Now Playing"), .1f, .5f, .58f, .5f); return true; });
+        await(() -> main(() -> player.getCurrentMediaItemIndex() == 0), 10000, "Miniplayer swipe right did not select previous song");
+        main(() -> { tapAt(findDescription("Open Now Playing"), .3f, .5f); return true; });
+        await(() -> main(() -> countDescription("Back") > 0), 5000, "Miniplayer tap did not open player after swiping");
+        main(() -> { invokeRegisteredBack(); return true; });
+        assertNull("Gesture navigation caused a playback error", main(player::getPlayerError));
+        assertEquals("Gesture checks must remain silent", 0f, (float) main(player::getVolume), 0f);
+    }
+
+    private void assertNativeFeedback(String prefix) {
+        assertTrue("Missing native press feedback: " + prefix, findDescription(prefix).getForeground() instanceof RippleDrawable);
+    }
+
+    private View findDescription(String prefix) {
+        for (View view : views()) if (view.getVisibility() == View.VISIBLE && description(view).startsWith(prefix)) return view;
+        throw new AssertionError("Missing view: " + prefix);
+    }
+
+    private void tap(View target) { tapAt(target, .5f, .5f); }
+    private void tapAt(View target, float x, float y) { drag(target, x, y, x, y); }
+
+    /** Dispatch through the decor so real child buttons and ScrollView interception participate. */
+    private void drag(View target, float fromX, float fromY, float toX, float toY) {
+        assertTrue("Gesture target must be laid out", target.getWidth() > 0 && target.getHeight() > 0);
+        View decor = activity.getWindow().getDecorView();
+        int[] targetOrigin = new int[2], decorOrigin = new int[2];
+        target.getLocationInWindow(targetOrigin); decor.getLocationInWindow(decorOrigin);
+        float left = targetOrigin[0] - decorOrigin[0], top = targetOrigin[1] - decorOrigin[1];
+        long down = SystemClock.uptimeMillis();
+        for (int step = 0; step <= 10; step++) {
+            float fraction = step / 10f;
+            float x = left + target.getWidth() * (fromX + (toX - fromX) * fraction);
+            float y = top + target.getHeight() * (fromY + (toY - fromY) * fraction);
+            int action = step == 0 ? MotionEvent.ACTION_DOWN : step == 10 ? MotionEvent.ACTION_UP : MotionEvent.ACTION_MOVE;
+            MotionEvent event = MotionEvent.obtain(down, down + step * 30, action, x, y, 0);
+            event.setSource(android.view.InputDevice.SOURCE_TOUCHSCREEN);
+            try { decor.dispatchTouchEvent(event); } finally { event.recycle(); }
         }
     }
 
@@ -148,6 +238,9 @@ public final class DiscoveryUiDeviceTest {
         if(view instanceof ViewGroup)for(int i=0;i<((ViewGroup)view).getChildCount();i++)count+=loadedArtworkCount(((ViewGroup)view).getChildAt(i));return count;
     }
     private void capture(String name) throws Exception {
+        String heading = name.contains("search") ? "Search" : name.contains("player") ? "Now Playing"
+                : name.contains("queue") ? "Queue" : "BlackYT";
+        main(() -> { assertHeadingBelowStatusBar(heading); return true; });
         Bitmap bitmap=main(() -> {
             View content=activity.findViewById(android.R.id.content);
             assertTrue("Own content needs layout",content.getWidth()>0 && content.getHeight()>0);
@@ -158,6 +251,24 @@ public final class DiscoveryUiDeviceTest {
             assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG,100,out));
         }finally{bitmap.recycle();}
     }
+    private void assertHeadingBelowStatusBar(String heading) {
+        android.view.WindowInsets insets = activity.getWindow().getDecorView().getRootWindowInsets();
+        assertNotNull("Window safe areas must be available", insets);
+        int safeTop = android.os.Build.VERSION.SDK_INT >= 30
+                ? insets.getInsetsIgnoringVisibility(android.view.WindowInsets.Type.systemBars()
+                        | android.view.WindowInsets.Type.displayCutout()).top
+                : insets.getStableInsetTop();
+        for (View view : views()) {
+            if (view instanceof TextView && ((TextView) view).getText().toString().equals(heading)) {
+                int[] position = new int[2]; view.getLocationOnScreen(position);
+                assertTrue(heading + " overlaps the status bar: top=" + position[1] + " safeTop=" + safeTop,
+                        position[1] >= safeTop);
+                return;
+            }
+        }
+        fail("Missing page heading: " + heading);
+    }
+
     private <T> T main(Supplier<T> action) {
         AtomicReference<T> value=new AtomicReference<>();instrumentation.runOnMainSync(() -> value.set(action.get()));return value.get();
     }

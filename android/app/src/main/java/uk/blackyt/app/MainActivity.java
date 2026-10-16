@@ -7,6 +7,7 @@ import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.RippleDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -14,6 +15,8 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.MotionEvent;
+import android.view.ViewConfiguration;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowInsets;
@@ -82,7 +85,7 @@ public final class MainActivity extends android.app.Activity {
     private LinearLayout miniPlayer;
     private ImageView miniArtwork, playerArtwork;
     private TextView status, miniTitle, miniSubtitle, playerTitle, playerArtist;
-    private TextView timeLabel, queueSummary, filtersChip;
+    private TextView timeLabel, queueSummary, filtersChip, playerHint;
     private ImageButton miniPlayButton, miniNextButton, fullPlayButton, fullPreviousButton, fullNextButton;
     private SeekBar seekBar;
     private ProgressBar miniProgress;
@@ -100,6 +103,8 @@ public final class MainActivity extends android.app.Activity {
     private String displayedQuery;
     private String renderedQueueKey = "";
     private String pendingProbeId;
+    private String startingTrackId, startingTrackTitle;
+    private Toast playbackFeedback;
     private ArtworkLoader artworkLoader;
     private Object platformBackCallback;
     private final List<RecentTrack> history = new ArrayList<>();
@@ -131,6 +136,7 @@ public final class MainActivity extends android.app.Activity {
         playerArtwork = null;
         playerTitle = null;
         playerArtist = null;
+        playerHint = null;
         timeLabel = null;
         seekBar = null;
         fullPlayButton = null;
@@ -208,11 +214,13 @@ public final class MainActivity extends android.app.Activity {
         miniPlayButton.setOnClickListener(v -> togglePlayback());
         miniRow.addView(miniPlayButton, lp(dp(48), dp(48), 3, 0, 2, 0));
         miniNextButton = iconButton(R.drawable.ic_next, "Play next song", CREAM);
-        miniNextButton.setOnClickListener(v -> ifController(c -> c.seekToNextMediaItem()));
+        miniNextButton.setOnClickListener(v -> skipQueuedSong(true));
         miniRow.addView(miniNextButton, lp(dp(48), dp(48), 0, 0, 0, 0));
         miniRow.setOnClickListener(v -> openFullPlayer());
         miniRow.setContentDescription("Open Now Playing");
         miniRow.setFocusable(true);
+        touchFeedback(miniRow, 6);
+        installQueueSwipe(miniRow, true);
         miniPlayer.addView(miniRow);
         miniProgress = progressBar();
         miniPlayer.addView(miniProgress, lp(-1, dp(3), 0, 3, 0, 0));
@@ -225,17 +233,22 @@ public final class MainActivity extends android.app.Activity {
         bottomTabs.setPadding(dp(4), dp(2), dp(4), dp(4));
         shell.addView(bottomTabs, lp(-1, dp(60), 0, 0, 0, 0));
 
+        // Apply safe areas once on the attached shell, including rebuilt pages and Now Playing.
         shell.setOnApplyWindowInsetsListener((view, insets) -> {
-            int bottom = 0;
-            if (Build.VERSION.SDK_INT >= 30) bottom = insets.getInsets(WindowInsets.Type.systemBars()).bottom;
-            else bottom = insets.getSystemWindowInsetBottom();
-            LinearLayout.LayoutParams tabsParams = (LinearLayout.LayoutParams) bottomTabs.getLayoutParams();
-            tabsParams.height = dp(58) + bottom;
-            bottomTabs.setLayoutParams(tabsParams);
-            bottomTabs.setPadding(dp(4), dp(2), dp(4), Math.max(dp(4), bottom));
+            int left, top, right, bottom;
+            if (Build.VERSION.SDK_INT >= 30) {
+                android.graphics.Insets bars = insets.getInsets(
+                        WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
+                left = bars.left; top = bars.top; right = bars.right; bottom = bars.bottom;
+            } else {
+                left = insets.getSystemWindowInsetLeft(); top = insets.getSystemWindowInsetTop();
+                right = insets.getSystemWindowInsetRight(); bottom = insets.getSystemWindowInsetBottom();
+            }
+            shell.setPadding(left, top, right, bottom);
             return insets;
         });
         setContentView(shell);
+        shell.requestApplyInsets();
         updateTabs();
     }
 
@@ -278,10 +291,10 @@ public final class MainActivity extends android.app.Activity {
         LinearLayout root = pageColumn(scroll);
         LinearLayout brand = row();
         ImageView mascot = new ImageView(this);
-        mascot.setImageResource(R.drawable.blackyt_mascot);
+        mascot.setImageResource(R.drawable.blackyt_avatar);
         mascot.setScaleType(ImageView.ScaleType.FIT_CENTER);
         mascot.setContentDescription("BlackYT blackbird");
-        brand.addView(mascot, lp(dp(36), dp(36), 0, 0, 10, 0));
+        brand.addView(mascot, lp(dp(48), dp(48), 0, 0, 10, 0));
         TextView wordmark = text("BlackYT", 20, CREAM, true);
         brand.addView(wordmark, new LinearLayout.LayoutParams(0, -2, 1));
         ImageButton about = iconButton(R.drawable.ic_more, "More options", MUTED);
@@ -309,6 +322,7 @@ public final class MainActivity extends android.app.Activity {
                 LinearLayout tile = new LinearLayout(this);
                 tile.setOrientation(LinearLayout.VERTICAL);
                 tile.setFocusable(true);
+                touchFeedback(tile, 6);
                 tile.setOnClickListener(v -> playTrack(recent.track, recent.rules));
                 ImageView art = imageView(dp(124), "Artwork for " + recent.track.title);
                 artworkLoader.load(recent.track.artworkUrl, art);
@@ -348,9 +362,10 @@ public final class MainActivity extends android.app.Activity {
         tile.setGravity(Gravity.CENTER_VERTICAL | Gravity.START);
         tile.setPadding(dp(16), 0, dp(12), 0);
         tile.setBackground(background(color, 5));
+        touchFeedback(tile, 5);
         tile.setContentDescription("Search YT for " + query);
         tile.setOnClickListener(v -> {
-        rememberSearch(query);
+            rememberSearch(query);
             musicMode = musicOnly;
             persistMode(musicOnly);
             showTab(TAB_SEARCH);
@@ -440,6 +455,7 @@ public final class MainActivity extends android.app.Activity {
         chip.setPadding(dp(14), 0, dp(14), 0);
         chip.setBackground(background(selected ? LIME : PANEL_LIGHT, 5));
         chip.setFocusable(true);
+        touchFeedback(chip, 5);
         chip.setContentDescription(title + (selected ? ", selected" : ""));
         return chip;
     }
@@ -458,6 +474,7 @@ public final class MainActivity extends android.app.Activity {
         TextView clear = text("Clear", 13, MUTED, true);
         clear.setGravity(Gravity.CENTER);
         clear.setContentDescription("Clear search results");
+        touchFeedback(clear, 5);
         clear.setOnClickListener(v -> clearResults());
         resultHeading.addView(clear, lp(dp(60), dp(48), 0, 0, 0, 0));
         resultsBox.addView(resultHeading);
@@ -466,6 +483,7 @@ public final class MainActivity extends android.app.Activity {
             TextView more = text("Load more", 14, CREAM, true);
             more.setGravity(Gravity.CENTER);
             more.setBackground(background(PANEL_LIGHT, 5));
+            touchFeedback(more, 5);
             more.setContentDescription("Load more search results");
             more.setOnClickListener(v -> loadMore());
             resultsBox.addView(more, lp(-1, dp(48), 0, 10, 0, 0));
@@ -477,6 +495,7 @@ public final class MainActivity extends android.app.Activity {
     private View buildCompactResult(YouTubeRepository.Track track) {
         LinearLayout item = row();
         item.setFocusable(true);
+        touchFeedback(item, 5);
         item.setContentDescription("Play " + track.title + " by " + track.channel);
         item.setOnClickListener(v -> playTrack(track));
         ImageView art = imageView(dp(56), "Artwork for " + track.title);
@@ -504,6 +523,7 @@ public final class MainActivity extends android.app.Activity {
         heading.addView(text("Recent searches", 15, CREAM, true), new LinearLayout.LayoutParams(0, dp(48), 1));
         TextView clear = text("Clear", 12, MUTED, true);
         clear.setGravity(Gravity.CENTER);
+        touchFeedback(clear, 5);
         clear.setOnClickListener(v -> { saveRecents(new ArrayList<>()); renderSearchResults(); });
         heading.addView(clear, lp(dp(56), dp(48), 0, 0, 0, 0));
         parent.addView(heading);
@@ -518,6 +538,7 @@ public final class MainActivity extends android.app.Activity {
             erase.setOnClickListener(v -> { List<String> values = getRecents(); values.remove(query); saveRecents(values); renderSearchResults(); });
             row.addView(erase, lp(dp(48), dp(48), 0, 0, 0, 0));
             row.setContentDescription("Search again for " + query);
+            touchFeedback(row, 5);
             row.setOnClickListener(v -> { queryInput.setText(query); search(); });
             parent.addView(row, lp(-1, dp(52), 0, 0, 0, 1));
         }
@@ -581,9 +602,14 @@ public final class MainActivity extends android.app.Activity {
         LinearLayout artArea = new LinearLayout(this);
         artArea.setGravity(Gravity.CENTER);
         int artSize = Math.min(dp(360), Math.max(dp(220), getResources().getDisplayMetrics().widthPixels - dp(48)));
-        playerArtwork = imageView(artSize, "Current song cover artwork");
+        playerArtwork = imageView(artSize, "Current song cover artwork. Swipe left for next song, right for previous song.");
+        installQueueSwipe(playerArtwork, false);
         artArea.addView(playerArtwork, new LinearLayout.LayoutParams(artSize, artSize));
         root.addView(artArea, new LinearLayout.LayoutParams(-1, 0, 1));
+        playerHint = text("Swipe artwork left or right to change queued songs", 12, MUTED, false);
+        playerHint.setGravity(Gravity.CENTER);
+        playerHint.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
+        root.addView(playerHint, lp(-1, -2, 0, 10, 0, 2));
 
         LinearLayout details = row();
         LinearLayout titleColumn = new LinearLayout(this);
@@ -625,12 +651,12 @@ public final class MainActivity extends android.app.Activity {
         LinearLayout transport = row();
         transport.setGravity(Gravity.CENTER);
         fullPreviousButton = iconButton(R.drawable.ic_previous, "Previous song", CREAM);
-        fullPreviousButton.setOnClickListener(v -> ifController(c -> c.seekToPreviousMediaItem()));
+        fullPreviousButton.setOnClickListener(v -> skipQueuedSong(false));
         fullPlayButton = iconButton(R.drawable.ic_play, "Play", BG);
         fullPlayButton.setBackground(background(LIME, 40));
         fullPlayButton.setOnClickListener(v -> togglePlayback());
         fullNextButton = iconButton(R.drawable.ic_next, "Next song", CREAM);
-        fullNextButton.setOnClickListener(v -> ifController(c -> c.seekToNextMediaItem()));
+        fullNextButton.setOnClickListener(v -> skipQueuedSong(true));
         transport.addView(fullPreviousButton, lp(dp(56), dp(56), 6, 0, 18, 0));
         transport.addView(fullPlayButton, lp(dp(64), dp(64), 8, 0, 8, 0));
         transport.addView(fullNextButton, lp(dp(56), dp(56), 18, 0, 6, 0));
@@ -691,6 +717,7 @@ public final class MainActivity extends android.app.Activity {
             item.addView(label);
             item.setContentDescription(labels[i] + " tab" + (selected ? ", selected" : ""));
             item.setFocusable(true);
+            touchFeedback(item, 8);
             item.setOnClickListener(v -> showTab(tab));
             bottomTabs.addView(item, new LinearLayout.LayoutParams(0, dp(54), 1));
         }
@@ -725,6 +752,8 @@ public final class MainActivity extends android.app.Activity {
             updatePlayer();
         }
         @Override public void onPlayerError(PlaybackException error) {
+            startingTrackId = null;
+            startingTrackTitle = null;
             safeLog("player_error_" + error.errorCode);
             String message = "Could not play this song. Check your connection or retry.";
             setStatus(message);
@@ -832,13 +861,23 @@ public final class MainActivity extends android.app.Activity {
     }
 
     private void playTrack(YouTubeRepository.Track track, YouTubeRepository.Rules rules) {
-        if (controller == null) { setStatus("Connecting to the player… try again in a moment."); return; }
+        if (controller == null) { showPlaybackFeedback("Connecting to the player… try again in a moment."); return; }
+        // A second tap while this selection is resolving must not enqueue it twice.
+        if (track.id.equals(startingTrackId) && controller.getCurrentMediaItem() != null
+                && track.id.equals(controller.getCurrentMediaItem().mediaId) && controller.getPlayWhenReady()) {
+            showPlaybackFeedback("Starting " + track.title + "…");
+            return;
+        }
+        startingTrackId = track.id;
+        startingTrackTitle = track.title;
+        showPlaybackFeedback("Starting " + track.title + "…");
         MediaItem item = NativeMediaItems.fromTrack(track, rules);
         int insertAt = controller.getMediaItemCount() == 0 ? 0 : Math.max(0, controller.getCurrentMediaItemIndex() + 1);
         controller.addMediaItem(insertAt, item);
         controller.seekTo(insertAt, 0);
         controller.prepare();
         controller.play();
+        updatePlayer();
         safeLog("play_selected");
     }
 
@@ -886,23 +925,36 @@ public final class MainActivity extends android.app.Activity {
         String artist = rawArtist == null || rawArtist.length() == 0
                 ? (hasCurrent ? "YT" : "Your music will appear here") : rawArtist.toString();
         if (miniTitle != null) miniTitle.setText(title);
-        if (miniSubtitle != null) miniSubtitle.setText(artist);
         boolean isPlaying = controller != null && controller.isPlaying();
+        boolean wantsPlayback = controller != null && controller.getPlayWhenReady()
+                && controller.getPlaybackState() != Player.STATE_ENDED && controller.getPlayerError() == null;
+        boolean loading = hasCurrent && wantsPlayback && controller.getPlayerError() == null
+                && (controller.getPlaybackState() == Player.STATE_IDLE || controller.getPlaybackState() == Player.STATE_BUFFERING);
+        if (hasCurrent && current.mediaId.equals(startingTrackId) && isPlaying) {
+            String startingMessage = "Starting " + startingTrackTitle + "…";
+            if (startingMessage.equals(statusMessage)) setStatus("Playing " + title);
+            startingTrackId = null;
+            startingTrackTitle = null;
+        }
+        boolean failed = controller != null && controller.getPlayerError() != null;
+        if (miniSubtitle != null) miniSubtitle.setText(failed ? "Could not play · " + artist : loading ? "Starting… · " + artist : artist);
+        if (playerHint != null) playerHint.setText(failed ? "Could not play. Open Track options to retry."
+                : loading ? "Starting…" : "Swipe artwork left or right to change queued songs");
         if (miniPlayer != null && !fullPlayer) miniPlayer.setVisibility(hasCurrent ? View.VISIBLE : View.GONE);
         if (miniPlayButton != null) {
-            miniPlayButton.setImageResource(isPlaying ? R.drawable.ic_pause : R.drawable.ic_play);
+            miniPlayButton.setImageResource(wantsPlayback ? R.drawable.ic_pause : R.drawable.ic_play);
             miniPlayButton.setColorFilter(LIME);
-            miniPlayButton.setContentDescription(isPlaying ? "Pause current song" : "Play current song");
+            miniPlayButton.setContentDescription(wantsPlayback ? "Pause current song" : "Play current song");
         }
-        if (miniNextButton != null) miniNextButton.setEnabled(controller != null && controller.hasNextMediaItem());
+        setTransportEnabled(miniNextButton, controller != null && controller.hasNextMediaItem());
         if (playerTitle != null) playerTitle.setText(hasCurrent ? title : "Nothing playing yet");
         if (playerArtist != null) playerArtist.setText(hasCurrent ? artist : "Choose a result to start listening.");
         if (fullPlayButton != null) {
-            fullPlayButton.setImageResource(isPlaying ? R.drawable.ic_pause : R.drawable.ic_play);
-            fullPlayButton.setContentDescription(isPlaying ? "Pause current song" : "Play current song");
+            fullPlayButton.setImageResource(wantsPlayback ? R.drawable.ic_pause : R.drawable.ic_play);
+            fullPlayButton.setContentDescription(wantsPlayback ? "Pause current song" : "Play current song");
         }
-        if (fullPreviousButton != null) fullPreviousButton.setEnabled(controller != null && controller.hasPreviousMediaItem());
-        if (fullNextButton != null) fullNextButton.setEnabled(controller != null && controller.hasNextMediaItem());
+        setTransportEnabled(fullPreviousButton, controller != null && controller.hasPreviousMediaItem());
+        setTransportEnabled(fullNextButton, controller != null && controller.hasNextMediaItem());
         Uri artUri = hasCurrent ? current.mediaMetadata.artworkUri : null;
         String artUrl = artUri == null ? "" : YouTubeRepository.safeArtworkUrl(artUri.toString());
         if (artUrl.isEmpty() && hasCurrent) {
@@ -912,6 +964,8 @@ public final class MainActivity extends android.app.Activity {
         if (miniArtwork != null) artworkLoader.load(artUrl, miniArtwork);
         if (playerArtwork != null) artworkLoader.load(artUrl, playerArtwork);
         if (miniProgress != null && controller != null) {
+            miniProgress.setIndeterminate(loading);
+            miniProgress.setContentDescription(loading ? "Starting song" : "Playback progress");
             long duration = controller.getDuration();
             if (duration <= 0 || duration == C.TIME_UNSET) duration = hasCurrent && current.mediaMetadata.extras != null
                     ? current.mediaMetadata.extras.getLong("blackyt_duration_seconds", 0) * 1000L : 0;
@@ -968,6 +1022,7 @@ public final class MainActivity extends android.app.Activity {
         LinearLayout line = row();
         line.setPadding(dp(4), dp(4), dp(2), dp(4));
         line.setBackground(background(current ? PANEL : BG, 5));
+        touchFeedback(line, 5);
         ImageView art = imageView(dp(48), "Artwork for " + titleOf(item));
         Uri uri = item.mediaMetadata.artworkUri;
         String url = uri == null ? fallbackArt(item.mediaId) : YouTubeRepository.safeArtworkUrl(uri.toString());
@@ -983,7 +1038,10 @@ public final class MainActivity extends android.app.Activity {
         line.addView(names, new LinearLayout.LayoutParams(0, -2, 1));
         line.setContentDescription((current ? "Current song, " : "Play ") + titleOf(item));
         line.setFocusable(true);
-        line.setOnClickListener(v -> ifController(c -> { c.seekTo(index, 0); c.prepare(); c.play(); }));
+        line.setOnClickListener(v -> ifController(c -> {
+            showPlaybackFeedback("Starting " + titleOf(item) + "…");
+            c.seekTo(index, 0); c.prepare(); c.play(); updatePlayer();
+        }));
         if (!current) {
             ImageButton remove = iconButton(R.drawable.ic_close, "Remove " + titleOf(item) + " from queue", MUTED);
             remove.setOnClickListener(v -> ifController(c -> {
@@ -1244,7 +1302,90 @@ public final class MainActivity extends android.app.Activity {
     }
 
     private void togglePlayback() {
-        ifController(c -> { if (c.isPlaying()) c.pause(); else { c.prepare(); c.play(); } });
+        ifController(c -> {
+            // Buffering still means Play was requested; a tap should pause immediately.
+            if (c.getPlayWhenReady() && c.getPlaybackState() != Player.STATE_ENDED && c.getPlayerError() == null) c.pause();
+            else {
+                if (c.getPlaybackState() == Player.STATE_ENDED) c.seekToDefaultPosition();
+                if (c.getPlaybackState() == Player.STATE_IDLE || c.getPlaybackState() == Player.STATE_ENDED || c.getPlayerError() != null) c.prepare();
+                c.play();
+            }
+            updatePlayer();
+        });
+    }
+
+    private void setTransportEnabled(ImageButton button, boolean enabled) {
+        if (button == null) return;
+        button.setEnabled(enabled);
+        button.setAlpha(enabled ? 1f : 0.35f);
+    }
+
+    private void showPlaybackFeedback(String message) {
+        setStatus(message);
+        if (playbackFeedback != null) playbackFeedback.cancel();
+        playbackFeedback = Toast.makeText(this, message, Toast.LENGTH_SHORT);
+        playbackFeedback.show();
+    }
+
+    private void skipQueuedSong(boolean next) {
+        if (controller == null) { showPlaybackFeedback("Connecting to the player…"); return; }
+        boolean available = next ? controller.hasNextMediaItem() : controller.hasPreviousMediaItem();
+        int command = next ? Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM : Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM;
+        if (!available || !controller.isCommandAvailable(command)) {
+            showPlaybackFeedback(next ? "End of queue. Add another song in Search."
+                    : "This is the first song in your queue.");
+            return;
+        }
+        int index = controller.getCurrentMediaItemIndex() + (next ? 1 : -1);
+        String title = titleOf(controller.getMediaItemAt(index));
+        if (next) controller.seekToNextMediaItem(); else controller.seekToPreviousMediaItem();
+        showPlaybackFeedback((next ? "Next: " : "Previous: ") + title);
+        updatePlayer();
+    }
+
+    /** Gestures start only on artwork or the miniplayer surface, never transport/seek controls. */
+    private void installQueueSwipe(View surface, boolean tapOpensPlayer) {
+        final int slop = ViewConfiguration.get(this).getScaledTouchSlop();
+        surface.setOnTouchListener(new View.OnTouchListener() {
+            float startX, startY;
+            long startTime;
+            boolean moved, cancelled;
+            private void releaseScroll(View view) {
+                if (view.getParent() != null) view.getParent().requestDisallowInterceptTouchEvent(false);
+                view.setPressed(false);
+            }
+            @Override public boolean onTouch(View view, MotionEvent event) {
+                switch (event.getActionMasked()) {
+                    case MotionEvent.ACTION_DOWN:
+                        startX = event.getX(); startY = event.getY(); startTime = event.getEventTime();
+                        moved = false; cancelled = false;
+                        // Decide the axis before the enclosing ScrollView steals a horizontal drag.
+                        if (view.getParent() != null) view.getParent().requestDisallowInterceptTouchEvent(true);
+                        if (tapOpensPlayer) view.setPressed(true);
+                        return true;
+                    case MotionEvent.ACTION_POINTER_DOWN:
+                        cancelled = true; releaseScroll(view); return true;
+                    case MotionEvent.ACTION_MOVE:
+                        float dx = Math.abs(event.getX() - startX), dy = Math.abs(event.getY() - startY);
+                        if (dx > slop || dy > slop) { moved = true; view.setPressed(false); }
+                        if (dy > slop && dy >= dx) { cancelled = true; releaseScroll(view); }
+                        return true;
+                    case MotionEvent.ACTION_UP:
+                        float distance = event.getX() - startX;
+                        float vertical = Math.abs(event.getY() - startY);
+                        boolean swipe = !cancelled && Math.abs(distance) >= Math.max(dp(48), view.getWidth() * 0.18f)
+                                && Math.abs(distance) > vertical * 1.5f && event.getEventTime() - startTime <= 1500;
+                        releaseScroll(view);
+                        if (swipe) skipQueuedSong(distance < 0);
+                        else if (tapOpensPlayer && !moved && !cancelled) view.performClick();
+                        return true;
+                    case MotionEvent.ACTION_CANCEL:
+                        cancelled = true; releaseScroll(view); return true;
+                    default:
+                        return true;
+                }
+            }
+        });
     }
 
     private void ifController(java.util.function.Consumer<MediaController> action) {
@@ -1271,16 +1412,6 @@ public final class MainActivity extends android.app.Activity {
         root.setOrientation(LinearLayout.VERTICAL);
         root.setPadding(dp(18), dp(10), dp(18), dp(20));
         scroll.addView(root);
-        scroll.setOnApplyWindowInsetsListener((view, insets) -> {
-            int top;
-            if (Build.VERSION.SDK_INT >= 30) {
-                top = insets.getInsets(WindowInsets.Type.systemBars()).top;
-            } else {
-                top = insets.getSystemWindowInsetTop();
-            }
-            root.setPadding(dp(18), top + dp(10), dp(18), dp(20));
-            return insets;
-        });
         return root;
     }
 
@@ -1318,6 +1449,7 @@ public final class MainActivity extends android.app.Activity {
         b.setTextColor(primary ? BG : CREAM);
         b.setBackground(background(primary ? LIME : BG, 14));
         b.setStateListAnimator(null);
+        touchFeedback(b, 14);
         return b;
     }
 
@@ -1348,6 +1480,7 @@ public final class MainActivity extends android.app.Activity {
         button.setContentDescription(description);
         button.setFocusable(true);
         button.setBackground(background(Color.TRANSPARENT, 24));
+        touchFeedback(button, 24);
         button.setMinimumWidth(dp(48));
         button.setMinimumHeight(dp(48));
         return button;
@@ -1369,6 +1502,13 @@ public final class MainActivity extends android.app.Activity {
         image.setContentDescription(description);
         image.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
         return image;
+    }
+
+    private void touchFeedback(View view, int radius) {
+        // Foreground preserves artwork/selected colours while showing native press feedback.
+        view.setForeground(new RippleDrawable(android.content.res.ColorStateList.valueOf(Color.argb(55, 255, 255, 255)),
+                null, background(Color.WHITE, radius)));
+        view.setFocusable(true);
     }
 
     private GradientDrawable background(int color, int radius) {
@@ -1436,6 +1576,7 @@ public final class MainActivity extends android.app.Activity {
         searchGeneration++;
         if (searchTask != null) searchTask.cancel(true);
         main.removeCallbacksAndMessages(null);
+        if (playbackFeedback != null) playbackFeedback.cancel();
         if (controller != null) controller.removeListener(playerListener);
         if (controllerFuture != null) MediaController.releaseFuture(controllerFuture);
         searches.shutdownNow();
