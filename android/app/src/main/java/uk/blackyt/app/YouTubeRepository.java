@@ -120,13 +120,20 @@ public final class YouTubeRepository {
         public final String channel;
         public final long durationSeconds;
         public final String artworkUrl;
+        /** Canonical public channel link when NewPipe supplied a valid uploader URL. */
+        public final String creatorUrl;
 
         public Track(String id, String title, String channel, long durationSeconds) {
-            this(id, title, channel, durationSeconds, null);
+            this(id, title, channel, durationSeconds, null, null);
         }
 
         public Track(String id, String title, String channel, long durationSeconds,
                      String artworkUrl) {
+            this(id, title, channel, durationSeconds, artworkUrl, null);
+        }
+
+        public Track(String id, String title, String channel, long durationSeconds,
+                     String artworkUrl, String creatorUrl) {
             this.id = id;
             this.title = title;
             this.channel = channel;
@@ -135,6 +142,10 @@ public final class YouTubeRepository {
             String safeId = safeThumbnailId(id);
             this.artworkUrl = !safeArtwork.isEmpty() ? safeArtwork
                     : safeId.isEmpty() ? "" : "https://i.ytimg.com/vi/" + safeId + "/hqdefault.jpg";
+            String canonical = "";
+            try { canonical = CreatorRepository.canonicalChannelUrl(creatorUrl); }
+            catch (IllegalArgumentException ignored) { /* Optional metadata is best-effort. */ }
+            this.creatorUrl = canonical;
         }
     }
 
@@ -239,7 +250,7 @@ public final class YouTubeRepository {
                         && cachedResultAllowed(musicCategory, safeRules.musicOnly)) {
                     return new SearchPage(Collections.singletonList(new Track(
                             pastedVideoId, title, channel, info.getDuration(),
-                            bestSafeThumbnail(info.getThumbnails()))), null, "");
+                            bestSafeThumbnail(info.getThumbnails()), info.getUploaderUrl())), null, "");
                 }
                 return new SearchPage(Collections.emptyList(), null, "");
             }
@@ -287,7 +298,7 @@ public final class YouTubeRepository {
                     String channel = nullToEmpty(stream.getUploaderName());
                     if (matches(title, channel, safeRules)) {
                         tracks.add(new Track(id, title, channel, stream.getDuration(),
-                                bestSafeThumbnail(stream.getThumbnails())));
+                                bestSafeThumbnail(stream.getThumbnails()), stream.getUploaderUrl()));
                         if (tracks.size() >= 50) break;
                     }
                 }

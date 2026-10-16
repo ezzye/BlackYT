@@ -21,6 +21,7 @@ public final class NativeMediaItems {
                 .appendQueryParameter("include", safe.include).appendQueryParameter("exclude", safe.exclude).build();
         Bundle extras = new Bundle();
         extras.putLong("blackyt_duration_seconds", Math.max(0, track.durationSeconds));
+        extras.putString("blackyt_creator_url", track.creatorUrl);
         MediaMetadata.Builder metadataBuilder = new MediaMetadata.Builder()
                 .setTitle(track.title == null ? "" : track.title)
                 .setArtist(track.channel == null ? "" : track.channel).setExtras(extras);

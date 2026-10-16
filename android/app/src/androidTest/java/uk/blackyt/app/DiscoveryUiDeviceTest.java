@@ -43,6 +43,12 @@ public final class DiscoveryUiDeviceTest {
 
     @Test public void compactSearchFullPlayerHistoryAndQueue() throws Exception {
         for(String screen:new String[]{"search","player","queue","home"})context.deleteFile("discovery-"+screen+"-view.png");
+        android.content.SharedPreferences ui=context.getSharedPreferences("blackyt_ui",Context.MODE_PRIVATE);
+        String ownerHistory=ui.getString("played_tracks","[]");
+        android.content.SharedPreferences library=context.getSharedPreferences("blackyt_listening_store_default",Context.MODE_PRIVATE);
+        String ownerLibrary=library.getString("data_v1",null);
+        library.edit().remove("data_v1").commit();new ListeningStore(context);
+        ui.edit().putString("played_tracks","[]").commit();
         AtomicReference<ListenableFuture<MediaController>> connection = new AtomicReference<>();
         main(() -> {connection.set(new MediaController.Builder(context,new SessionToken(context,
                 new ComponentName(context,PlaybackService.class))).buildAsync());return true;});
@@ -58,7 +64,7 @@ public final class DiscoveryUiDeviceTest {
             activity = monitor.waitForActivityWithTimeout(12000);
             assertNotNull("Own activity must be created; this check never unlocks the phone",activity);
             await(() -> main(() -> hasText("Jump back in")),10000,"Home did not build");
-            main(() -> {clickDescription("Search tab");return true;});
+            main(() -> {clickDescription("Search tab");clickDescription("Music");return true;});
             main(() -> {input().setText("U2 With Or Without You");clickDescription("Search YT");return true;});
             main(() -> {clickDescription("Home tab");clickDescription("Queue tab");clickDescription("Search tab");return true;});
             await(() -> main(() -> countDescription("Add ")>0 && countDescription("Load more search results")>0),45000,"Search did not survive a tab switch");
@@ -77,15 +83,14 @@ public final class DiscoveryUiDeviceTest {
                 }
                 return true;
             });
-            main(() -> {
-                for(View view:views()) {
-                    String description=description(view);
-                    if(description.startsWith("Play ") && description.contains(" by ") && view.isClickable()) {
-                        view.performClick();return true;
-                    }
-                }
-                fail("No tappable song row");return false;
+            @SuppressWarnings("unchecked") List<YouTubeRepository.Track> candidates=main(() -> {
+                try {java.lang.reflect.Field field=MainActivity.class.getDeclaredField("results");field.setAccessible(true);
+                    return new ArrayList<>((List<YouTubeRepository.Track>)field.get(activity));}
+                catch(Exception error){throw new AssertionError(error);}
             });
+            YouTubeRepository.Track playable=DeviceStreamChecks.available(candidates,new YouTubeRepository.Rules(true,"",""));
+            final int playableIndex=candidates.indexOf(playable);
+            main(() -> {clickNth("Play ",playableIndex,true);return true;});
             await(() -> main(() -> {
                 assertNull("Selected song reported a playback error",player.getPlayerError());
                 return player.isPlaying() && player.getCurrentPosition()>1000 && countDescription("Open Now Playing")>0;
@@ -96,7 +101,7 @@ public final class DiscoveryUiDeviceTest {
             capture("discovery-player-view.png");
             main(() -> {invokeRegisteredBack();return true;});
             await(() -> main(() -> countDescription("Open Now Playing")>0),5000,"Miniplayer did not appear above navigation");
-            main(() -> {clickDescription("Add ");clickDescription("Queue tab");return true;});
+            main(() -> {clickNth("Add ",playableIndex,false);clickDescription("Queue tab");return true;});
             await(() -> main(() -> player.getMediaItemCount()==2 && countDescription("Remove ")>0),10000,"Add did not append to the queue");
             capture("discovery-queue-view.png");
             checkPlayerGestures(player);
@@ -119,12 +124,15 @@ public final class DiscoveryUiDeviceTest {
             instrumentation.removeMonitor(monitor);
             main(() -> {player.stop();player.clearMediaItems();player.setVolume(1f);player.release();return true;});
             if(activity!=null)main(() -> {activity.finish();return true;});
+            ui.edit().putString("played_tracks",ownerHistory).commit();
+            if(ownerLibrary==null)library.edit().remove("data_v1").commit();else library.edit().putString("data_v1",ownerLibrary).commit();
         }
     }
 
     private void checkPlayerGestures(MediaController player) throws Exception {
         assertEquals("Gesture check starts at the first queued song", 0, (int) main(player::getCurrentMediaItemIndex));
         main(() -> { clickDescription("Open Now Playing"); return true; });
+        awaitLayout("Current song cover artwork");
         main(() -> {
             View art = findDescription("Current song cover artwork");
             drag(art, .5f, .2f, .5f, .8f);
@@ -134,6 +142,7 @@ public final class DiscoveryUiDeviceTest {
         assertEquals("Vertical artwork scrolling must never skip a song", 0, (int) main(player::getCurrentMediaItemIndex));
         // Reopen after the vertical scroll to bring the complete artwork back into view.
         main(() -> { invokeRegisteredBack(); clickDescription("Open Now Playing"); return true; });
+        awaitLayout("Current song cover artwork");
         main(() -> { drag(findDescription("Current song cover artwork"), .8f, .5f, .2f, .5f); return true; });
         await(() -> main(() -> player.getCurrentMediaItemIndex() == 1), 10000, "Artwork swipe left did not select next queued song");
         main(() -> {
@@ -156,6 +165,7 @@ public final class DiscoveryUiDeviceTest {
         main(() -> { tap(findDescription("Play current song")); return true; });
         await(() -> main(player::getPlayWhenReady), 5000, "Play tap stopped responding after artwork gesture");
         main(() -> { invokeRegisteredBack(); return true; });
+        awaitLayout("Open Now Playing");
         main(() -> { drag(findDescription("Open Now Playing"), .58f, .5f, .1f, .5f); return true; });
         await(() -> main(() -> player.getCurrentMediaItemIndex() == 1), 10000, "Miniplayer swipe left did not select next song");
         assertTrue("Miniplayer swipes must not also open the full player", main(() -> countDescription("Back") == 0));
@@ -166,6 +176,14 @@ public final class DiscoveryUiDeviceTest {
         main(() -> { invokeRegisteredBack(); return true; });
         assertNull("Gesture navigation caused a playback error", main(player::getPlayerError));
         assertEquals("Gesture checks must remain silent", 0f, (float) main(player::getVolume), 0f);
+    }
+
+    private void awaitLayout(String prefix) {
+        instrumentation.waitForIdleSync();
+        // A sleeping display may defer Android's normal traversal. Layout only this app's
+        // existing content for the behind-keyguard gesture check; never wake or unlock it.
+        main(() -> {layoutOwnContent();return true;});
+        await(() -> main(() -> {View v=findDescription(prefix);return v.isLaidOut()&&v.getWidth()>0&&v.getHeight()>0;}),5000,"View not laid out: "+prefix);
     }
 
     private void assertNativeFeedback(String prefix) {
@@ -221,6 +239,12 @@ public final class DiscoveryUiDeviceTest {
     private int countDescription(String prefix) {
         int count=0;for(View view:views())if(view.getVisibility()==View.VISIBLE && description(view).startsWith(prefix))count++;return count;
     }
+    private void clickNth(String prefix,int index,boolean songRow) {
+        int current=0;
+        for(View view:views())if(view.getVisibility()==View.VISIBLE&&view.isClickable()&&description(view).startsWith(prefix)
+                &&(!songRow||description(view).contains(" by "))){if(current++==index){assertTrue(view.isEnabled());view.performClick();return;}}
+        throw new AssertionError("Missing exact result index "+index);
+    }
     private void clickDescription(String prefix) {
         for(View view:views()) if(view.getVisibility()==View.VISIBLE && view.isClickable() && description(view).startsWith(prefix)) {
             assertTrue("Control disabled: "+prefix,view.isEnabled());view.performClick();return;
@@ -242,6 +266,7 @@ public final class DiscoveryUiDeviceTest {
                 : name.contains("queue") ? "Queue" : "BlackYT";
         main(() -> { assertHeadingBelowStatusBar(heading); return true; });
         Bitmap bitmap=main(() -> {
+            layoutOwnContent();
             View content=activity.findViewById(android.R.id.content);
             assertTrue("Own content needs layout",content.getWidth()>0 && content.getHeight()>0);
             Bitmap image=Bitmap.createBitmap(content.getWidth(),content.getHeight(),Bitmap.Config.ARGB_8888);
@@ -250,6 +275,13 @@ public final class DiscoveryUiDeviceTest {
         try(FileOutputStream out=new FileOutputStream(new File(context.getFilesDir(),name))) {
             assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG,100,out));
         }finally{bitmap.recycle();}
+    }
+    private void layoutOwnContent() {
+        View content=activity.findViewById(android.R.id.content);
+        int width=content.getWidth(),height=content.getHeight();
+        assertTrue("Existing app content must have bounds",width>0&&height>0);
+        content.measure(View.MeasureSpec.makeMeasureSpec(width,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(height,View.MeasureSpec.EXACTLY));
+        content.layout(content.getLeft(),content.getTop(),content.getLeft()+width,content.getTop()+height);
     }
     private void assertHeadingBelowStatusBar(String heading) {
         android.view.WindowInsets insets = activity.getWindow().getDecorView().getRootWindowInsets();

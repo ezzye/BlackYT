@@ -34,9 +34,20 @@ public final class PlaybackService extends MediaSessionService {
     private static final String TAG = "BlackYTPlayback";
     private ExoPlayer player;
     private MediaSession session;
+    private ListeningStore listening;
+    private final android.os.Handler progressHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private final java.util.concurrent.ExecutorService progressWrites = java.util.concurrent.Executors.newSingleThreadExecutor();
+    private final Runnable progressTick = new Runnable() {
+        @Override public void run() {
+            if (player == null) return;
+            if (player.isPlaying()) saveCurrentProgress();
+            progressHandler.postDelayed(this, 10000);
+        }
+    };
 
     @Override public void onCreate() {
         super.onCreate();
+        listening = new ListeningStore(this);
         YouTubeRepository repository = YouTubeRepository.get();
         DataSource.Factory http = new OkHttpDataSource.Factory(repository.mediaClient())
                 .setUserAgent(YouTubeRepository.USER_AGENT);
@@ -65,7 +76,19 @@ public final class PlaybackService extends MediaSessionService {
                         + " positionMs=" + player.getCurrentPosition());
             }
 
+            @Override public void onPositionDiscontinuity(Player.PositionInfo oldPosition,
+                    Player.PositionInfo newPosition, int reason) {
+                if (oldPosition.mediaItem != null && (newPosition.mediaItem == null
+                        || !oldPosition.mediaItem.mediaId.equals(newPosition.mediaItem.mediaId))) {
+                    saveProgress(oldPosition.mediaItem.mediaId, oldPosition.positionMs,
+                            oldPosition.mediaItem.mediaMetadata.extras == null ? 0
+                            : oldPosition.mediaItem.mediaMetadata.extras.getLong("blackyt_duration_seconds", 0) * 1000L);
+                }
+                saveCurrentProgress();
+            }
+
             @Override public void onIsPlayingChanged(boolean isPlaying) {
+                saveCurrentProgress();
                 Log.i(TAG, "BlackYTPlayback:state state=" + stateName(player.getPlaybackState())
                         + " isPlaying=" + isPlaying + " mediaId=" + safeCurrentMediaId()
                         + " positionMs=" + player.getCurrentPosition());
@@ -80,8 +103,28 @@ public final class PlaybackService extends MediaSessionService {
                 .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         PendingIntent activity = PendingIntent.getActivity(this, 0, open,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        progressHandler.postDelayed(progressTick, 10000);
         session = new MediaSession.Builder(this, player).setSessionActivity(activity)
                 .setCallback(new QueueCallback()).build();
+    }
+
+    private void saveCurrentProgress() {
+        if (player == null || player.getCurrentMediaItem() == null) return;
+        MediaItem item = player.getCurrentMediaItem();
+        long duration = player.getDuration();
+        if (duration <= 0 || duration == C.TIME_UNSET) duration = item.mediaMetadata.extras == null ? 0
+                : item.mediaMetadata.extras.getLong("blackyt_duration_seconds", 0) * 1000L;
+        saveProgress(item.mediaId, Math.max(0, player.getCurrentPosition()), duration);
+    }
+
+    private void saveProgress(String id, long position, long duration) {
+        if (id == null || !id.matches("[A-Za-z0-9_-]{11}") || progressWrites.isShutdown()) return;
+        ListeningStore.SavedEpisode saved = listening.getEpisode(id);
+        if (saved == null) return;
+        try { progressWrites.execute(() -> {
+            try { listening.updateProgressIfSaved(id, position, duration, saved.savedAtMs); }
+            catch (IllegalArgumentException invalid) { /* No unowned metadata is persisted. */ }
+        }); } catch (java.util.concurrent.RejectedExecutionException ignored) { }
     }
 
     private String safeCurrentMediaId() {
@@ -126,6 +169,9 @@ public final class PlaybackService extends MediaSessionService {
     }
 
     @Override public void onDestroy() {
+        saveCurrentProgress();
+        progressHandler.removeCallbacksAndMessages(null);
+        progressWrites.shutdown();
         if (session != null) { session.release(); session = null; }
         if (player != null) { player.release(); player = null; }
         super.onDestroy();
@@ -149,7 +195,8 @@ public final class PlaybackService extends MediaSessionService {
                             : item.mediaMetadata.extras.getLong("blackyt_duration_seconds", 0);
                     duration = Math.max(0, Math.min(duration, 864000));
                     accepted.add(NativeMediaItems.fromTrack(
-                            new YouTubeRepository.Track(owned.id, title, artist, duration, artwork), owned.rules));
+                            new YouTubeRepository.Track(owned.id, title, artist, duration, artwork,
+                                    item.mediaMetadata.extras == null ? "" : item.mediaMetadata.extras.getString("blackyt_creator_url", "")), owned.rules));
                 }
                 return Futures.immediateFuture(accepted);
             } catch (RuntimeException invalid) {
