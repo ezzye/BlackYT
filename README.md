@@ -10,6 +10,12 @@ BlackYT is an Android app for finding and playing music and spoken videos availa
 
 The current native release is [v0.5.1](https://github.com/ezzye/BlackYT/releases/tag/v0.5.1), with **BlackYT-Android-v0.5.1.apk** (versionCode 51). Start with the detailed [Android installation guide](docs/INSTALL.md), or use the downloadable [offline HTML guide](https://github.com/ezzye/BlackYT/releases/download/v0.5.1/BlackYT-Android-Guide.html). No GitHub sign-in, developer settings, USB debugging, Termux, or Mac is needed for normal installation. Android 8 or newer is required. See [FAQ](docs/FAQ.md), [troubleshooting](docs/TROUBLESHOOTING.md), and [android/README.md](android/README.md) for source builds and signing. The Android component is GPL-3.0-or-later; see [android/LICENSE](android/LICENSE) and [android/NOTICE](android/NOTICE).
 
+## Contribute to BlackYT
+
+Help improve accessibility, search, design, documentation or testing. You do not need to write code: bug reports, clearer instructions and feature ideas are welcome. Start with [the contribution guide](CONTRIBUTING.md), or [download its offline HTML copy](CONTRIBUTING.html). It explains issues, browser-based edits, forks, pull requests, build checks and licensing. Project contact: **blackyt@streamit2.me** · Unsigned Media Ltd.
+
+**Educational use only: this project should not be used to break the law.** Respect copyright, creators' rights, applicable platform terms and access restrictions. Read the [full disclaimer](DISCLAIMER.md).
+
 ## v0.5.1: original audio
 
 Videos with several language tracks now prefer the creator’s original audio when identified by YT. This fixes the Wes Roth episode selecting an Arabic dub instead of its English original. See the [audio comparison and explanation](android/docs/audio-comparison-v0.5.1.html) and [focused verification](android/docs/verification-v0.5.1.json). Direct streaming, background playback and the queue remain in place.
@@ -40,7 +46,7 @@ BlackYT is an independent educational project. Its creator uses it to listen to 
 
 ## Disclaimer
 
-BlackYT is an independent, unofficial project for educational use. Use it lawfully, respect copyright, licences, creators' rights, and applicable platform terms. Educational status is not permission to break the law or bypass rights or restrictions. See [DISCLAIMER.md](DISCLAIMER.md) for the full notice.
+BlackYT is an independent, unofficial educational project by Unsigned Media Ltd. It is not affiliated with YT or its providers. This project should not be used to break the law. Respect copyright, licences, creators' rights, applicable platform terms and access restrictions. Educational purpose does not itself grant permission to reuse content or avoid restrictions. Access, playback and an ad-free experience are not guaranteed. Read [DISCLAIMER.md](DISCLAIMER.md) for the full notice and contact details.
 
 ## v0.5.0 device checks
 
