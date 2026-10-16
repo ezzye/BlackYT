@@ -15,7 +15,6 @@ import androidx.media3.common.Player;
 import androidx.media3.common.util.UnstableApi;
 import androidx.media3.datasource.DataSource;
 import androidx.media3.datasource.DataSpec;
-import androidx.media3.datasource.ResolvingDataSource;
 import androidx.media3.datasource.okhttp.OkHttpDataSource;
 import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory;
@@ -51,13 +50,14 @@ public final class PlaybackService extends MediaSessionService {
         YouTubeRepository repository = YouTubeRepository.get();
         DataSource.Factory http = new OkHttpDataSource.Factory(repository.mediaClient())
                 .setUserAgent(YouTubeRepository.USER_AGENT);
-        DataSource.Factory ownedOnly = new ResolvingDataSource.Factory(http, dataSpec -> {
+        DataSource.Factory ownedOnly = () -> new RefreshingAudioDataSource(http, (dataSpec, fresh) -> {
             NativeMediaItems.OwnedItem item = parseOwnedDataSpec(dataSpec);
             try {
-                YouTubeRepository.Resolved result = repository.resolve(item.id, item.rules, false);
+                if (fresh) Log.i(TAG, "Refreshing a refused YT audio stream once");
+                YouTubeRepository.Resolved result = repository.resolve(item.id, item.rules, fresh);
                 // The repository validates this host against googlevideo.com; never log its URL.
                 Log.i(TAG, "Resolved YT audio source host=" + result.sourceHost);
-                return dataSpec.withUri(android.net.Uri.parse(result.url));
+                return android.net.Uri.parse(result.url);
             } catch (Exception failure) {
                 Log.w(TAG, "Resolution failed (" + failure.getClass().getSimpleName() + ")");
                 throw new IOException("Unable to resolve this audio item.");

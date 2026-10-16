@@ -114,6 +114,11 @@ public final class PhoneNaturalPlaybackTest {
             YouTubeRepository.Track availableNext=DeviceStreamChecks.available(b,music);
             queue.add(NativeMediaItems.fromTrack(availableFirst,music));
             queue.add(NativeMediaItems.fromTrack(availableNext,music));
+            android.os.PowerManager power = context.getSystemService(android.os.PowerManager.class);
+            KeyguardManager keyguard = context.getSystemService(KeyguardManager.class);
+            if ("true".equals(InstrumentationRegistry.getArguments().getString("expect_screen_off"))) {
+                await(() -> keyguard.isKeyguardLocked() && !power.isInteractive(),error,60000);
+            }
             main(() -> {
                 assertTrue("App volume must be controllable before silent testing",c.isCommandAvailable(Player.COMMAND_SET_VOLUME));
                 c.setVolume(0f);
@@ -132,8 +137,6 @@ public final class PhoneNaturalPlaybackTest {
             boolean screenOffObserved = false;
             boolean continuouslyLocked = true;
             boolean continuouslyScreenOff = true;
-            android.os.PowerManager power = context.getSystemService(android.os.PowerManager.class);
-            KeyguardManager keyguard = context.getSystemService(KeyguardManager.class);
             while(SystemClock.elapsedRealtime()<until){
                 assertNull("Playback error during background sample",error.get());
                 lockedObserved |= keyguard.isKeyguardLocked();

@@ -275,6 +275,8 @@ public final class DiscoveryUiDeviceTest {
         try(FileOutputStream out=new FileOutputStream(new File(context.getFilesDir(),name))) {
             assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG,100,out));
         }finally{bitmap.recycle();}
+        File directory=context.getExternalFilesDir("episodes-check");assertNotNull(directory);assertTrue(directory.isDirectory()||directory.mkdirs());
+        java.nio.file.Files.copy(new File(context.getFilesDir(),name).toPath(),new File(directory,name).toPath(),java.nio.file.StandardCopyOption.REPLACE_EXISTING);
     }
     private void layoutOwnContent() {
         View content=activity.findViewById(android.R.id.content);
