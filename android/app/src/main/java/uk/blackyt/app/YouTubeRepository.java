@@ -22,7 +22,6 @@ import org.schabi.newpipe.extractor.search.SearchExtractor;
 import org.schabi.newpipe.extractor.services.youtube.linkHandler.YoutubeSearchQueryHandlerFactory;
 import org.schabi.newpipe.extractor.stream.AudioStream;
 import org.schabi.newpipe.extractor.stream.ContentAvailability;
-import org.schabi.newpipe.extractor.stream.DeliveryMethod;
 import org.schabi.newpipe.extractor.stream.StreamInfo;
 import org.schabi.newpipe.extractor.stream.StreamInfoItem;
 import org.schabi.newpipe.extractor.stream.StreamType;
@@ -343,22 +342,8 @@ public final class YouTubeRepository {
                 throw new IOException("This item is not categorized as Music.");
             }
 
-            AudioStream selected = null;
-            for (AudioStream candidate : info.getAudioStreams()) {
-                if (!candidate.isUrl()
-                        || candidate.getDeliveryMethod() != DeliveryMethod.PROGRESSIVE_HTTP
-                        || candidate.getFormat() == null) {
-                    continue;
-                }
-                String mime = candidate.getFormat().getMimeType();
-                if ("audio/mp4".equalsIgnoreCase(mime)) {
-                    selected = candidate;
-                    break;
-                }
-                if ("audio/webm".equalsIgnoreCase(mime) && selected == null) {
-                    selected = candidate;
-                }
-            }
+            AudioStream selected = AudioStreamSelector.select(info.getAudioStreams());
+            Diagnostics.event("audio-track", AudioStreamSelector.diagnosticMetadata(selected));
             if (selected == null) {
                 throw new IOException("No direct progressive MP4 or WebM audio stream is available.");
             }
