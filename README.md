@@ -71,6 +71,18 @@ cd android && ./gradlew assembleDebug testDebugUnitTest lintRelease
 
 The release uses a signing key outside the repository. Keep a protected backup of that key; updates must use the same key. Never publish the key or commit it to Git. Future product work is tracked in [ROADMAP.md](ROADMAP.md).
 
+## Watch BlackYT in one minute
+
+[Watch or download the 60-second portrait promo](https://github.com/ezzye/BlackYT/releases/download/v0.5.1/BlackYT-Promo-60s-Portrait.mp4) · [Save the single-file offline video page](https://github.com/ezzye/BlackYT/releases/download/v0.5.1/BlackYT-promo.html) · [Caption text](docs/BlackYT-promo-captions.srt)
+
+<a href="https://github.com/ezzye/BlackYT/releases/download/v0.5.1/BlackYT-Promo-60s-Portrait.mp4"><img src="android/docs/images/blackyt-promo-poster.jpg" width="300" alt="Watch the BlackYT Android promo: feed your ears, fuel your curiosity"></a>
+
+The animated film shows real BlackYT v0.5.1 app footage: creator search and Videos, saving an episode and resuming it from Library, editing Explore, and the queue/artwork swipe. Screen-off listening is illustrated after a real player shot. Audio streams directly from YT; the app is Android only. The 1080×1920 MP4 has burned-in English captions and is about 14.5 MB. The standalone HTML embeds the film, works offline and can be saved and attached as a file; system sharing depends on the browser. It is a video companion, not an offline music-download feature.
+
+The demonstration uses public example content and a staged Library. Device status/navigation chrome and other apps are excluded; no private listening history or raw phone recordings are published. The promo contains synthetic ElevenLabs Jamie narration and an original instrumental bed, with no third-party song or episode audio. See [production notes and credits](docs/PROMO.md).
+
+![Eight scenes from the BlackYT Android promo](android/docs/images/blackyt-promo-scenes.jpg)
+
 ## App preview
 
 These v0.5.0 app-content renders show the native app with public example content.
