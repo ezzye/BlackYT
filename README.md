@@ -8,7 +8,11 @@ BlackYT is an Android app for finding and playing music and spoken videos availa
 
 ## Install the native Android app
 
-The current native release is [v0.5.0](https://github.com/ezzye/BlackYT/releases/tag/v0.5.0), with **BlackYT-Android-v0.5.0.apk** (versionCode 50). Start with the detailed [Android installation guide](docs/INSTALL.md), or use the downloadable [offline HTML guide](https://github.com/ezzye/BlackYT/releases/download/v0.5.0/BlackYT-Android-Guide.html). No GitHub sign-in, developer settings, USB debugging, Termux, or Mac is needed for normal installation. Android 8 or newer is required. See [FAQ](docs/FAQ.md), [troubleshooting](docs/TROUBLESHOOTING.md), and [android/README.md](android/README.md) for source builds and signing. The Android component is GPL-3.0-or-later; see [android/LICENSE](android/LICENSE) and [android/NOTICE](android/NOTICE).
+The current native release is [v0.5.1](https://github.com/ezzye/BlackYT/releases/tag/v0.5.1), with **BlackYT-Android-v0.5.1.apk** (versionCode 51). Start with the detailed [Android installation guide](docs/INSTALL.md), or use the downloadable [offline HTML guide](https://github.com/ezzye/BlackYT/releases/download/v0.5.1/BlackYT-Android-Guide.html). No GitHub sign-in, developer settings, USB debugging, Termux, or Mac is needed for normal installation. Android 8 or newer is required. See [FAQ](docs/FAQ.md), [troubleshooting](docs/TROUBLESHOOTING.md), and [android/README.md](android/README.md) for source builds and signing. The Android component is GPL-3.0-or-later; see [android/LICENSE](android/LICENSE) and [android/NOTICE](android/NOTICE).
+
+## v0.5.1: original audio
+
+Videos with several language tracks now prefer the creator’s original audio when identified by YT. This fixes the Wes Roth episode selecting an Arabic dub instead of its English original. See the [audio comparison and explanation](android/docs/audio-comparison-v0.5.1.html) and [focused verification](android/docs/verification-v0.5.1.json). Direct streaming, background playback and the queue remain in place.
 
 ## Quick start: find spoken episodes
 

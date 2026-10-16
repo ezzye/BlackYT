@@ -16,7 +16,7 @@ If you see a Play Protect, “not verified,” developer-verification, work, or 
 
 ## How do I install it?
 
-Open the [v0.5.0 release page](https://github.com/ezzye/BlackYT/releases/tag/v0.5.0) and download **BlackYT-Android-v0.5.0.apk** from Assets. See [INSTALL.md](INSTALL.md) for steps.
+Open the [v0.5.1 release page](https://github.com/ezzye/BlackYT/releases/tag/v0.5.1) and download **BlackYT-Android-v0.5.1.apk** from Assets. See [INSTALL.md](INSTALL.md) for steps.
 
 ## Why is the app called BlackYT when my old icon says BlackYT Phone?
 
@@ -25,6 +25,10 @@ Open the [v0.5.0 release page](https://github.com/ezzye/BlackYT/releases/tag/v0.
 ## What is new in v0.4.2?
 
 The v0.4.2 release adds a clearer bird-and-headphones launcher icon, including an Android themed-icon version, plus immediate visual feedback when starting tracks and pressing controls. Swipe left or right across artwork or the miniplayer to move through the queue; short vertical drags do not skip, and queue ends do not wrap. The app also has Home, Search, and Queue navigation; Home's Jump back in row and six example Explore search shortcuts; Music/All videos search, filters and pages; and a Now Playing screen with seeking, Previous, Play/Pause, Next, Queue, Stop and Retry.
+
+## Why did a video play in the wrong language?
+
+Update to v0.5.1 and select the video again. BlackYT prefers a creator’s original audio when YouTube identifies it, in any language. If that information is unavailable, it may use an alternate audio track. There is no manual audio-track selector.
 
 ## What is new in v0.5.0?
 

@@ -6,7 +6,7 @@ Start with the issue that best matches what you see. For safety warnings about t
 
 | What you see | What to do |
 | --- | --- |
-| Release page or APK is missing | Use the [v0.5.0 release page](https://github.com/ezzye/BlackYT/releases/tag/v0.5.0) and choose **BlackYT-Android-v0.5.0.apk** under **Assets**, not the source-code ZIP. |
+| Release page or APK is missing | Use the [v0.5.1 release page](https://github.com/ezzye/BlackYT/releases/tag/v0.5.1) and choose **BlackYT-Android-v0.5.1.apk** under **Assets**, not the source-code ZIP. |
 | I cannot find the downloaded APK | In Chrome, open **⋮ → Downloads**. Or open Android's **Files** app and choose **Downloads**. Look for the exact `.apk` filename. Wait for the download to finish before opening it. |
 | Android says Chrome or Files cannot install apps from this source | Android controls this separately for each app that opens an APK. On a Pixel, go to **Settings → Apps → Special app access → Install unknown apps → Chrome → Allow from this source**. If Files opened the APK, choose Files instead. Return to Downloads and open the APK again. Labels differ on other phones. You can turn the permission off after installation. [Google Pixel help](https://support.google.com/pixelphone/answer/7391672). |
 | Android shows a Play Protect, “not verified,” developer-verification, work, or school warning or block | Stop. Do not turn off Play Protect or bypass the warning. Contact the project maintainer, your organization administrator, or consult the [Android developer verification FAQ](https://developer.android.com/developer-verification/guides/faq?hl=en). |

@@ -1,0 +1,94 @@
+{
+  "version": "0.5.1-native",
+  "versionCode": 51,
+  "date": "2026-10-16",
+  "sourceCommit": "bf0ce2e088f831a07c6695df5dbc62ff8f15177c",
+  "apkSha256": "4046607fc89c914be3929b70474192a88c474037e9b7e47e5f9252e8a12b2e78",
+  "signingCertificateSha256": "6a475af54a417cdcf425f38bd599227d29b6cd8d4e31ddc1346fe00d475bacf8",
+  "installedHashMatched": true,
+  "releaseUnitTests": {
+    "passed": 26,
+    "failures": 0
+  },
+  "releaseLint": {
+    "errors": 0,
+    "warnings": 19
+  },
+  "focusedPhoneTests": {
+    "passed": 5,
+    "failures": 0,
+    "originalAudioNormalSpeedScreenOffQueue": 1,
+    "transportRefresh": 4
+  },
+  "audioComparison": {
+    "version": "0.5.1-native",
+    "date": "2026-10-16",
+    "videoId": "EmaXeEdlJkI",
+    "creator": "Wes Roth",
+    "title": "AI just BROKE all of the software industry...",
+    "durationSeconds": 1575,
+    "before": {
+      "trackId": "ar.10",
+      "language": "ar",
+      "type": "DUBBED",
+      "format": "audio/mp4"
+    },
+    "after": {
+      "trackId": "en-US.4",
+      "language": "en-US",
+      "type": "ORIGINAL",
+      "format": "audio/mp4"
+    },
+    "comparison": {
+      "method": "Local multilingual Whisper base speech recognition; reference is owner-supplied timestamped transcript. Not a full-episode transcription or human listening acceptance.",
+      "oldSelectionDetectedLanguage": "ar",
+      "originalDetectedLanguage": "en",
+      "sampleWindowsSeconds": {
+        "old": [
+          0,
+          25
+        ],
+        "original": [
+          [
+            0,
+            45
+          ],
+          [
+            95,
+            120
+          ]
+        ]
+      },
+      "openingContentMatches": true,
+      "fireshipCue": {
+        "suppliedTranscriptSeconds": 98,
+        "audioRecognitionSeconds": 98.26,
+        "approximate": true
+      },
+      "fixedProductionSampleEqualsOriginalReferenceBytes": true,
+      "comparedBytes": 768000,
+      "sampleSha256": "2e557b0c00872c51844d23d374ab66f77b4ce4b27214cebf6b816ca82aad7d24",
+      "fixedProductionSafeTrackLabel": "acont=original:lang=en-US"
+    },
+    "privacy": "Full transcript, audio excerpts and signed media URLs are not published.",
+    "playback": {
+      "speed": 1.0,
+      "pitch": 1.0,
+      "elapsedMs": 120021,
+      "audioAdvancedMs": 119866,
+      "continuouslyLocked": true,
+      "continuouslyDisplayOff": true,
+      "automaticNext": true,
+      "seekNearEndUsed": true,
+      "appMuted": true,
+      "note": "Queue completion used seek near end; earlier v0.5.0 full natural-song proof is separate."
+    }
+  },
+  "unchangedFeaturesEvidence": "The discovery, Library, Explore and UI features retain their v0.5.0 checks, separately documented in verification-v0.5.0.json. They were not all rerun for this selector-only fix.",
+  "limitations": [
+    "Audio comparison covers sampled sections and uses local speech recognition, not a complete human-verified transcription.",
+    "Automatic queue check sought near the end of the episode; it did not wait through the full 26-minute episode.",
+    "Automated phone playback was muted within BlackYT. Owner listening acceptance of v0.5.1 remains pending.",
+    "If original metadata is missing, an alternate available track may be selected. No manual audio-language selector."
+  ]
+}

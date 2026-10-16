@@ -6,7 +6,7 @@ BlackYT is an Android-only app for finding and playing music and spoken videos a
 
 ## Public release
 
-The current native release is [v0.5.0](https://github.com/ezzye/BlackYT/releases/tag/v0.5.0), with **BlackYT-Android-v0.5.0.apk** (versionCode 50). For beginner installation steps, questions, and recovery help, see the [Android install guide](../docs/INSTALL.md), [FAQ](../docs/FAQ.md), and [troubleshooting guide](../docs/TROUBLESHOOTING.md). The [standalone HTML guide](https://github.com/ezzye/BlackYT/releases/download/v0.5.0/BlackYT-Android-Guide.html) is convenient for offline reading and sharing.
+The current native release is [v0.5.1](https://github.com/ezzye/BlackYT/releases/tag/v0.5.1), with **BlackYT-Android-v0.5.1.apk** (versionCode 51). For beginner installation steps, questions, and recovery help, see the [Android install guide](../docs/INSTALL.md), [FAQ](../docs/FAQ.md), and [troubleshooting guide](../docs/TROUBLESHOOTING.md). The [standalone HTML guide](https://github.com/ezzye/BlackYT/releases/download/v0.5.1/BlackYT-Android-Guide.html) is convenient for offline reading and sharing.
 
 The old Chrome PWA home-screen app was labelled **BlackYT Phone** and belongs to the separate legacy v0.2.0 Termux setup. The native APK does not need that installation.
 

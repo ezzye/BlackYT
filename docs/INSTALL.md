@@ -1,17 +1,17 @@
 # Install BlackYT on Android
 
-BlackYT is an Android app for Android 8.0 or newer. The v0.5.0 release (versionCode 50) provides **BlackYT-Android-v0.5.0.apk**. This guide describes installation and everyday listening. The older Termux and Chrome instructions below are a separate legacy option.
+BlackYT is an Android app for Android 8.0 or newer. The v0.5.1 release (versionCode 51) provides **BlackYT-Android-v0.5.1.apk**. This guide describes installation and everyday listening. The older Termux and Chrome instructions below are a separate legacy option.
 
 ## Before you begin
 
 - Android 8.0 or newer is required. An iOS app is planned for later, with no release date.
 - You need internet to download, search, and stream. Mobile-data use may count against your plan. No BlackYT account is needed.
-- Download the APK from the [v0.5.0 release page](https://github.com/ezzye/BlackYT/releases/tag/v0.5.0). Choose **BlackYT-Android-v0.5.0.apk** under **Assets**, not the source-code ZIP.
+- Download the APK from the [v0.5.1 release page](https://github.com/ezzye/BlackYT/releases/tag/v0.5.1). Choose **BlackYT-Android-v0.5.1.apk** under **Assets**, not the source-code ZIP.
 - Normal phone installation needs no Developer options, USB debugging, computer, Termux, or Mac.
 
-## Install v0.5.0
+## Install v0.5.1
 
-1. Open the [v0.5.0 release page](https://github.com/ezzye/BlackYT/releases/tag/v0.5.0) in Chrome or another browser and download **BlackYT-Android-v0.5.0.apk** under **Assets**. Do not choose the source-code ZIP.
+1. Open the [v0.5.1 release page](https://github.com/ezzye/BlackYT/releases/tag/v0.5.1) in Chrome or another browser and download **BlackYT-Android-v0.5.1.apk** under **Assets**. Do not choose the source-code ZIP.
 2. Open the completed download from Chrome Downloads or Files → Downloads.
 3. If Android asks permission for Chrome or Files to install apps from that source, allow it for that app only. On a Pixel: **Settings → Apps → Special app access → Install unknown apps → Chrome → Allow from this source** (choose Files if Files opened the APK). Labels vary by phone. You can revoke the permission after installation. See [Google Pixel install help](https://support.google.com/pixelphone/answer/7391672).
 4. Tap **Install**, then **Open**. Find **BlackYT** in the app list.
@@ -34,7 +34,7 @@ Tap a bookmark to save an episode in **Library**. Its metadata and listening pro
 
 The phone journey passed: a shared `youtu.be` link with `t=205s` opened a preview without autoplay and played from 205 seconds when selected; the saved episode retained that resume point after recreating the Library activity. A Wes Roth creator search opened its Videos page, paged results, saved the creator, and reopened its latest videos from Library. Explore add/edit persisted and the edited topic launched an All videos search. With the activity finished, Media3 playback continued muted for 35 seconds with the screen locked and display off. See [verification-v0.5.0.json](../android/docs/verification-v0.5.0.json) for final automated results. This muted check does not establish audible acceptance. Other devices are unverified.
 
-See the [FAQ](FAQ.md), [troubleshooting guide](TROUBLESHOOTING.md), and [offline HTML guide](https://github.com/ezzye/BlackYT/releases/download/v0.5.0/BlackYT-Android-Guide.html). Updates require the same signing key as the installed release; install over the existing app instead of uninstalling if you want to retain app data.
+See the [FAQ](FAQ.md), [troubleshooting guide](TROUBLESHOOTING.md), and [offline HTML guide](https://github.com/ezzye/BlackYT/releases/download/v0.5.1/BlackYT-Android-Guide.html). Updates require the same signing key as the installed release; install over the existing app instead of uninstalling if you want to retain app data.
 
 ## Legacy Termux + Chrome PWA (v0.2.0)
 
