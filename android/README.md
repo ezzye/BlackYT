@@ -6,17 +6,17 @@ BlackYT is an Android-only app for finding and playing YT music links. It extrac
 
 ## Public release
 
-The public native release is [v0.4.0](https://github.com/ezzye/BlackYT/releases/tag/v0.4.0), with **BlackYT-Android-v0.4.0.apk** (versionCode 40). For beginner installation steps, questions, and recovery help, see the [Android install guide](../docs/INSTALL.md), [FAQ](../docs/FAQ.md), and [troubleshooting guide](../docs/TROUBLESHOOTING.md). The [standalone HTML guide](docs/native-android.html) is convenient for offline reading and sharing.
+The public native release is [v0.4.2](https://github.com/ezzye/BlackYT/releases/tag/v0.4.2), with **BlackYT-Android-v0.4.2.apk** (versionCode 42). For beginner installation steps, questions, and recovery help, see the [Android install guide](../docs/INSTALL.md), [FAQ](../docs/FAQ.md), and [troubleshooting guide](../docs/TROUBLESHOOTING.md). The [standalone HTML guide](docs/native-android.html) is convenient for offline reading and sharing.
 
 The old Chrome PWA home-screen app was labelled **BlackYT Phone** and belongs to the separate legacy v0.2.0 Termux setup. The native APK does not need that installation.
 
 ## Home, search, and listen
 
-1. Bottom navigation switches between **Home**, **Search**, and **Queue**. Home shows a small mascot, **Jump back in** with up to 12 recently played tracks, and colorful interest tiles that start real searches.
+1. Bottom navigation switches between **Home**, **Search**, and **Queue**. Home shows a small mascot, **Jump back in** with up to 12 recently played tracks, and six colorful Explore tiles that are example search shortcuts. Search for any genre, artist, topic, or title. Podcast episodes available through YT can be found using **Search → All videos** or a pasted YT link, then played in the regular player and queue; podcast directories, RSS feeds, and subscriptions are not supported.
 2. Recent-play history stores public track metadata and original artwork references locally; **Home → More (⋮) → Clear listening history** removes it. The last eight search phrases are stored locally and can also be cleared. BlackYT does not create fake playlists or automatically fetch recommendations.
 3. Search with the compact search field, its action button, or the keyboard Search/Enter action. Paste a YT link or enter a phrase. Choose **Music** or **All videos**; open **Filters** for optional include-any and exclude-any terms. Music classification depends on YT metadata and is not guaranteed.
 4. Use **Load more** for further pages, up to 200 matches. Tap a result to play it immediately. **Add** appends it to the FIFO queue. Queue items can be removed.
-5. A miniplayer appears above the bottom navigation only when a track is current. Tap it to open full **Now Playing**. Back returns to the previous screen. The full player has seeking, Previous, Play/Pause, Next, Queue, and **More**; More includes Stop and Retry current song.
+5. A miniplayer appears above the bottom navigation only when a track is current. Tap it to open full **Now Playing**. Back returns to the previous screen. The full player has seeking, Previous, Play/Pause, Next, Queue, and **More**; More includes Stop and Retry current song. Track starts and button presses have immediate visual feedback. Swipe artwork or the miniplayer left for next and right for previous; short vertical drags do not change tracks. The queue does not wrap at either end.
 
 The queue lasts only for the current app session. Audio streams directly over HTTPS from the phone to YT's Googlevideo stream host, with no BlackYT cloud relay. There is no sign-in or offline download.
 
@@ -30,7 +30,7 @@ The queue lasts only for the current app session. Audio streams directly over HT
 
 ## Current validation
 
-v0.4.0 automated checks passed on the Pixel 10 Pro XL: nine unit tests in each build type, release lint with zero errors, live search/link/filter/paging/artwork checks, and the native Home/Search/Now Playing/history/queue controls. The exact signed release played silently for two minutes with the existing lock and display off, then moved automatically to the next queued song. Its installed APK hash matched the release file. The owner has not yet reviewed or listened to v0.4.0, and a fresh mobile-data check for this version has not been performed. Other phones are unverified. Historical v0.3.0 owner acceptance is separate. The Mac and Termux are not playback dependencies. See [verification details](docs/verification-v0.4.0.json).
+Local build checks passed nine release unit tests and lint with zero errors and 17 warnings. Pixel 10 Pro XL checks passed for live search, links, Music/All videos, filters, pagination, artwork, navigation, queue controls, header spacing, native press feedback and artwork/miniplayer swipes. Vertical and short drags did not skip; queue boundaries did not wrap; taps worked after swiping. A silent track played for its full 208.564 seconds and advanced naturally. The complete 120-second sample stayed locked with the display off, and both conditions still held when the next track began. Playback used mobile data while USB remained connected; unplugged operation was not retested for v0.4.2. The installed APK hash matched the tested build. Owner audible and visual acceptance of v0.4.2 remains pending. Other phones are unverified. See [verification details](docs/verification-v0.4.2.json).
 
 ## Build from source
 

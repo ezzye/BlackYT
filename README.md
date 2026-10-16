@@ -8,15 +8,15 @@ BlackYT is an Android app for finding and playing YT music links. It extracts a 
 
 ## Install the native Android app
 
-The native Android release is [v0.4.0](https://github.com/ezzye/BlackYT/releases/tag/v0.4.0), with **BlackYT-Android-v0.4.0.apk** (versionCode 40). Start with the detailed [Android installation guide](docs/INSTALL.md), or use the downloadable [offline HTML guide](android/docs/native-android.html). No GitHub sign-in, developer settings, USB debugging, Termux, or Mac is needed for normal installation. Android 8 or newer is required; automated v0.4.0 checks have run on a Pixel 10 Pro XL; other devices are unverified. See [FAQ](docs/FAQ.md), [troubleshooting](docs/TROUBLESHOOTING.md), and [android/README.md](android/README.md) for source builds and signing. The Android component is GPL-3.0-or-later; see [android/LICENSE](android/LICENSE) and [android/NOTICE](android/NOTICE).
+The native Android release is [v0.4.2](https://github.com/ezzye/BlackYT/releases/tag/v0.4.2), with **BlackYT-Android-v0.4.2.apk** (versionCode 42). Start with the detailed [Android installation guide](docs/INSTALL.md), or use the downloadable [offline HTML guide](android/docs/native-android.html). No GitHub sign-in, developer settings, USB debugging, Termux, or Mac is needed for normal installation. Android 8 or newer is required; the v0.4.2 release has been checked on a Pixel 10 Pro XL; other devices are unverified. See [FAQ](docs/FAQ.md), [troubleshooting](docs/TROUBLESHOOTING.md), and [android/README.md](android/README.md) for source builds and signing. The Android component is GPL-3.0-or-later; see [android/LICENSE](android/LICENSE) and [android/NOTICE](android/NOTICE).
 
 ## Daily use
 
-BlackYT opens on **Home**, with bottom navigation for **Home**, **Search**, and **Queue**. Home has a small mascot, a **Jump back in** row of up to 12 recently played tracks, and colorful interest tiles. Each tile starts a real search for that interest. Recent-play history stores public track metadata and original artwork references locally; clear it using **Home → More (⋮) → Clear listening history**. BlackYT does not create fake playlists or fetch recommendations automatically.
+BlackYT opens on **Home**, with bottom navigation for **Home**, **Search**, and **Queue**. Home has a small mascot, a **Jump back in** row of up to 12 recently played tracks, and six colorful Explore tiles. Tiles are example search shortcuts; use Search for any genre, artist, topic, or title. Podcast episodes available through YT can be found with **Search → All videos** or by pasting a YT link, then played in the regular queue and player. BlackYT has no podcast directory, RSS feed support, or subscriptions. Recent-play history stores public track metadata and original artwork references locally; clear it using **Home → More (⋮) → Clear listening history**. BlackYT does not create fake playlists or fetch recommendations automatically.
 
 Use the compact Search field and its action or keyboard Search/Enter key. Choose **Music** or **All videos** and open **Filters** for optional include-any and exclude-any terms. The last eight search phrases are stored locally and can be cleared. Use **Load more** for further results, up to 200 matches. Tapping a result starts it; **Add** appends it to the FIFO queue. Song thumbnails appear in results and playback surfaces when available.
 
-A miniplayer appears above the bottom navigation only while a track is current. Tapping it opens the full **Now Playing** screen. Use Back to return; seek, Previous, Play/Pause, Next, Queue, and **More** are available there. More includes Stop and Retry. Queue items remain FIFO and can be removed; the queue lasts only for the current app session.
+A miniplayer appears above the bottom navigation only while a track is current. Tapping it opens the full **Now Playing** screen. Use Back to return; seek, Previous, Play/Pause, Next, Queue, and **More** are available there. More includes Stop and Retry. Track starts and button presses show immediate visual feedback. Swipe left or right across the artwork or miniplayer to move through the queue; short vertical drags do not change tracks. The queue is FIFO, does not wrap at either end, and lasts only for the current app session.
 
 Music classification depends on YT metadata and is not guaranteed. BlackYT has no offline downloads or sign-in. It streams audio directly over HTTPS from YT's Googlevideo host; no BlackYT cloud relay is involved. YT may change its service and break extraction or playback.
 
@@ -30,7 +30,7 @@ BlackYT is an independent, unofficial project for educational use. Use it lawful
 
 ## Current validation
 
-v0.4.0 automated checks passed on the Pixel 10 Pro XL: nine unit tests in each build type, release lint with zero errors, live search/link/filter/paging/artwork checks, and the native Home/Search/Now Playing/history/queue controls. The exact signed release played silently for two minutes with the existing lock and display off, then moved automatically to the next queued song. Its installed APK hash matched the release file. The owner has not yet reviewed or listened to v0.4.0, and a fresh mobile-data check for this version has not been performed. Other phones are unverified. Historical v0.3.0 owner acceptance is separate. The Mac and Termux are not playback dependencies. See [verification details](android/docs/verification-v0.4.0.json).
+Local build checks passed nine release unit tests and lint with zero errors and 17 warnings. Pixel 10 Pro XL checks passed for live search, links, Music/All videos, filters, pagination, artwork, navigation, queue controls, header spacing, native press feedback and artwork/miniplayer swipes. Vertical and short drags did not skip; queue boundaries did not wrap; taps worked after swiping. A silent track played for its full 208.564 seconds and advanced naturally. The complete 120-second sample stayed locked with the display off, and both conditions still held when the next track began. Playback used mobile data while USB remained connected; unplugged operation was not retested for v0.4.2. The installed APK hash matched the tested build. Owner audible and visual acceptance of v0.4.2 remains pending. Other phones are unverified. See [verification details](android/docs/verification-v0.4.2.json).
 
 ## Legacy alternative: Termux + Chrome PWA (v0.2.0)
 
@@ -59,8 +59,12 @@ The release uses a signing key outside the repository. Keep a protected backup o
 
 ## App preview
 
-| Home | Search | Now Playing |
-| --- | --- | --- |
-| ![BlackYT Home](android/docs/images/blackyt-home-v0.4.0.png) | ![BlackYT Search](android/docs/images/blackyt-search-v0.4.0.png) | ![BlackYT Now Playing](android/docs/images/blackyt-player-v0.4.0.png) |
+| Home | Search |
+| --- | --- |
+| ![BlackYT Home](android/docs/images/blackyt-home-v0.4.2.png) | ![BlackYT Search](android/docs/images/blackyt-search-v0.4.2.png) |
+| Now Playing | Queue |
+| ![BlackYT Now Playing](android/docs/images/blackyt-player-v0.4.2.png) | ![BlackYT Queue](android/docs/images/blackyt-queue-v0.4.2.png) |
+| Color launcher icon | Themed launcher icon |
+| ![BlackYT color launcher icon](android/docs/images/blackyt-icon-color-v0.4.2.png) | ![BlackYT themed launcher icon](android/docs/images/blackyt-icon-themed-v0.4.2.png) |
 
 App-only view renders from the Pixel; no system or lock-screen content is included. YT thumbnail artwork belongs to its respective rights holders. The navigation and player layout use [Spotify’s mobile Now Playing flow](https://support.spotify.com/mv-en/article/now-playing/) as a design reference while retaining BlackYT’s mascot and identity.

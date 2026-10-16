@@ -1,0 +1,48 @@
+{
+  "version": "0.4.2-native",
+  "versionCode": 42,
+  "date": "2026-10-16",
+  "sourceCommit": "9eb62d66c9b792ddf99e61f69a86bdb62d9fd4be",
+  "device": "Pixel 10 Pro XL",
+  "apkSha256": "1cd4bab43a1050089b8e8a402fe3e3498f2b4d8fb5c95b504d713fc0ba262133",
+  "installedHashMatched": true,
+  "releaseUnitTests": {
+    "passed": 9,
+    "failures": 0
+  },
+  "releaseLint": {
+    "errors": 0,
+    "warnings": 17
+  },
+  "phoneChecks": {
+    "liveSearchLinksFiltersPagingArtwork": true,
+    "navigationHistoryAndAddRemoveQueue": true,
+    "headerBelowStatusAndCameraCutout": true,
+    "artworkAndMiniplayerNextPreviousSwipes": true,
+    "queueBoundariesNoWrap": true,
+    "verticalAndShortDragsDoNotSkip": true,
+    "tapsAfterSwipes": true,
+    "nativePressFeedback": true,
+    "colorAndThemedAdaptiveIconRendered": true
+  },
+  "screenOffPlayback": {
+    "muted": true,
+    "sampleMs": 120000,
+    "continuouslyLockedInSample": true,
+    "continuouslyNoninteractiveInSample": true,
+    "firstTrackNaturalDurationMs": 208564,
+    "seekToEndUsed": false,
+    "automaticNext": true,
+    "lockedAtNext": true,
+    "displayOffAtNext": true,
+    "networkTransport": "cellular",
+    "usbConnected": true
+  },
+  "limitations": [
+    "Automated playback was muted; owner audible and visual acceptance of this patch is pending.",
+    "One earlier UI run encountered a source error; retry and final patch checks passed.",
+    "Other Android devices are unverified.",
+    "RSS feeds and podcast subscriptions are not implemented."
+  ],
+  "screenshots": "App-owned view renders; no system, lock-screen or other-app content."
+}

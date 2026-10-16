@@ -2,7 +2,7 @@
 
 ## Which devices can run BlackYT?
 
-BlackYT is for Android only and requires Android 8.0 or newer. iPhone and iPad are not supported now. An iOS app is planned for later, with no release date. The owner physically tested v0.3.0 on a Pixel 10 Pro XL. Separate v0.4.0 automated search, UI, direct playback and locked/screen-off queue checks passed on that Pixel. The owner has not yet reviewed this update; other devices are unverified.
+BlackYT is for Android only and requires Android 8.0 or newer. iPhone and iPad are not supported now. An iOS app is planned for later, with no release date. The v0.4.2 release passed phone checks on a Pixel 10 Pro XL; owner audible and visual acceptance of this version is still pending, and other devices are unverified.
 
 ## Do I need Developer options, USB debugging, or a computer?
 
@@ -16,19 +16,23 @@ If you see a Play Protect, “not verified,” developer-verification, work, or 
 
 ## How do I install it?
 
-Open the public [v0.4.0 release page](https://github.com/ezzye/BlackYT/releases/tag/v0.4.0) and download **BlackYT-Android-v0.4.0.apk** from Assets. See [INSTALL.md](INSTALL.md) for steps.
+Open the [v0.4.2 release page](https://github.com/ezzye/BlackYT/releases/tag/v0.4.2) and download **BlackYT-Android-v0.4.2.apk** from Assets. See [INSTALL.md](INSTALL.md) for steps.
 
 ## Why is the app called BlackYT when my old icon says BlackYT Phone?
 
 **BlackYT** is the native Android app. **BlackYT Phone** is an older home-screen PWA shortcut that needs Termux and Chrome. The native app does not need either one. You can leave the old shortcut installed while trying the native app.
 
-## What is new in v0.4.0?
+## What is new in v0.4.2?
 
-The v0.4.0 flow has Home, Search, and Queue in bottom navigation. Home shows Jump back in with up to 12 locally saved recent tracks and colorful interest tiles that start actual searches. Search has Music/All videos choices, optional Filters, eight recent search phrases, and paged results up to 200. A miniplayer appears only while a track is current and opens full Now Playing. The full player has seeking, Previous, Play/Pause, Next, Queue, and More (Stop and Retry).
+The v0.4.2 release adds a clearer bird-and-headphones launcher icon, including an Android themed-icon version, plus immediate visual feedback when starting tracks and pressing controls. Swipe left or right across artwork or the miniplayer to move through the queue; short vertical drags do not skip, and queue ends do not wrap. The app also has Home, Search, and Queue navigation; Home's Jump back in row and six example Explore search shortcuts; Music/All videos search, filters and pages; and a Now Playing screen with seeking, Previous, Play/Pause, Next, Queue, Stop and Retry.
+
+## Can I listen to podcasts, and are the Explore tiles a limited catalog?
+
+The six Explore tiles are shortcuts for example searches, not the full set of topics. Search for any genre, artist, topic, or title. Podcast episodes available through YT can be found with **Search → All videos** or by pasting a YT link, then played in the usual player and queue. BlackYT does not have a podcast directory, RSS feed support, or podcast subscriptions.
 
 ## How do Play and Add differ?
 
-**Play** starts that result now. **Add** puts it at the end of the current queue. The queue plays in the order songs were added. If nothing is playing, Add fills the queue but does not start it; open the miniplayer/Now Playing when a track is current, or choose a result to start playback. Queue items can be removed and are played FIFO. BlackYT does not automatically choose songs or fetch recommendations.
+**Play** starts that result now. **Add** puts it at the end of the current queue. The queue plays in the order songs were added and does not wrap after the last or before the first item. If nothing is playing, Add fills the queue but does not start it; choose a result to start playback. Queue items can be removed and are played FIFO. BlackYT does not automatically choose songs or fetch recommendations.
 
 ## What do the filters do?
 
@@ -53,3 +57,7 @@ Yes, install the new APK over the installed BlackYT app. Updates must have the s
 ## What if a YT link fails?
 
 Check your connection and tap **Retry current song** to request a fresh stream link. Some links may be unavailable, restricted, or blocked, and YT can change its service. See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for specific messages and next steps.
+
+## Can I listen to spoken YT videos like a podcast?
+
+Yes. Choose **Search → All videos** and paste a spoken video link, or search for interviews, news, lectures or a creator. For example, the [Wes Roth link supplied by the owner](https://www.youtube.com/watch?v=EmaXeEdlJkI&t=205s) is a video link, not an RSS feed. Individual episodes still depend on YT availability. Link timestamps are currently ignored: `t=205s` means 3:25, so move the playback slider there manually after starting. There is no podcast subscription or RSS reader yet. This particular episode has not been device-tested.

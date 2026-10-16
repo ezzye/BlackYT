@@ -1,17 +1,17 @@
 # Install BlackYT on Android
 
-BlackYT is an Android app for Android 8.0 or newer. The v0.4.0 release (versionCode 40) provides **BlackYT-Android-v0.4.0.apk**. This guide describes installation and everyday listening. The older Termux and Chrome instructions below are a separate legacy option.
+BlackYT is an Android app for Android 8.0 or newer. The v0.4.2 release (versionCode 42) provides **BlackYT-Android-v0.4.2.apk**. This guide describes installation and everyday listening. The older Termux and Chrome instructions below are a separate legacy option.
 
 ## Before you begin
 
 - Android 8.0 or newer is required. An iOS app is planned for later, with no release date.
 - You need internet to download, search, and stream. Mobile-data use may count against your plan. No BlackYT account is needed.
-- When v0.4.0 is published, its APK will be linked from the [v0.4.0 release page](https://github.com/ezzye/BlackYT/releases/tag/v0.4.0). It is not available for download yet.
+- Download the APK from the [v0.4.2 release page](https://github.com/ezzye/BlackYT/releases/tag/v0.4.2). Choose **BlackYT-Android-v0.4.2.apk** under **Assets**, not the source-code ZIP.
 - Normal phone installation needs no Developer options, USB debugging, computer, Termux, or Mac.
 
 ## Install when the release is available
 
-1. Open the v0.4.0 release page in Chrome or another browser and download **BlackYT-Android-v0.4.0.apk** under **Assets**. Do not choose the source-code ZIP.
+1. Open the [v0.4.2 release page](https://github.com/ezzye/BlackYT/releases/tag/v0.4.2) in Chrome or another browser and download **BlackYT-Android-v0.4.2.apk** under **Assets**. Do not choose the source-code ZIP.
 2. Open the completed download from Chrome Downloads or Files → Downloads.
 3. If Android asks permission for Chrome or Files to install apps from that source, allow it for that app only. On a Pixel: **Settings → Apps → Special app access → Install unknown apps → Chrome → Allow from this source** (choose Files if Files opened the APK). Labels vary by phone. You can revoke the permission after installation. See [Google Pixel install help](https://support.google.com/pixelphone/answer/7391672).
 4. Tap **Install**, then **Open**. Find **BlackYT** in the app list.
@@ -20,17 +20,17 @@ Do not disable Play Protect or bypass a security warning. If Android shows a Pla
 
 ## Home, search, and playback
 
-Bottom navigation has **Home**, **Search**, and **Queue**. Home includes a small mascot, **Jump back in** with up to 12 recently played tracks, and colorful interest tiles that trigger actual searches. Recently played history stores public track metadata and original artwork references locally; **Home → More (⋮) → Clear listening history** removes it. BlackYT does not create fake playlists or fetch recommendations automatically.
+Bottom navigation has **Home**, **Search**, and **Queue**. Home includes a small mascot, **Jump back in** with up to 12 recently played tracks, and six colorful Explore tiles that are example search shortcuts. Search for any genre, artist, topic, or title. Podcast episodes available through YT can be found with **Search → All videos** or a pasted YT link, then played in the regular player and queue. Podcast directories, RSS feeds, and subscriptions are not supported. Recently played history stores public track metadata and original artwork references locally; **Home → More (⋮) → Clear listening history** removes it. BlackYT does not create fake playlists or fetch recommendations automatically.
 
 Search uses a compact field with a Search action and keyboard Search/Enter submission. Choose **Music** or **All videos**, and open **Filters** for optional include-any and exclude-any terms. The last eight search phrases are stored locally and can be cleared. Use **Load more** for further results, up to 200 matches; tapping a result plays it immediately, while **Add** appends it to the FIFO queue. Queue tracks can be removed.
 
-A miniplayer appears above the bottom navigation only while a track is current. Tap it to open full **Now Playing**; Back returns. The full player provides seeking, Previous, Play/Pause, Next, Queue, and **More**, with Stop and Retry under More. The queue lasts for the current app session.
+A miniplayer appears above the bottom navigation only while a track is current. Tap it to open full **Now Playing**; Back returns. The full player provides seeking, Previous, Play/Pause, Next, Queue, and **More**, with Stop and Retry under More. Track starts and button presses show immediate visual feedback. Swipe across the artwork or miniplayer left for next and right for previous; short vertical drags do not skip. The FIFO queue does not wrap at either end and lasts for the current app session.
 
 Audio streams directly over HTTPS from YT's Googlevideo host to the phone. There are no offline downloads or sign-in; YT can change its service and availability.
 
 ## Historical checks and current verification
 
-v0.4.0 automated checks passed on the Pixel 10 Pro XL: nine unit tests in each build type, release lint with zero errors, live search/link/filter/paging/artwork checks, and the native Home/Search/Now Playing/history/queue controls. The exact signed release played silently for two minutes with the existing lock and display off, then moved automatically to the next queued song. Its installed APK hash matched the release file. The owner has not yet reviewed or listened to v0.4.0, and a fresh mobile-data check for this version has not been performed. Other phones are unverified. Historical v0.3.0 owner acceptance is separate.
+Local build checks passed nine release unit tests and lint with zero errors and 17 warnings. Pixel 10 Pro XL checks passed for live search, links, Music/All videos, filters, pagination, artwork, navigation, queue controls, header spacing, native press feedback and artwork/miniplayer swipes. Vertical and short drags did not skip; queue boundaries did not wrap; taps worked after swiping. A silent track played for its full 208.564 seconds and advanced naturally. The complete 120-second sample stayed locked with the display off, and both conditions still held when the next track began. Playback used mobile data while USB remained connected; unplugged operation was not retested for v0.4.2. The installed APK hash matched the tested build. Owner audible and visual acceptance of v0.4.2 remains pending. Other phones are unverified. See [verification details](../android/docs/verification-v0.4.2.json).
 
 See the [FAQ](FAQ.md), [troubleshooting guide](TROUBLESHOOTING.md), and [offline HTML guide](../android/docs/native-android.html). Updates require the same signing key as the installed release; install over the existing app instead of uninstalling if you want to retain app data.
 
