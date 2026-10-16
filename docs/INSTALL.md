@@ -1,17 +1,17 @@
 # Install BlackYT on Android
 
-BlackYT is an Android app for Android 8.0 or newer. The v0.4.2 release (versionCode 42) provides **BlackYT-Android-v0.4.2.apk**. This guide describes installation and everyday listening. The older Termux and Chrome instructions below are a separate legacy option.
+BlackYT is an Android app for Android 8.0 or newer. The v0.5.0 release (versionCode 50) provides **BlackYT-Android-v0.5.0.apk**. This guide describes installation and everyday listening. The older Termux and Chrome instructions below are a separate legacy option.
 
 ## Before you begin
 
 - Android 8.0 or newer is required. An iOS app is planned for later, with no release date.
 - You need internet to download, search, and stream. Mobile-data use may count against your plan. No BlackYT account is needed.
-- Download the APK from the [v0.4.2 release page](https://github.com/ezzye/BlackYT/releases/tag/v0.4.2). Choose **BlackYT-Android-v0.4.2.apk** under **Assets**, not the source-code ZIP.
+- Download the APK from the [v0.5.0 release page](https://github.com/ezzye/BlackYT/releases/tag/v0.5.0). Choose **BlackYT-Android-v0.5.0.apk** under **Assets**, not the source-code ZIP.
 - Normal phone installation needs no Developer options, USB debugging, computer, Termux, or Mac.
 
-## Install when the release is available
+## Install v0.5.0
 
-1. Open the [v0.4.2 release page](https://github.com/ezzye/BlackYT/releases/tag/v0.4.2) in Chrome or another browser and download **BlackYT-Android-v0.4.2.apk** under **Assets**. Do not choose the source-code ZIP.
+1. Open the [v0.5.0 release page](https://github.com/ezzye/BlackYT/releases/tag/v0.5.0) in Chrome or another browser and download **BlackYT-Android-v0.5.0.apk** under **Assets**. Do not choose the source-code ZIP.
 2. Open the completed download from Chrome Downloads or Files → Downloads.
 3. If Android asks permission for Chrome or Files to install apps from that source, allow it for that app only. On a Pixel: **Settings → Apps → Special app access → Install unknown apps → Chrome → Allow from this source** (choose Files if Files opened the APK). Labels vary by phone. You can revoke the permission after installation. See [Google Pixel install help](https://support.google.com/pixelphone/answer/7391672).
 4. Tap **Install**, then **Open**. Find **BlackYT** in the app list.
@@ -20,19 +20,21 @@ Do not disable Play Protect or bypass a security warning. If Android shows a Pla
 
 ## Home, search, and playback
 
-Bottom navigation has **Home**, **Search**, and **Queue**. Home includes a small mascot, **Jump back in** with up to 12 recently played tracks, and six colorful Explore tiles that are example search shortcuts. Search for any genre, artist, topic, or title. Podcast episodes available through YT can be found with **Search → All videos** or a pasted YT link, then played in the regular player and queue. Podcast directories, RSS feeds, and subscriptions are not supported. Recently played history stores public track metadata and original artwork references locally; **Home → More (⋮) → Clear listening history** removes it. BlackYT does not create fake playlists or fetch recommendations automatically.
+Bottom navigation has **Home**, **Search**, **Library**, and **Queue**. Home includes **Jump back in** and editable Explore topics. Search offers **Music**, **All videos**, and **Creators**. All videos can find talks, interviews, lectures, podcasts, music and other public YT videos. Spoken discovery uses video search and creator browsing; BlackYT does not label videos automatically as podcasts and has no podcast directory, RSS reader, or subscription system. Recently played history stores public track metadata and original artwork references locally; **Home → More (⋮) → Clear listening history** removes it.
 
-Search uses a compact field with a Search action and keyboard Search/Enter submission. Choose **Music** or **All videos**, and open **Filters** for optional include-any and exclude-any terms. The last eight search phrases are stored locally and can be cleared. Use **Load more** for further results, up to 200 matches; tapping a result plays it immediately, while **Add** appends it to the FIFO queue. Queue tracks can be removed.
+Search uses a compact field with a Search action and keyboard Search/Enter submission. Choose **Music**, **All videos**, or **Creators**. Video search has optional Filters for include-any and exclude-any terms. Open a creator to browse its Videos page, load more, and save that creator. You can share a supported YT link to BlackYT or open it from another app. BlackYT shows a preview without autoplay and retains supported timestamps such as `t=205s` (3:25). Tapping a result plays it; **Add** appends it to the FIFO queue. Queue tracks can be removed.
 
 A miniplayer appears above the bottom navigation only while a track is current. Tap it to open full **Now Playing**; Back returns. The full player provides seeking, Previous, Play/Pause, Next, Queue, and **More**, with Stop and Retry under More. Track starts and button presses show immediate visual feedback. Swipe across the artwork or miniplayer left for next and right for previous; short vertical drags do not skip. The FIFO queue does not wrap at either end and lasts for the current app session.
 
 Audio streams directly over HTTPS from YT's Googlevideo host to the phone. There are no offline downloads or sign-in; YT can change its service and availability.
 
-## Historical checks and current verification
+Tap a bookmark to save an episode in **Library**. Its metadata and listening progress stay on the phone; tapping it later resumes playback, unless 30 seconds or less remain, in which case it starts from the beginning. Saved creators are local too; opening one fetches its latest videos over the internet. Library entries are links, not offline audio. On Home, use **Edit** beside Explore to add a topic, edit its name or search phrase, move it, remove it, or restore the defaults. These features need no account or cloud sync.
 
-Local build checks passed nine release unit tests and lint with zero errors and 17 warnings. Pixel 10 Pro XL checks passed for live search, links, Music/All videos, filters, pagination, artwork, navigation, queue controls, header spacing, native press feedback and artwork/miniplayer swipes. Vertical and short drags did not skip; queue boundaries did not wrap; taps worked after swiping. A silent track played for its full 208.564 seconds and advanced naturally. The complete 120-second sample stayed locked with the display off, and both conditions still held when the next track began. Playback used mobile data while USB remained connected; unplugged operation was not retested for v0.4.2. The installed APK hash matched the tested build. Owner audible and visual acceptance of v0.4.2 remains pending. Other phones are unverified. See [verification details](../android/docs/verification-v0.4.2.json).
+## v0.5.0 phone checks
 
-See the [FAQ](FAQ.md), [troubleshooting guide](TROUBLESHOOTING.md), and [offline HTML guide](../android/docs/native-android.html). Updates require the same signing key as the installed release; install over the existing app instead of uninstalling if you want to retain app data.
+The phone journey passed: a shared `youtu.be` link with `t=205s` opened a preview without autoplay and played from 205 seconds when selected; the saved episode retained that resume point after recreating the Library activity. A Wes Roth creator search opened its Videos page, paged results, saved the creator, and reopened its latest videos from Library. Explore add/edit persisted and the edited topic launched an All videos search. With the activity finished, Media3 playback continued muted for 35 seconds with the screen locked and display off. See [verification-v0.5.0.json](../android/docs/verification-v0.5.0.json) for final automated results. This muted check does not establish audible acceptance. Other devices are unverified.
+
+See the [FAQ](FAQ.md), [troubleshooting guide](TROUBLESHOOTING.md), and [offline HTML guide](https://github.com/ezzye/BlackYT/releases/download/v0.5.0/BlackYT-Android-Guide.html). Updates require the same signing key as the installed release; install over the existing app instead of uninstalling if you want to retain app data.
 
 ## Legacy Termux + Chrome PWA (v0.2.0)
 
@@ -192,3 +194,5 @@ Then uninstall **BlackYT Phone** from Android/Chrome. If you no longer use the s
 The repository records 22 passing backend tests, passing mocked installer checks, and physical Pixel evidence for phone-local Prince playback (HTTP 206, audio/mp4, advancing playback) plus the owner's confirmation that it was audible. The owner also confirmed that the manual queue worked after tapping the correct control. The owner subsequently confirmed two minutes with the screen locked on the phone-local version. A locked queue transition and exact disconnected/mobile-data conditions were not separately restated. The portable ZIP is a new installation route with mocked installer and package checks; a clean physical-phone install from that exact release has not been repeated. Review the `evidence/` files for detail.
 
 Termux's own [installation guidance](https://github.com/termux/termux-app#installation) and [Android lifecycle notes](https://github.com/termux/termux-app#termux-on-android-11) explain its distribution and background limits. BlackYT uses yt-dlp and its EJS support for an unofficial access route; see the [yt-dlp FAQ](https://github.com/yt-dlp/yt-dlp/wiki/FAQ) and [EJS documentation](https://github.com/yt-dlp/yt-dlp/wiki/EJS). Availability can change, and audio may include creator messages or promotions. BlackYT does not remove them.
+
+Final v0.5.0 checks: **20 release unit tests and 14 phone instrumentation tests passed**; release lint had zero errors and 19 warnings. A complete 208.564-second song advanced naturally to the next queued track on mobile data. The full two-minute sample stayed locked/display asleep, and both conditions held at the next track. USB remained connected; playback was app-muted. See the versioned verification JSON for evidence and limits.

@@ -1,0 +1,90 @@
+{
+  "version": "0.5.0-native",
+  "versionCode": 50,
+  "date": "2026-10-16",
+  "sourceCommit": "ea1b362b353b3d330280abaff4e6a83d33affc6a",
+  "device": "Pixel 10 Pro XL",
+  "apkSha256": "7ead63971a557db3d94ccc96d768bf516718d4e11729246dda5012e3ed996bcf",
+  "signingCertificateSha256": "6a475af54a417cdcf425f38bd599227d29b6cd8d4e31ddc1346fe00d475bacf8",
+  "installedHashMatched": true,
+  "releaseUnitTests": {
+    "passed": 20,
+    "failures": 0
+  },
+  "releaseLint": {
+    "errors": 0,
+    "warnings": 19
+  },
+  "phoneInstrumentation": {
+    "passed": 14,
+    "failures": 0,
+    "storeTests": 7,
+    "transportRetryTests": 4,
+    "liveCreatorBrowsing": 1,
+    "shareLibraryExploreJourney": 1,
+    "nativeUiSearchQueueSwipes": 1
+  },
+  "listeningJourney": {
+    "sharedShortLink": true,
+    "shareDidNotAutoplay": true,
+    "openLinkPreviewWithoutAutoplay": true,
+    "pasteVideoWhileCreatorsSelected": true,
+    "sharedTimestampMs": 205000,
+    "creatorSearch": true,
+    "actualCreatorVideos": true,
+    "creatorInitialRows": 50,
+    "savedCreatorReopened": true,
+    "exploreAddEditSearch": true,
+    "savedEpisodeActivityRestart": true,
+    "libraryResume": true,
+    "screenOffLockedSeconds": 35,
+    "serviceProgressWithActivityAbsentMs": 28518,
+    "appMuted": true,
+    "appViewRendersOnly": true
+  },
+  "storeProcessRestart": {
+    "differentAppProcess": true,
+    "savedProgressMs": 241000,
+    "savedCreator": true,
+    "customExploreTile": true
+  },
+  "phoneChecks": {
+    "musicSearchArtworkPagination": true,
+    "shortLinkShareAndOpenPreviewNoAutoplay": true,
+    "timestampsStartAt205Seconds": true,
+    "pasteLinkWhileCreatorsSelected": true,
+    "creatorVideosAndContinuation": true,
+    "creatorSaveReopen": true,
+    "episodeSaveAndResume": true,
+    "exploreAddEditAllVideosSearch": true,
+    "exploreStoreMoveRemoveReset": true,
+    "artworkAndMiniplayerSwipes": true,
+    "queueBoundariesAndRemoval": true,
+    "tapsAfterSwipesAndNativeFeedback": true,
+    "singleRefreshAfter403PreservesByteRange": true,
+    "second403RemainsAnError": true
+  },
+  "screenOffPlayback": {
+    "muted": true,
+    "sampleMs": 120000,
+    "continuouslyLockedInSample": true,
+    "continuouslyNoninteractiveInSample": true,
+    "firstTrackNaturalDurationMs": 208564,
+    "seekToEndUsed": false,
+    "automaticNext": true,
+    "lockedAtNext": true,
+    "displayOffAtNext": true,
+    "networkTransport": "cellular",
+    "usbConnected": true
+  },
+  "limitations": [
+    "Automated playback was app-muted; owner audible and everyday touch acceptance of this update is pending.",
+    "A stream returned HTTP 403 during earlier checks. Fresh requests and playback of the same video succeeded; a geographic restriction was not established.",
+    "The app refreshes a refused stream once; individual videos may remain unavailable.",
+    "Some earlier UI checks encountered harness timing and duplicate-title selection problems. Final isolated-data checks passed.",
+    "UI resume was tested after Activity recreation. Storage was also tested in a separate app process; the store component was unchanged by the later transport retry update.",
+    "Other Android devices are unverified.",
+    "No RSS feeds, cloud sync, offline audio or automatic creator-feed refresh."
+  ],
+  "screenshots": "Own-app view renders with public examples and isolated Library/Explore/history data. Some views were laid out while the display slept; no system, lock-screen or personal content."
+}

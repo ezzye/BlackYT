@@ -2,7 +2,7 @@
 
 ## Which devices can run BlackYT?
 
-BlackYT is for Android only and requires Android 8.0 or newer. iPhone and iPad are not supported now. An iOS app is planned for later, with no release date. The v0.4.2 release passed phone checks on a Pixel 10 Pro XL; owner audible and visual acceptance of this version is still pending, and other devices are unverified.
+BlackYT is for Android only and requires Android 8.0 or newer. iPhone and iPad are not supported now. An iOS app is planned for later, with no release date. The v0.5.0 phone journey passed the share-preview, timestamp, creator, Library, Explore, and muted screen-off checks described below. Other devices and audible acceptance are not established.
 
 ## Do I need Developer options, USB debugging, or a computer?
 
@@ -16,7 +16,7 @@ If you see a Play Protect, “not verified,” developer-verification, work, or 
 
 ## How do I install it?
 
-Open the [v0.4.2 release page](https://github.com/ezzye/BlackYT/releases/tag/v0.4.2) and download **BlackYT-Android-v0.4.2.apk** from Assets. See [INSTALL.md](INSTALL.md) for steps.
+Open the [v0.5.0 release page](https://github.com/ezzye/BlackYT/releases/tag/v0.5.0) and download **BlackYT-Android-v0.5.0.apk** from Assets. See [INSTALL.md](INSTALL.md) for steps.
 
 ## Why is the app called BlackYT when my old icon says BlackYT Phone?
 
@@ -26,9 +26,13 @@ Open the [v0.4.2 release page](https://github.com/ezzye/BlackYT/releases/tag/v0.
 
 The v0.4.2 release adds a clearer bird-and-headphones launcher icon, including an Android themed-icon version, plus immediate visual feedback when starting tracks and pressing controls. Swipe left or right across artwork or the miniplayer to move through the queue; short vertical drags do not skip, and queue ends do not wrap. The app also has Home, Search, and Queue navigation; Home's Jump back in row and six example Explore search shortcuts; Music/All videos search, filters and pages; and a Now Playing screen with seeking, Previous, Play/Pause, Next, Queue, Stop and Retry.
 
+## What is new in v0.5.0?
+
+Share or open a supported YT video link in BlackYT to see a preview without autoplay. `youtu.be` links and timestamps are supported; for example, `t=205s` starts at 3:25 after you choose to play. Search offers **Music**, **All videos**, and **Creators**; open a creator to browse and page through its Videos, then save it to Library. Library saves episode metadata and listening progress and keeps saved creators on the phone. Episodes within 30 seconds of the end resume from the beginning. Explore topics can be added, edited, moved, removed, or restored to defaults. There is no account or cloud sync, offline audio, podcast directory, RSS reader, or subscription system.
+
 ## Can I listen to podcasts, and are the Explore tiles a limited catalog?
 
-The six Explore tiles are shortcuts for example searches, not the full set of topics. Search for any genre, artist, topic, or title. Podcast episodes available through YT can be found with **Search → All videos** or by pasting a YT link, then played in the usual player and queue. BlackYT does not have a podcast directory, RSS feed support, or podcast subscriptions.
+Explore topics are editable search shortcuts, not a fixed catalog. Add or edit a topic name and search phrase, move it, remove it, or restore the starter set. Spoken videos available through YT can be found with **Search → All videos** or **Creators** channel browsing. BlackYT does not have a podcast directory, RSS reader, or subscription system.
 
 ## How do Play and Add differ?
 
@@ -40,7 +44,7 @@ Choose **Music** or **All videos** in Search. Music classification depends on YT
 
 ## Does BlackYT download songs or need an account?
 
-No. It streams audio to the phone and needs an internet connection. It has no offline library, and there is no BlackYT sign-in or hosting account. Mobile-data and battery use depend on how long you listen and on your device and network plan.
+No. It streams audio to the phone and needs an internet connection. Library saves episode links, metadata, and resume progress, not audio files. Saved creators fetch videos when opened and also need internet. There is no BlackYT sign-in or hosting account. Mobile-data and battery use depend on how long you listen and on your device and network plan.
 
 ## What permissions does BlackYT need?
 
@@ -48,7 +52,7 @@ It needs internet access to search and stream. While music plays, Android can sh
 
 ## Why does playback stop after I close the app?
 
-The queue is kept in the running app session and can be lost if Android stops BlackYT, you force-stop it, or the phone restarts. Recent search phrases (up to eight) and recently played public track metadata (up to 12) are stored locally; search history has Clear; listening history is cleared from **Home → More (⋮) → Clear listening history**. No automatic recommendation service fills Home.
+The queue is kept in the running app session and can be lost if Android stops BlackYT, you force-stop it, or the phone restarts. Saved episodes, progress, creators, and Explore edits persist locally in Library and Home. Recent search phrases (up to eight) and recently played public track metadata (up to 12) are stored separately; search history has Clear; listening history is cleared from **Home → More (⋮) → Clear listening history**. No automatic recommendation service fills Home.
 
 ## Can I install an update over my existing copy?
 
@@ -60,4 +64,17 @@ Check your connection and tap **Retry current song** to request a fresh stream l
 
 ## Can I listen to spoken YT videos like a podcast?
 
-Yes. Choose **Search → All videos** and paste a spoken video link, or search for interviews, news, lectures or a creator. For example, the [Wes Roth link supplied by the owner](https://www.youtube.com/watch?v=EmaXeEdlJkI&t=205s) is a video link, not an RSS feed. Individual episodes still depend on YT availability. Link timestamps are currently ignored: `t=205s` means 3:25, so move the playback slider there manually after starting. There is no podcast subscription or RSS reader yet. This particular episode has not been device-tested.
+Yes. Choose **Search → All videos** for spoken videos or **Creators** to find a channel and browse its Videos. The phone journey passed for the [Wes Roth link supplied by the owner](https://www.youtube.com/watch?v=EmaXeEdlJkI&t=205s): BlackYT previewed the shared link without autoplay, then started at 3:25 after selection. The episode’s saved resume position persisted after the Library activity was recreated. Individual videos depend on YT availability. BlackYT does not provide a podcast directory, RSS reader, or podcast subscriptions.
+
+
+## What has been checked on a phone in v0.5.0?
+
+The exercised journey passed for shared-link preview and timestamped playback, Library resume after activity recreation, Wes Roth creator search and Videos paging, save/reopen creator fetch, Explore add/edit and All videos search, and 35 seconds of muted screen-off playback with the activity finished. See [verification-v0.5.0.json](../android/docs/verification-v0.5.0.json) for final automated results. Other phones and audible acceptance are not established by this check.
+
+## Does a 403 error mean a geographic block?
+
+A 403 is an HTTP refusal, and does not identify its cause. In the Pixel checks an earlier music-stream 403 was followed by successful fresh requests and playback of that same video. A geographic block was not established. Temporary stream addresses and differences in client requests can also matter. BlackYT automatically requests one fresh stream address after a 403. If it still fails, try **Retry current song**, or choose another available upload. Comparing the same video in the official YT app on the same phone and network can help identify a content restriction. Respect any country or rights restriction shown there; BlackYT does not promise access to every result.
+
+See [YT region-availability help](https://support.google.com/youtube/answer/92571?hl=en) and [Android's HTTP playback error reference](https://developer.android.com/reference/androidx/media3/common/PlaybackException#ERROR_CODE_IO_BAD_HTTP_STATUS).
+
+Final v0.5.0 checks: **20 release unit tests and 14 phone instrumentation tests passed**; release lint had zero errors and 19 warnings. A complete 208.564-second song advanced naturally to the next queued track on mobile data. The full two-minute sample stayed locked/display asleep, and both conditions held at the next track. USB remained connected; playback was app-muted. See the versioned verification JSON for evidence and limits.

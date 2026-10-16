@@ -1,7 +1,9 @@
 # Roadmap
 
-BlackYT v0.4.0 (versionCode 40) includes Home/Search/Queue bottom navigation; a Home screen with locally saved Jump back in tracks and interest tiles that start real searches; compact search with Music/All videos and optional Filters; paged search up to 200 matches; and a conditional miniplayer that opens full Now Playing.
+The current native release is v0.5.0 (versionCode 50). It includes Home/Search/Library/Queue navigation, Android Share/Open handling for supported YT links with timestamps and preview-before-play, Music/All videos/Creators discovery, paged creator Videos, locally saved episodes and creators, and editable Explore topics.
 
-Recent play history stores up to 12 entries of public track metadata and original artwork references locally. Search history stores up to eight phrases locally. Both have a Clear action. Results and queues use explicit Play, FIFO Add, and remove actions. No fake playlists or automatic recommendation fetches are planned.
+Saved episodes retain listening progress and restart from the beginning when 30 seconds or less remain. Saved creators fetch their latest videos when opened. Library data and Explore edits stay on the phone, with no account or cloud sync and no offline audio. Existing music search, queue, direct streaming, and Media3 background playback are preserved.
+
+Spoken videos are discovered through All videos search, shareable YT links, and creator browsing. They are not classified by a podcast detector. BlackYT does not include a podcast directory, RSS feeds, or subscriptions.
 
 An iOS app for iPhone and iPad is planned for later; there is no release date. BlackYT remains Android only today.

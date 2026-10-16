@@ -6,7 +6,7 @@ Start with the issue that best matches what you see. For safety warnings about t
 
 | What you see | What to do |
 | --- | --- |
-| Release page or APK is missing | Use the [v0.4.2 release page](https://github.com/ezzye/BlackYT/releases/tag/v0.4.2) and choose **BlackYT-Android-v0.4.2.apk** under **Assets**, not the source-code ZIP. |
+| Release page or APK is missing | Use the [v0.5.0 release page](https://github.com/ezzye/BlackYT/releases/tag/v0.5.0) and choose **BlackYT-Android-v0.5.0.apk** under **Assets**, not the source-code ZIP. |
 | I cannot find the downloaded APK | In Chrome, open **⋮ → Downloads**. Or open Android's **Files** app and choose **Downloads**. Look for the exact `.apk` filename. Wait for the download to finish before opening it. |
 | Android says Chrome or Files cannot install apps from this source | Android controls this separately for each app that opens an APK. On a Pixel, go to **Settings → Apps → Special app access → Install unknown apps → Chrome → Allow from this source**. If Files opened the APK, choose Files instead. Return to Downloads and open the APK again. Labels differ on other phones. You can turn the permission off after installation. [Google Pixel help](https://support.google.com/pixelphone/answer/7391672). |
 | Android shows a Play Protect, “not verified,” developer-verification, work, or school warning or block | Stop. Do not turn off Play Protect or bypass the warning. Contact the project maintainer, your organization administrator, or consult the [Android developer verification FAQ](https://developer.android.com/developer-verification/guides/faq?hl=en). |
@@ -22,13 +22,24 @@ Start with the issue that best matches what you see. For safety warnings about t
 | Recent searches or played tracks should be cleared | Use **Clear** for search history or **Home → More (⋮) → Clear listening history** for played tracks. Up to eight search phrases and 12 recently played public-metadata entries are stored locally. |
 | Load more stops returning items | Results are paged up to a cap of 200. Try a shorter or more specific search phrase. |
 | A result is missing | Choose **All videos**. YT labels are not always complete, so Music classification may omit a wanted result. |
-| A result does not start, or you see an HTTP 403/network error | Check that the phone is online and tap **Retry current song**. Retry asks for a fresh stream link. Try another result if it remains unavailable. Some videos may be restricted or blocked, and YT can change its service. |
+| A result does not start, or you see an HTTP 403/network error | Check that the phone is online and tap **Retry current song**. BlackYT first attempts one fresh stream link automatically after a 403. Retry asks again if the failure remains. Try another result if it remains unavailable. Some videos may be restricted or blocked, and YT can change its service. |
 | The song is playing but I hear nothing | Check the phone's media volume, mute setting, Bluetooth output, connected headphones, and the app's Play/Pause control. Check whether Android routed audio to another connected device. Then try another result. |
 | Playback stops when the screen turns off | Reopen BlackYT and resume. Check only BlackYT's app-specific battery setting, if your phone provides one: **Settings → Apps → BlackYT → App battery usage**. On Pixels this may be shown as **Allow background usage**. Keep the general battery optimization setting at its recommended value; do not disable optimization for all apps. Android and manufacturers may still stop background work. [Google Pixel battery guidance](https://support.google.com/pixelphone/answer/6090599). |
 | Next does nothing, or the queue is empty | **Add** appends to the FIFO queue; it does not start playback. Tap a result to start it, then add more. Next advances through queued tracks. |
 | A swipe does not change tracks, or a short drag skips | Swipe horizontally across the artwork or miniplayer: left goes to the next queued track and right goes to the previous one. Short vertical drags and taps should not skip. The queue does not wrap at its first or last item. |
 | My queue disappeared | The queue lasts only for the current app session. Force-stopping BlackYT, the phone restarting, or Android ending its process can clear it. Pressing Home or locking the screen while music plays is supported. Recent search phrases are saved separately, up to eight. |
 | Mobile-data playback uses too much data | Streaming uses your phone's data plan. Prefer Wi-Fi when available or stop playback. BlackYT does not save music for offline listening. |
+
+## Links, Library, and Explore
+
+| What you see | What to do |
+| --- | --- |
+| BlackYT does not appear in Share/Open | Choose Copy link and paste the YT link into BlackYT Search. Supported public video links include `youtu.be`; availability also depends on Android’s app chooser. |
+| A shared link shows a preview but does not play | That is expected. Tap its video result to start playback. The preview does not autoplay. A timestamp such as `t=205s` starts at 3:25 after you select the result. |
+| I cannot find a spoken episode | Choose **All videos** and try the show, guest, or topic name. Choose **Creators** to search for a channel; open it to browse Videos and use **Load more**. BlackYT does not automatically label videos as podcasts. |
+| A saved episode is missing or starts at the beginning | Open **Library** and check Saved episodes. If 30 seconds or less remained, beginning playback is intentional. See [verification-v0.5.0.json](../android/docs/verification-v0.5.0.json) for final persistence checks. |
+| A saved creator has no current videos | Open it while connected to the internet; Library stores the creator link and fetches its latest videos when tapped. |
+| My Explore topic disappeared | Open **Home → Edit** beside Explore. Restore defaults replaces the list with starter topics; removed topics are not recovered individually. |
 
 
 ## App and device questions
