@@ -12,18 +12,18 @@ Search phrases, video/creator lookups, artwork requests and audio requests go di
 
 Saved episodes and creators, resume progress, recent searches, listening history, filters and Explore topics are stored in app-private local preferences. There is no app-operated cloud sync or analytics upload. The application sets `allowBackup=false` and disallows cleartext traffic. These controls do not promise protection against every OS backup/transfer behaviour, compromised device, system service, or forensic access. Uninstalling or clearing app storage removes local saves.
 
-Debug builds may write bounded local diagnostic files. Release diagnostic-file writing is disabled. In the v0.5.2 candidate, playback-state logging that includes video identifiers is debug-only. No signed stream URLs should be printed or submitted in bug reports.
+Debug builds may write bounded local diagnostic files. Release diagnostic-file writing is disabled. In the v0.6.0 candidate, playback-state logging that includes video identifiers is debug-only. No signed stream URLs should be printed or submitted in bug reports.
 
-## v0.5.2 candidate: prepare likely next items
+## v0.6.0 candidate: playlists, suggestions and preparation
 
-In **More options → Playback preparation**, choose **Off**, **Unmetered connections (default)**, or **Wi-Fi and mobile data**. Android's network metering flag is respected; a metered Wi-Fi network is treated as metered. This prepares stream addresses, not audio downloads.
+Named playlists and their saved video metadata are stored locally on the device. **Play playlist** explicitly replaces the current queue; **Add all** appends playlist items and preserves current playback. Library and playlist data do not sync to an account or cloud. Suggestions are opt-in: **Find more like these** can use up to two creator pages and two searches and returns at most 12 items. The label **New to this playlist** is not a verified upload date. BlackYT never adds suggestions automatically.
 
-The next two queued items take priority, followed by up to three currently visible results/history/Library entries. At most five candidates are considered at once, one speculative task runs at a time, and at most eight item-preparation attempts start in a rolling minute. Pending visible candidates are replaced as the screen changes and cleared when the activity pauses. New speculation pauses while playback buffers. One request already running may finish after a screen change or switching Off.
+Playback preparation targets the next two queued items and the first visible item. When stable format identity exists, it may retain a per-item prefix of at most 384 KiB in an on-device least-recently-used cache capped at 32 MiB. It prepares a bounded opening chunk, rather than providing an offline download library; very short clips can fit entirely within that cap. Preparation is off, unmetered by default, or allowed on Wi-Fi and mobile data; no more than eight items per minute are prepared. Turning it off cancels pending work and clears the cache asynchronously. Unknown identity or cache failure falls back to direct playback. Streaming remains directly from the device to YT. Instant starts and Spotify feature parity are not promised.
 
-Resolved metadata is kept in an in-memory cache with at most 64 entries and a five-minute freshness window. Concurrent requests for the same item share a load. Every playback still rechecks its filters; a refused HTTP 403 stream can be refreshed once. Preparation makes extra YT requests before a tap; use Off if you prefer requests only when needed. Connection setup, audio buffering, unavailable content and network changes can still cause delays. Instant starts and offline playback are not promised.
+Existing search filters are still checked on playback, and original-track handling remains. A changed source format can require tapping **Retry current song**. Preparation issues should not be described as offline playback or guaranteed speed improvements.
 
-## Evidence and limits (17 October 2026)
+## Validation status
 
-The candidate passed 33 debug unit tests, including seven cache/concurrency tests, and release APK compilation. Phone instrumentation tests compile. Release lint has zero errors and 19 warnings. This pass reviewed source, release dependency metadata and the merged release manifest; it did not capture runtime network traffic or test the new candidate on a physical Pixel. The previous v0.5.1 phone results do not validate the new preparation feature. Keep public speed claims conditional until measured on a phone.
+The release candidate builds and passes all 41 JVM unit tests. Release lint reports zero errors and 19 warnings; Android instrumentation tests compile but have not been run. No phone or emulator test has been run for v0.6.0; Pixel testing is deferred by the owner. The public stable APK remains v0.5.1 pending a separate release. Prior-version device results do not validate this candidate.
 
 Contact: blackyt@streamit2.me · Unsigned Media Ltd.

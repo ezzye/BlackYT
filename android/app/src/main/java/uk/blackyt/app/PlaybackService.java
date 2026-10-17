@@ -16,6 +16,7 @@ import androidx.media3.common.util.UnstableApi;
 import androidx.media3.datasource.DataSource;
 import androidx.media3.datasource.DataSpec;
 import androidx.media3.datasource.okhttp.OkHttpDataSource;
+import androidx.media3.datasource.cache.CacheDataSource;
 import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory;
 import androidx.media3.session.MediaSession;
@@ -34,6 +35,7 @@ public final class PlaybackService extends MediaSessionService {
     private ExoPlayer player;
     private MediaSession session;
     private ListeningStore listening;
+    private String pinnedMediaId = "";
     private final android.os.Handler progressHandler = new android.os.Handler(android.os.Looper.getMainLooper());
     private final java.util.concurrent.ExecutorService progressWrites = java.util.concurrent.Executors.newSingleThreadExecutor();
     private final Runnable progressTick = new Runnable() {
@@ -56,22 +58,47 @@ public final class PlaybackService extends MediaSessionService {
             try {
                 if (fresh) Log.i(TAG, "Refreshing a refused YT audio stream once");
                 YouTubeRepository.Resolved result = repository.resolve(item.id, item.rules, fresh);
+                String expectedKey = AudioPrefixCache.key(item.id, item.rules, result);
+                if (result.formatKey != null && !result.formatKey.isEmpty()
+                        && !PlaybackFormatPins.accept(item.id, result.formatKey))
+                    throw new AudioFormatChangedException();
+                if (dataSpec.key != null && !dataSpec.key.equals(expectedKey)) {
+                    throw new AudioFormatChangedException();
+                }
                 // The repository validates this host against googlevideo.com; never log its URL.
                 Log.i(TAG, "Resolved YT audio source host=" + result.sourceHost);
                 return android.net.Uri.parse(result.url);
+            } catch (AudioFormatChangedException changed) {
+                throw changed;
             } catch (Exception failure) {
                 Log.w(TAG, "Resolution failed (" + failure.getClass().getSimpleName() + ")");
                 throw new IOException("Unable to resolve this audio item.");
             }
         });
+        DataSource.Factory playbackFactory = () -> {
+            AudioPrefixCache preparedCache = AudioPrefixCache.peek();
+            if (preparedCache == null) return ownedOnly.createDataSource();
+            try { return new KeyedAudioCacheDataSource(preparedCache.factory(ownedOnly), ownedOnly); }
+            catch (RuntimeException unavailable) {
+                Log.w(TAG, "Audio cache unavailable; using direct playback");
+                return ownedOnly.createDataSource();
+            }
+        };
         player = new ExoPlayer.Builder(this)
-                .setMediaSourceFactory(new DefaultMediaSourceFactory(this).setDataSourceFactory(ownedOnly))
+                .setMediaSourceFactory(new DefaultMediaSourceFactory(this).setDataSourceFactory(playbackFactory))
                 .setWakeMode(C.WAKE_MODE_NETWORK)
                 .setAudioAttributes(new AudioAttributes.Builder().setUsage(C.USAGE_MEDIA)
                         .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC).build(), true)
                 .build();
         player.addListener(new Player.Listener() {
             @Override public void onEvents(Player source, Player.Events events) { updateQueuePreparation(); }
+
+            @Override public void onMediaItemTransition(@Nullable MediaItem item, int reason) {
+                String nextId = item == null ? "" : item.mediaId;
+                if (!pinnedMediaId.isEmpty() && !pinnedMediaId.equals(nextId))
+                    PlaybackFormatPins.clear(pinnedMediaId);
+                pinnedMediaId = nextId;
+            }
 
             @Override public void onPlaybackStateChanged(int state) {
                 if (BuildConfig.DEBUG) Log.i(TAG, "BlackYTPlayback:state state=" + stateName(state)
@@ -165,7 +192,7 @@ public final class PlaybackService extends MediaSessionService {
         }
     }
 
-    private static NativeMediaItems.OwnedItem parseOwnedDataSpec(DataSpec spec) throws IOException {
+    static NativeMediaItems.OwnedItem parseOwnedDataSpec(DataSpec spec) throws IOException {
         try {
             String pathId = spec.uri.getLastPathSegment();
             MediaItem item = new MediaItem.Builder().setMediaId(pathId == null ? "" : pathId)
@@ -190,6 +217,7 @@ public final class PlaybackService extends MediaSessionService {
     @Override public void onDestroy() {
         PlaybackPreparation.get(this).update("queue", java.util.Collections.emptyList());
         PlaybackPreparation.get(this).setPlaybackBusy(false);
+        PlaybackFormatPins.clear(pinnedMediaId);
         saveCurrentProgress();
         progressHandler.removeCallbacksAndMessages(null);
         progressWrites.shutdown();

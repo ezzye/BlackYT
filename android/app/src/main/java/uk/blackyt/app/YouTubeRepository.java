@@ -181,6 +181,8 @@ public final class YouTubeRepository {
         public final long durationSeconds;
         public final String sourceHost;
         public final String artworkUrl;
+        /** Stable selected-stream identity for the on-device prefix cache; never a signed URL. */
+        public final String formatKey;
 
         public Resolved(String url, String mimeType, String title, String channel,
                         long durationSeconds, String sourceHost) {
@@ -189,6 +191,11 @@ public final class YouTubeRepository {
 
         public Resolved(String url, String mimeType, String title, String channel,
                         long durationSeconds, String sourceHost, String artworkUrl) {
+            this(url, mimeType, title, channel, durationSeconds, sourceHost, artworkUrl, "");
+        }
+
+        public Resolved(String url, String mimeType, String title, String channel,
+                        long durationSeconds, String sourceHost, String artworkUrl, String formatKey) {
             this.url = url;
             this.mimeType = mimeType;
             this.title = title;
@@ -197,6 +204,7 @@ public final class YouTubeRepository {
             this.sourceHost = sourceHost;
             String safeArtwork = safeArtworkUrl(artworkUrl);
             this.artworkUrl = safeArtwork;
+            this.formatKey = formatKey == null ? "" : formatKey;
         }
     }
 
@@ -339,8 +347,19 @@ public final class YouTubeRepository {
 
             String url = selected.getUrl();
             String host = requireGoogleVideoUrl(url);
+            String trackId = nullToEmpty(selected.getAudioTrackId());
+            String trackType = selected.getAudioTrackType() == null ? "" : selected.getAudioTrackType().name();
+            String codec = nullToEmpty(selected.getCodec());
+            String mime = nullToEmpty(selected.getFormat().getMimeType()).toLowerCase(Locale.ROOT);
+            String formatKey = selected.getItag() > 0 && (!trackId.isEmpty() || !trackType.isEmpty())
+                    && !codec.isEmpty()
+                    && selected.getBitrate() > 0 && !mime.isEmpty()
+                    ? selected.getItag() + ":" + trackId + ":" + trackType
+                            + ":" + mime + ":" + codec + ":" + selected.getBitrate()
+                    : "";
             Resolved result = new Resolved(url, selected.getFormat().getMimeType(),
-                    title, channel, info.getDuration(), host, bestSafeThumbnail(info.getThumbnails()));
+                    title, channel, info.getDuration(), host, bestSafeThumbnail(info.getThumbnails()),
+                    formatKey);
             return new CachedResolved(result, SystemClock.elapsedRealtime(), musicCategory);
         } catch (IOException e) {
             throw e;
@@ -353,7 +372,9 @@ public final class YouTubeRepository {
 
     public void invalidate(String inputId) {
         try {
-            resolvedCache.invalidate(normalizeVideoId(inputId));
+            String id = normalizeVideoId(inputId);
+            resolvedCache.invalidate(id);
+            PlaybackFormatPins.clear(id);
         } catch (IllegalArgumentException ignored) {
             // Invalid input has no cache entry.
         }

@@ -130,6 +130,15 @@ public final class MainActivity extends android.app.Activity {
     }
     private Object platformBackCallback;
     private final List<RecentTrack> history = new ArrayList<>();
+    private PlaylistStore playlists;
+    private boolean selectingPlaylistItems;
+    private final java.util.LinkedHashMap<String, YouTubeRepository.Track> selectedPlaylistItems = new java.util.LinkedHashMap<>();
+    private final List<PlaylistSuggestionRow> suggestionRows = new ArrayList<>();
+    private boolean suggestionsLoading;
+    private String openPlaylistId;
+    private long suggestionGeneration;
+    private long suggestionSearchGeneration = -1;
+    private String suggestionTargetPlaylistId;
     private String lastRememberedId = "";
     private ListeningStore listening;
     private boolean creatorMode;
@@ -150,6 +159,16 @@ public final class MainActivity extends android.app.Activity {
             this.track = track;
             this.rules = rules;
         }
+    }
+    private static final class PlaylistSuggestionRow {
+        final YouTubeRepository.Track track; final YouTubeRepository.Rules rules; final String why;
+        PlaylistSuggestionRow(YouTubeRepository.Track track, YouTubeRepository.Rules rules, String why) {
+            this.track=track; this.rules=rules; this.why=why;
+        }
+    }
+    private static final class CreatorSuggestionSource {
+        final String url,name;
+        CreatorSuggestionSource(String url,String name) { this.url=url; this.name=name; }
     }
     private final Runnable ticker = new Runnable() {
         @Override public void run() {
@@ -193,6 +212,7 @@ public final class MainActivity extends android.app.Activity {
         musicMode = ui.getBoolean("music", true);
         creatorMode = ui.getBoolean("creator_mode", false);
         listening = new ListeningStore(this);
+        playlists = new PlaylistStore(this);
         includeFilter = ui.getString("include", "");
         excludeFilter = ui.getString("exclude", "");
         getWindow().setStatusBarColor(BG);
@@ -525,6 +545,7 @@ public final class MainActivity extends android.app.Activity {
         resultsBox.setVisibility(View.VISIBLE);
         scheduleVisiblePreparation();
         if (creatorMode || creatorPageUrl != null) { renderCreatorResults(); return; }
+        if (suggestionTargetPlaylistId != null || suggestionSearchGeneration != searchGeneration) clearSuggestions();
         if (results.isEmpty()) {
             if (hasSearched && !searchLoading) resultsBox.addView(text("No matches. Try another search or adjust your filters.", 14, MUTED, false),
                     lp(-1, -2, 0, 4, 0, 10));
@@ -533,6 +554,12 @@ public final class MainActivity extends android.app.Activity {
         }
         LinearLayout resultHeading = row();
         resultHeading.addView(text("Results", 17, CREAM, true), new LinearLayout.LayoutParams(0, dp(48), 1));
+        if (!selectingPlaylistItems) {
+            TextView select=text("Select",13,LIME,true); select.setGravity(Gravity.CENTER);
+            select.setContentDescription("Select results to create or fill a playlist");
+            select.setOnClickListener(v -> { selectingPlaylistItems=true; selectedPlaylistItems.clear(); renderSearchResults(); });
+            resultHeading.addView(select,lp(dp(64),dp(48),0,0,8,0));
+        }
         TextView clear = text("Clear", 13, MUTED, true);
         clear.setGravity(Gravity.CENTER);
         clear.setContentDescription("Clear search results");
@@ -540,9 +567,39 @@ public final class MainActivity extends android.app.Activity {
         clear.setOnClickListener(v -> clearResults());
         resultHeading.addView(clear, lp(dp(60), dp(48), 0, 0, 0, 0));
         resultsBox.addView(resultHeading);
+        if (selectingPlaylistItems) {
+            LinearLayout selectionActions=row();
+            Button all=button("Select all",false); all.setContentDescription("Select all loaded results");
+            all.setOnClickListener(v -> { for (YouTubeRepository.Track t : results) selectedPlaylistItems.put(t.id,t); renderSearchResults(); });
+            Button addSelected=button("Add selected",true); addSelected.setContentDescription("Add selected results to a playlist");
+            addSelected.setOnClickListener(v -> { if (selectedPlaylistItems.isEmpty()) showPlaybackFeedback("Select at least one result first."); else showPlaylistPicker(new ArrayList<>(selectedPlaylistItems.values())); });
+            selectionActions.addView(all,new LinearLayout.LayoutParams(0,dp(48),1));
+            selectionActions.addView(new View(this),lp(dp(8),1,0,0,0,0));
+            selectionActions.addView(addSelected,new LinearLayout.LayoutParams(0,dp(48),1));
+            resultsBox.addView(selectionActions,lp(-1,dp(48),0,0,0,4));
+            LinearLayout selectionMore=row();
+            Button create=button("Create playlist",false); create.setContentDescription("Create a playlist from selected results");
+            create.setOnClickListener(v -> { if (selectedPlaylistItems.isEmpty()) showPlaybackFeedback("Select at least one result first."); else promptCreatePlaylist(new ArrayList<>(selectedPlaylistItems.values())); });
+            Button cancel=button("Cancel selection",false); cancel.setOnClickListener(v -> { selectingPlaylistItems=false; selectedPlaylistItems.clear(); renderSearchResults(); });
+            selectionMore.addView(create,new LinearLayout.LayoutParams(0,dp(48),1));
+            selectionMore.addView(new View(this),lp(dp(8),1,0,0,0,0));
+            selectionMore.addView(cancel,new LinearLayout.LayoutParams(0,dp(48),1));
+            resultsBox.addView(selectionMore,lp(-1,dp(48),0,0,0,8));
+        }
         if (sharedStartMs > 0 && !sharedVideoId.isEmpty())
             resultsBox.addView(text("Shared starting point · " + format(sharedStartMs / 1000) + " · tap a result to play", 13, LIME, false), lp(-1, -2, 0, 0, 0, 8));
         for (YouTubeRepository.Track track : results) resultsBox.addView(buildCompactResult(track), lp(-1, dp(72), 0, 0, 0, 2));
+        if (!selectingPlaylistItems) {
+            Button suggest=button(suggestionsLoading ? "Finding ideas…" : "More like this", false);
+            suggest.setEnabled(!suggestionsLoading);
+            suggest.setContentDescription("Search YT for related music or episodes. Suggestions are never added automatically.");
+            suggest.setOnClickListener(v -> requestSuggestions());
+            resultsBox.addView(suggest,lp(-1,dp(48),0,10,0,2));
+            for (PlaylistSuggestionRow suggestion : suggestionRows) {
+                resultsBox.addView(text(suggestion.why,12,LIME,true),lp(-1,-2,0,12,0,2));
+                resultsBox.addView(buildCompactResult(suggestion.track),lp(-1,dp(72),0,0,0,2));
+            }
+        }
         if (nextCursor != null && !activeSearch && results.size() < SEARCH_LIMIT) {
             TextView more = text("Load more", 14, CREAM, true);
             more.setGravity(Gravity.CENTER);
@@ -560,8 +617,9 @@ public final class MainActivity extends android.app.Activity {
         LinearLayout item = row();
         item.setFocusable(true);
         touchFeedback(item, 5);
-        item.setContentDescription("Play " + track.title + " by " + track.channel);
-        item.setOnClickListener(v -> playTrack(track));
+        boolean selected=selectedPlaylistItems.containsKey(track.id);
+        item.setContentDescription(selectingPlaylistItems ? (selected ? "Selected " : "Select ") + track.title : "Play " + track.title + " by " + track.channel);
+        item.setOnClickListener(v -> { if (selectingPlaylistItems) { if (selectedPlaylistItems.containsKey(track.id)) selectedPlaylistItems.remove(track.id); else selectedPlaylistItems.put(track.id,track); renderSearchResults(); } else playTrack(track); });
         prepareWhenVisible(item, track, resultRules.get(track.id));
         ImageView art = imageView(dp(56), "Artwork for " + track.title);
         artworkLoader.load(track.artworkUrl, art);
@@ -577,15 +635,23 @@ public final class MainActivity extends android.app.Activity {
         item.addView(words, new LinearLayout.LayoutParams(0, -2, 1));
         ImageButton add = iconButton(R.drawable.ic_add, "Add " + track.title + " to queue", MUTED);
         add.setOnClickListener(v -> addNext(track));
-        boolean saved = listening.isSaved(track.id);
-        ImageButton bookmark = iconButton(saved ? R.drawable.ic_bookmark_filled : R.drawable.ic_bookmark,
-                (saved ? "Saved " : "Save ") + track.title + " in Library", saved ? LIME : MUTED);
-        bookmark.setOnClickListener(v -> {
-            YouTubeRepository.Rules rules = resultRules.get(track.id);
-            saveEpisode(track, rules == null ? new YouTubeRepository.Rules(musicMode && !creatorMode, includeFilter, excludeFilter) : rules, bookmark);
-        });
-        item.addView(bookmark, lp(dp(48), dp(48), 0, 0, 0, 0));
-        item.addView(add, lp(dp(48), dp(48), 0, 0, 0, 0));
+        if (selectingPlaylistItems) {
+            TextView check=text(selected ? "✓" : "○",24,selected ? LIME : MUTED,true); check.setGravity(Gravity.CENTER);
+            item.addView(check,lp(dp(48),dp(48),0,0,0,0));
+        } else {
+            boolean saved = listening.isSaved(track.id);
+            ImageButton bookmark = iconButton(saved ? R.drawable.ic_bookmark_filled : R.drawable.ic_bookmark,
+                    (saved ? "Saved " : "Save ") + track.title + " in Library", saved ? LIME : MUTED);
+            bookmark.setOnClickListener(v -> {
+                YouTubeRepository.Rules rules = resultRules.get(track.id);
+                saveEpisode(track, rules == null ? new YouTubeRepository.Rules(musicMode && !creatorMode, includeFilter, excludeFilter) : rules, bookmark);
+            });
+            item.addView(bookmark, lp(dp(48), dp(48), 0, 0, 0, 0));
+            ImageButton playlistAdd=iconButton(R.drawable.ic_nav_library,"Add " + track.title + " to a playlist",MUTED);
+            playlistAdd.setOnClickListener(v -> showPlaylistPicker(track,resultRules.get(track.id)));
+            item.addView(playlistAdd,lp(dp(48),dp(48),0,0,0,0));
+            item.addView(add, lp(dp(48), dp(48), 0, 0, 0, 0));
+        }
         if (!track.creatorUrl.isEmpty()) item.setOnLongClickListener(v -> { openCreator(track.creatorUrl); return true; });
         return item;
     }
@@ -873,6 +939,9 @@ public final class MainActivity extends android.app.Activity {
         final long generation = ++searchGeneration;
         final YouTubeRepository.Rules rules = currentRules();
         if (searchTask != null) searchTask.cancel(true);
+        clearSuggestions();
+        selectingPlaylistItems=false;
+        selectedPlaylistItems.clear();
         clearSearchResults(false);
         resultLimitReached = false;
         hasSearched = true;
@@ -1192,6 +1261,7 @@ public final class MainActivity extends android.app.Activity {
     }
 
     private void invalidateSearchForEdits() {
+        clearSuggestions();
         String query = queryInput == null ? "" : queryInput.getText().toString().trim();
         YouTubeRepository.Rules rules = currentRules();
         boolean changed = activeSearch || nextCursor != null
@@ -1232,6 +1302,12 @@ public final class MainActivity extends android.app.Activity {
 
     private void handleBack() {
         if (fullPlayer) { closeFullPlayer(); return; }
+        if (currentTab == TAB_SEARCH && selectingPlaylistItems) {
+            selectingPlaylistItems=false; selectedPlaylistItems.clear(); renderSearchResults(); return;
+        }
+        if (currentTab == TAB_LIBRARY && openPlaylistId != null) {
+            openPlaylistId=null; showTab(TAB_LIBRARY); return;
+        }
         if (currentTab == TAB_SEARCH && creatorPageUrl != null) {
             closeCreatorPage(); return;
         }
@@ -1270,6 +1346,7 @@ public final class MainActivity extends android.app.Activity {
 
     private void clearResults() {
         searchGeneration++;
+        clearSuggestions();
         if (searchTask != null) searchTask.cancel(true);
         activeSearch = false;
         hasSearched = false;
@@ -1289,6 +1366,14 @@ public final class MainActivity extends android.app.Activity {
             resultsBox.removeAllViews();
             if (hide) resultsBox.setVisibility(View.GONE);
         }
+    }
+
+    private void clearSuggestions() {
+        suggestionGeneration++;
+        suggestionRows.clear();
+        suggestionsLoading=false;
+        suggestionTargetPlaylistId=null;
+        suggestionSearchGeneration=-1;
     }
 
     private void setSearching(boolean value, String message) {
@@ -1434,7 +1519,7 @@ public final class MainActivity extends android.app.Activity {
                 })
                 .setNeutralButton("How it works", (dialog, which) -> new android.app.AlertDialog.Builder(this)
                         .setTitle("Prepare likely next items")
-                        .setMessage("Prepares stream addresses for the next two queued items, then up to three visible results. It makes extra requests to YT before you tap, but does not download their audio. At most eight items are prepared per minute. Prepared addresses are kept only in app memory and reused for up to five minutes. A short connection or buffering delay can still occur. Choose Off to stop new speculative requests; one request already in progress may finish.")
+                        .setMessage("Prepares the next two queued items, then the first visible result. Where YT exposes a stable audio identity, it buffers up to 384 KiB of each item in a rolling 32 MiB cache on this phone. This is a temporary opening buffer, not an offline download library; very short clips can fit within the byte cap. Up to eight items are prepared per minute. Unmetered connections is the default; mobile data is optional. Off cancels preparation and clears prepared audio in the background. Preparation sends extra requests to YT before you tap. Playback falls back to direct streaming if caching is unavailable; connection and buffering delays can still occur.")
                         .setPositiveButton("Got it", null).show())
                 .setNegativeButton("Close", null).show();
     }
@@ -1796,10 +1881,48 @@ public final class MainActivity extends android.app.Activity {
     }
 
     private View buildLibraryPage() {
+        if (openPlaylistId != null) {
+            PlaylistStore.Playlist opened=playlists.get(openPlaylistId);
+            if (opened != null) return buildPlaylistDetail(opened);
+            openPlaylistId=null;
+        }
         ScrollView scroll = pageScroll();
         LinearLayout root = pageColumn(scroll);
         root.addView(text("Your Library", 26, CREAM, true), lp(-1, dp(52), 0, 0, 0, 4));
         root.addView(text("Saved on this phone. Return to an episode where you left off.", 13, MUTED, false), lp(-1, -2, 0, 0, 0, 14));
+        List<PlaylistStore.Playlist> savedPlaylists=playlists.list();
+        LinearLayout playlistHeading=row();
+        playlistHeading.addView(text("Playlists · " + savedPlaylists.size(),18,CREAM,true),new LinearLayout.LayoutParams(0,dp(48),1));
+        TextView create=text("＋ New",14,LIME,true); create.setGravity(Gravity.CENTER);
+        create.setOnClickListener(v -> promptCreatePlaylist(null));
+        playlistHeading.addView(create,lp(-2,dp(48),0,0,0,0)); root.addView(playlistHeading);
+        if (savedPlaylists.isEmpty()) root.addView(text("Create a playlist from search results or start with a name here.",13,MUTED,false),lp(-1,-2,0,0,0,10));
+        for (PlaylistStore.Playlist playlist : savedPlaylists) {
+            LinearLayout row=row(); row.setFocusable(true); touchFeedback(row,5);
+            TextView icon=text("♫",22,LIME,true); icon.setGravity(Gravity.CENTER);
+            row.addView(icon,lp(dp(48),dp(48),0,0,10,0));
+            LinearLayout labels=new LinearLayout(this); labels.setOrientation(LinearLayout.VERTICAL);
+            labels.addView(text(playlist.name,15,CREAM,true));
+            labels.addView(text(playlist.entries.size() + (playlist.entries.size()==1 ? " track" : " tracks"),12,MUTED,false),lp(-1,-2,0,3,0,0));
+            row.addView(labels,new LinearLayout.LayoutParams(0,-2,1));
+            ImageButton menu=iconButton(R.drawable.ic_more,"Options for " + playlist.name,MUTED);
+            menu.setOnClickListener(v -> {
+                android.widget.PopupMenu popup=new android.widget.PopupMenu(this,menu);
+                popup.getMenu().add("Open playlist").setOnMenuItemClickListener(i -> { openPlaylistId=playlist.id; showTab(TAB_LIBRARY); return true; });
+                popup.getMenu().add("Add search results").setOnMenuItemClickListener(i -> { openPlaylistId=playlist.id; showTab(TAB_SEARCH); selectingPlaylistItems=true; renderSearchResults(); return true; });
+                popup.getMenu().add("Delete playlist").setOnMenuItemClickListener(i -> {
+                    new android.app.AlertDialog.Builder(this).setTitle("Delete “" + playlist.name + "”?")
+                            .setMessage("This removes the playlist from this phone.")
+                            .setNegativeButton("Cancel",null).setPositiveButton("Delete",(d,w) -> { playlists.delete(playlist.id); showTab(TAB_LIBRARY); }).show();
+                    return true;
+                });
+                popup.show();
+            });
+            row.addView(menu,lp(dp(48),dp(48),0,0,0,0));
+            row.setOnClickListener(v -> { openPlaylistId=playlist.id; showTab(TAB_LIBRARY); });
+            row.setContentDescription("Open playlist " + playlist.name + ", " + playlist.entries.size() + " tracks");
+            root.addView(row,lp(-1,dp(64),0,0,0,3));
+        }
         List<ListeningStore.SavedEpisode> episodes = listening.listEpisodes();
         root.addView(text("Saved episodes · " + episodes.size(), 18, CREAM, true), lp(-1, -2, 0, 0, 0, 8));
         if (episodes.isEmpty()) {
@@ -1856,6 +1979,205 @@ public final class MainActivity extends android.app.Activity {
             root.addView(line, lp(-1, dp(72), 0, 0, 0, 4));
         }
         return scroll;
+    }
+
+    private View buildPlaylistDetail(PlaylistStore.Playlist playlist) {
+        if (!playlist.id.equals(suggestionTargetPlaylistId)) clearSuggestions();
+        ScrollView scroll=pageScroll(); LinearLayout root=pageColumn(scroll);
+        LinearLayout heading=row();
+        ImageButton back=iconButton(R.drawable.ic_back,"Back to your library",CREAM); back.setOnClickListener(v -> { openPlaylistId=null; showTab(TAB_LIBRARY); });
+        heading.addView(back,lp(dp(48),dp(48),-6,0,6,0));
+        heading.addView(text(playlist.name,22,CREAM,true),new LinearLayout.LayoutParams(0,dp(48),1));
+        root.addView(heading);
+        root.addView(text(playlist.entries.size() + " tracks · saved on this phone",13,MUTED,false),lp(-1,-2,0,2,0,12));
+        if (!playlist.entries.isEmpty()) {
+            LinearLayout actions=row();
+            Button play=button("Play playlist",true); play.setOnClickListener(v -> playPlaylist(playlist));
+            Button queue=button("Add all to queue",false); queue.setOnClickListener(v -> queuePlaylist(playlist));
+            actions.addView(play,new LinearLayout.LayoutParams(0,dp(48),1));
+            actions.addView(new View(this),lp(dp(8),1,0,0,0,0));
+            actions.addView(queue,new LinearLayout.LayoutParams(0,dp(48),1));
+            root.addView(actions,lp(-1,dp(48),0,0,0,12));
+        }
+        Button discover=button("Find more like these",false);
+        discover.setOnClickListener(v -> requestSuggestions(playlist));
+        root.addView(discover,lp(-1,dp(48),0,0,0,10));
+        if (playlist.entries.isEmpty()) root.addView(text("Add tracks from Search to build this playlist.",14,MUTED,false),lp(-1,-2,0,8,0,12));
+        for (PlaylistSuggestionRow suggestion : suggestionRows) {
+            root.addView(text(suggestion.why,12,LIME,true),lp(-1,-2,0,12,0,2));
+            LinearLayout line=row(); touchFeedback(line,5);
+            ImageView art=imageView(dp(52),"Artwork for " + suggestion.track.title); artworkLoader.load(suggestion.track.artworkUrl,art);
+            line.addView(art,lp(dp(52),dp(52),0,0,9,0));
+            LinearLayout words=new LinearLayout(this); words.setOrientation(LinearLayout.VERTICAL);
+            TextView title=text(suggestion.track.title,14,CREAM,true); title.setMaxLines(2); words.addView(title);
+            words.addView(text(suggestion.track.channel,12,MUTED,false),lp(-1,-2,0,3,0,0)); line.addView(words,new LinearLayout.LayoutParams(0,-2,1));
+            ImageButton add=iconButton(R.drawable.ic_nav_library,"Add " + suggestion.track.title + " to " + playlist.name,LIME);
+            add.setOnClickListener(v -> {
+                try {
+                    if (playlists.add(playlist.id,suggestion.track,suggestion.rules)) {
+                        showPlaybackFeedback("Added to " + playlist.name);
+                        suggestionRows.remove(suggestion);
+                    } else showPlaybackFeedback("Already in " + playlist.name);
+                } catch (IllegalArgumentException full) { showPlaybackFeedback(full.getMessage()); }
+                showTab(TAB_LIBRARY);
+            });
+            line.addView(add,lp(dp(48),dp(48),0,0,0,0)); root.addView(line,lp(-1,dp(68),0,0,0,3));
+        }
+        for (PlaylistStore.Entry entry : playlist.entries) {
+            LinearLayout line=row(); touchFeedback(line,5);
+            ImageView art=imageView(dp(52),"Artwork for " + entry.track.title); artworkLoader.load(entry.track.artworkUrl,art);
+            line.addView(art,lp(dp(52),dp(52),0,0,9,0));
+            LinearLayout words=new LinearLayout(this); words.setOrientation(LinearLayout.VERTICAL);
+            TextView title=text(entry.track.title,14,CREAM,true); title.setMaxLines(2); words.addView(title);
+            words.addView(text(entry.track.channel,12,MUTED,false),lp(-1,-2,0,3,0,0)); line.addView(words,new LinearLayout.LayoutParams(0,-2,1));
+            ImageButton options=iconButton(R.drawable.ic_more,"Options for " + entry.track.title,MUTED);
+            options.setOnClickListener(v -> { android.widget.PopupMenu popup=new android.widget.PopupMenu(this,options);
+                popup.getMenu().add("Play now").setOnMenuItemClickListener(i -> { playTrack(entry.track,entry.rules,0); openFullPlayer(); return true; });
+                popup.getMenu().add("Add to queue").setOnMenuItemClickListener(i -> { addToQueue(entry.track,entry.rules); return true; });
+                popup.getMenu().add("Remove from playlist").setOnMenuItemClickListener(i -> { playlists.remove(playlist.id,entry.track.id); showTab(TAB_LIBRARY); return true; }); popup.show(); });
+            line.addView(options,lp(dp(48),dp(48),0,0,0,0));
+            line.setOnClickListener(v -> { playTrack(entry.track,entry.rules,0); openFullPlayer(); });
+            root.addView(line,lp(-1,dp(68),0,0,0,3));
+        }
+        return scroll;
+    }
+
+    private void playPlaylist(PlaylistStore.Playlist playlist) {
+        if (controller == null || playlist.entries.isEmpty()) { showPlaybackFeedback("This playlist is empty or the player is connecting."); return; }
+        List<MediaItem> items=new ArrayList<>();
+        for (PlaylistStore.Entry entry : playlist.entries) items.add(NativeMediaItems.fromTrack(entry.track,entry.rules));
+        controller.setMediaItems(items,0,0);
+        controller.prepare(); controller.play(); updatePlayer(); showPlaybackFeedback("Playing " + playlist.name);
+    }
+    private void queuePlaylist(PlaylistStore.Playlist playlist) {
+        if (controller == null) { showPlaybackFeedback("Connecting to the player…"); return; }
+        List<MediaItem> items=new ArrayList<>();
+        for (PlaylistStore.Entry entry : playlist.entries) items.add(NativeMediaItems.fromTrack(entry.track,entry.rules));
+        controller.addMediaItems(items);
+        showPlaybackFeedback("Added " + playlist.entries.size() + " tracks to the end of your queue."); updatePlayer(); showTab(TAB_QUEUE);
+    }
+
+    private void showPlaylistPicker(YouTubeRepository.Track track, YouTubeRepository.Rules rules) {
+        if (rules != null) resultRules.put(track.id,rules);
+        List<YouTubeRepository.Track> one=new ArrayList<>(); one.add(track);
+        showPlaylistPicker(one);
+    }
+    private void showPlaylistPicker(List<YouTubeRepository.Track> tracks) {
+        List<PlaylistStore.Playlist> values=playlists.list();
+        List<String> labels=new ArrayList<>(); for (PlaylistStore.Playlist p : values) labels.add(p.name + " · " + p.entries.size());
+        String[] choices=labels.toArray(new String[0]);
+        android.app.AlertDialog.Builder dialog=new android.app.AlertDialog.Builder(this).setTitle("Add to playlist");
+        if (choices.length > 0) dialog.setItems(choices,(d,which) -> {
+            PlaylistStore.Playlist playlist=values.get(which); int added=0;
+            try {
+                List<PlaylistStore.Entry> batch=new ArrayList<>();
+                for (YouTubeRepository.Track track : tracks) batch.add(new PlaylistStore.Entry(track,rulesFor(track)));
+                added=playlists.addAll(playlist.id,batch);
+            } catch (IllegalArgumentException full) { showPlaybackFeedback(full.getMessage()); return; }
+            showPlaybackFeedback(added == 0 ? "Already in " + playlist.name : "Added " + added + (added == 1 ? " track to " : " tracks to ") + playlist.name);
+            selectingPlaylistItems=false; selectedPlaylistItems.clear(); if (currentTab==TAB_SEARCH) renderSearchResults();
+        });
+        dialog.setNeutralButton("Create new",(d,w) -> promptCreatePlaylist(tracks));
+        dialog.setNegativeButton("Cancel",null).show();
+    }
+    private YouTubeRepository.Rules rulesFor(YouTubeRepository.Track track) {
+        YouTubeRepository.Rules rules=resultRules.get(track.id);
+        if (rules == null && displayedRules != null) rules=displayedRules;
+        return rules == null ? currentRules() : rules;
+    }
+    private void promptCreatePlaylist(List<YouTubeRepository.Track> tracks) {
+        EditText name=input("Playlist name"); name.setSingleLine(true);
+        LinearLayout content=new LinearLayout(this); content.setPadding(dp(20),dp(4),dp(20),dp(4)); content.addView(name,lp(-1,dp(52),0,0,0,0));
+        new android.app.AlertDialog.Builder(this).setTitle("New playlist").setView(content)
+                .setNegativeButton("Cancel",null).setPositiveButton("Create",(d,w) -> {
+                    try {
+                        PlaylistStore.Playlist created=playlists.create(name.getText().toString()); int added=0;
+                        if (tracks != null) {
+                            List<PlaylistStore.Entry> batch=new ArrayList<>();
+                            for (YouTubeRepository.Track track : tracks) batch.add(new PlaylistStore.Entry(track,rulesFor(track)));
+                            added=playlists.addAll(created.id,batch);
+                        }
+                        selectingPlaylistItems=false; selectedPlaylistItems.clear(); openPlaylistId=created.id;
+                        showPlaybackFeedback(added == 0 ? "Created " + created.name : "Created " + created.name + " with " + added + (added == 1 ? " track" : " tracks"));
+                        showTab(TAB_LIBRARY);
+                    } catch (IllegalArgumentException invalid) { showPlaybackFeedback(invalid.getMessage()); }
+                }).show();
+    }
+
+    private void requestSuggestions() { requestSuggestions(null); }
+    private void requestSuggestions(@Nullable PlaylistStore.Playlist target) {
+        if (suggestionsLoading) return;
+        YouTubeRepository.Track seed=target != null && !target.entries.isEmpty() ? target.entries.get(0).track
+                : !results.isEmpty() ? results.get(0) : currentTrack();
+        if (seed == null) { showPlaybackFeedback("Play or search for a song or episode first."); return; }
+        YouTubeRepository.Rules seedRules=rulesFor(seed);
+        if (target != null && !target.entries.isEmpty()) seedRules=target.entries.get(0).rules;
+        else if (controller != null && controller.getCurrentMediaItem() != null
+                && seed.id.equals(controller.getCurrentMediaItem().mediaId)) {
+            try { seedRules=NativeMediaItems.parse(controller.getCurrentMediaItem()).rules; }
+            catch (Exception ignored) { }
+        }
+        final YouTubeRepository.Rules suggestionRules=seedRules;
+        boolean musicOnly=suggestionRules.musicOnly;
+        final List<PlaylistSuggestions.Idea> ideas=PlaylistSuggestions.forTrack(seed,musicOnly);
+        final List<CreatorSuggestionSource> creatorSources=new ArrayList<>();
+        if (seed.creatorUrl != null && !seed.creatorUrl.isEmpty()) creatorSources.add(new CreatorSuggestionSource(seed.creatorUrl,seed.channel));
+        for (ListeningStore.SavedCreator creator : listening.listCreators()) {
+            boolean duplicate=false; for (CreatorSuggestionSource existing : creatorSources) if (existing.url.equals(creator.url)) duplicate=true;
+            if (!duplicate && creatorSources.size()<3) creatorSources.add(new CreatorSuggestionSource(creator.url,creator.name));
+        }
+        final long generation=searchGeneration;
+        final long suggestionRequest=++suggestionGeneration;
+        suggestionTargetPlaylistId=target == null ? null : target.id;
+        suggestionSearchGeneration=generation;
+        final java.util.Set<String> existingResultIds=new java.util.LinkedHashSet<>();
+        for (YouTubeRepository.Track track : results) existingResultIds.add(track.id);
+        suggestionsLoading=true; suggestionRows.clear(); if (currentTab==TAB_SEARCH) renderSearchResults(); else if (currentTab==TAB_LIBRARY) showTab(TAB_LIBRARY);
+        searches.execute(() -> {
+            List<PlaylistSuggestionRow> found=new ArrayList<>();
+            java.util.Set<String> seen=new java.util.LinkedHashSet<>();
+            for (ListeningStore.SavedEpisode e : listening.listEpisodes()) seen.add(e.track.id);
+            if (target != null) for (PlaylistStore.Entry e : target.entries) seen.add(e.track.id);
+            seen.addAll(existingResultIds);
+            // Saved creators provide current channel-tab items for episode discovery; no upload-date claim is made.
+            int creatorsFetched=0;
+            for (CreatorSuggestionSource creator : creatorSources) {
+                if (musicOnly) break;
+                if (creatorsFetched >= 2) break;
+                try {
+                    CreatorRepository.ChannelPage page=CreatorRepository.get().channel(creator.url,null); creatorsFetched++;
+                    List<YouTubeRepository.Track> filtered=new ArrayList<>();
+                    for (YouTubeRepository.Track t : page.tracks) if (YouTubeRepository.matches(t.title,t.channel,suggestionRules)) filtered.add(t);
+                    List<YouTubeRepository.Track> unique=PlaylistSuggestions.uniqueUnseen(filtered,seen);
+                    for (YouTubeRepository.Track t : unique) {
+                        if (found.size() >= 12) break;
+                        seen.add(t.id); found.add(new PlaylistSuggestionRow(t,suggestionRules,"More from " + creator.name + (target == null ? " · YT channel videos" : " · New to this playlist")));
+                    }
+                } catch (Exception ignored) { creatorsFetched++; }
+            }
+            for (PlaylistSuggestions.Idea idea : ideas) {
+                if (found.size() >= 12) break;
+                try {
+                    YouTubeRepository.Rules queryRules=new YouTubeRepository.Rules(idea.musicOnly,suggestionRules.include,suggestionRules.exclude);
+                    YouTubeRepository.SearchPage page=YouTubeRepository.get().searchPage(idea.query,queryRules,null);
+                    List<YouTubeRepository.Track> unique=PlaylistSuggestions.uniqueUnseen(page.tracks,seen);
+                    for (YouTubeRepository.Track t : unique) {
+                        seen.add(t.id);
+                        found.add(new PlaylistSuggestionRow(t,queryRules,idea.label + " · YT search" + (target == null ? "" : " · New to this playlist")));
+                        if (found.size() >= 12) break;
+                    }
+                } catch (Exception ignored) { }
+            }
+            main.post(() -> {
+                if (destroyed) return;
+                if (suggestionRequest != suggestionGeneration) return;
+                if (generation != searchGeneration) { suggestionsLoading=false; return; }
+                suggestionsLoading=false; suggestionRows.clear(); suggestionRows.addAll(found);
+                for (PlaylistSuggestionRow row : found) resultRules.put(row.track.id,row.rules);
+                if (currentTab==TAB_SEARCH) renderSearchResults(); else if (currentTab==TAB_LIBRARY) showTab(TAB_LIBRARY);
+                showPlaybackFeedback(found.isEmpty() ? "No new matches found. Try another search later." : found.size() + " ideas ready. Nothing was added automatically.");
+            });
+        });
     }
 
     private long positionFor(YouTubeRepository.Track track) {

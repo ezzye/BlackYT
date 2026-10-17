@@ -13,16 +13,22 @@ The old Chrome PWA home-screen app was labelled **BlackYT Phone** and belongs to
 ## Home, search, and listen
 
 1. Bottom navigation switches between **Home**, **Search**, **Library**, and **Queue**. Home has **Jump back in** and editable Explore topics. Search offers **Music**, **All videos**, and **Creators**. All videos includes spoken videos; creator pages show and page through available videos. Share or open supported YT links in BlackYT to preview before playback; shared timestamps are retained.
-2. Recent-play history stores public track metadata and original artwork references locally; **Home → More (⋮) → Clear listening history** removes it. The last eight search phrases are stored locally and can also be cleared. BlackYT does not create fake playlists or automatically fetch recommendations.
+2. Recent-play history stores public track metadata and original artwork references locally; **Home → More (⋮) → Clear listening history** removes it. The last eight search phrases are stored locally and can also be cleared. The v0.6.0 candidate adds named playlists and optional suggestions; suggestions are never added automatically.
 3. Search with the compact search field, its action button, or the keyboard Search/Enter action. Paste a YT link or enter a phrase. Choose **Music**, **All videos**, or **Creators**; open **Filters** for optional include-any and exclude-any terms in video search. Music classification depends on YT metadata and is not guaranteed. BlackYT does not automatically classify videos as podcasts and does not provide RSS or subscription features.
 4. Use **Load more** for further pages, up to 200 matches. Tap a result to play it immediately. **Add** appends it to the FIFO queue. Queue items can be removed.
 5. A miniplayer appears above the bottom navigation only when a track is current. Tap it to open full **Now Playing**. Back returns to the previous screen. The full player has seeking, Previous, Play/Pause, Next, Queue, and **More**; More includes Stop and Retry current song. Track starts and button presses have immediate visual feedback. Swipe artwork or the miniplayer left for next and right for previous; short vertical drags do not change tracks. The queue does not wrap at either end.
 
 The queue lasts only for the current app session. The Library stores saved episode metadata, progress, and creators on the phone. Episodes with 30 seconds or less remaining resume from the beginning; saved creators fetch their latest videos when opened. Library data and Explore edits do not sync to an account or cloud, and the Library does not contain offline audio. Audio streams directly over HTTPS from the phone to YT's Googlevideo stream host, with no BlackYT cloud relay.
 
-## Playback preparation candidate
+## v0.6.0 candidate features
 
-The v0.5.2 source prepares the next two queue entries before up to three visible choices. Set **More options → Playback preparation** to Off, Unmetered connections (default), or Wi-Fi and mobile data. It warms addresses and metadata, not audio files. See [ads, privacy and preparation details](docs/PRIVACY.md) for rate/data limits, upstream requests and validation status. The candidate passed 33 unit tests and builds; physical-phone timing and regression checks are pending. The public v0.5.1 release is unchanged.
+Select results in Search, tap rows or **Select all**, then choose **Create playlist** or **Add selected**. Add selected opens a chooser for existing playlists. Each result also has a playlist button. Named playlists appear in Library and are stored locally. **Play playlist** explicitly replaces the current queue; **Add all** appends tracks while preserving current playback.
+
+Optional **Find more like these** suggestions use at most two creator pages and two searches, capped at 12 results. The label **New to this playlist** does not verify upload dates. Suggestions are never added automatically. Filters and original-track selection are preserved; if the source format changes, **Retry current song** may be needed.
+
+Playback preparation targets the next two queued items and first visible result. It can prepare a per-item prefix of at most 384 KiB when stable format identity exists, uses a 32 MiB on-device LRU cache, and is rate-limited to eight items per minute. Choose Off, Unmetered connections (default), or Wi-Fi and mobile data. Turning it off cancels work and asynchronously clears the cache. Unknown identity or cache failure falls back to direct streaming. Audio still streams from the phone to YT; this is not an offline download library, and instant starts or Spotify parity are not promised. Very short clips can fit within the byte cap.
+
+The v0.6.0 candidate is not the public release. The candidate builds, all 41 JVM unit tests pass, and release lint reports zero errors and 19 warnings. Android instrumentation tests compile but have not been run. No phone or emulator tests have run; Pixel testing is deferred by the owner. Public stable APK remains v0.5.1.
 
 ## Recovery
 

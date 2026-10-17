@@ -16,9 +16,13 @@ Help improve accessibility, search, design, documentation or testing. You do not
 
 **Educational use only: this project should not be used to break the law.** Respect copyright, creators' rights, applicable platform terms and access restrictions. Read the [full disclaimer](DISCLAIMER.md).
 
-## Playback preparation candidate and privacy
+## v0.6.0 candidate
 
-The v0.5.2 source adds **More options → Playback preparation**: next queued items first, then a few visible choices, with an unmetered default, optional mobile-data mode, rate limits and a five-minute in-memory freshness window. It prepares stream addresses rather than downloading audio; buffering can still occur. The candidate builds and passes 33 unit tests; a new physical-phone responsiveness check is pending. The current public APK remains v0.5.1 until a separately published release.
+The upcoming v0.6.0 candidate adds named local playlists, suggestions to find more music, and optional playback preparation. Select search results and choose **Create playlist** or **Add to playlist**; each result also has a playlist button. Library playlists stay on the phone. **Play playlist** explicitly replaces the queue; **Add all** appends items and preserves current playback. “Find more like these” is optional, uses at most two creator pages and two searches, and returns at most 12 suggestions. Suggestions are never added automatically; “New to this playlist” does not verify upload dates.
+
+Playback preparation targets the next two queued items and first visible item, with up to 384 KiB per item when stable format identity is available and a 32 MiB on-device LRU cache. It is off, unmetered by default, or enabled on mobile data, and is limited to eight items per minute. Turning it off cancels work and clears the cache asynchronously. Missing identity or cache failure falls back to direct playback. Audio still streams from the device to YT; this is not an offline download library, and instant starts or Spotify parity are not promised. Very short clips can fit within the byte cap. Existing filters and original-track handling remain; a source-format change may require **Retry current song**.
+
+The candidate builds and passes all 41 JVM unit tests. Release lint reports zero errors and 19 warnings. Android instrumentation tests compile but have not been run. No phone or emulator test has been run for this candidate; Pixel testing is deferred by the owner. Public stable APK remains v0.5.1 until a separate release.
 
 BlackYT has no in-app advertising or app analytics SDKs in the inspected build. YT/Google still receives direct search, artwork and streaming requests and the device IP address; creator sponsorships can remain. Read [ads, privacy and preparation details](android/docs/PRIVACY.md). “No trackers anywhere” or “no personal data leaves the phone” would not be accurate promises.
 

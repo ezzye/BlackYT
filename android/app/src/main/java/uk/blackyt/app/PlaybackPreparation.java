@@ -14,10 +14,11 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-/** Bounded, on-device metadata preparation. Never downloads speculative audio. */
+/** Bounded, on-device stream preparation. Writes only the explicitly limited audio prefix. */
+@androidx.media3.common.util.UnstableApi
 final class PlaybackPreparation {
     static final int OFF = 0, UNMETERED = 1, ANY_NETWORK = 2;
-    private static final int PER_SOURCE = 3, TOTAL = 5;
+    private static final int QUEUE_LIMIT = 2, SCREEN_LIMIT = 1, TOTAL = 3;
     private static final long RETRY_MS = 30_000;
     private final java.util.ArrayDeque<Long> starts = new java.util.ArrayDeque<>();
     private static volatile PlaybackPreparation instance;
@@ -33,7 +34,12 @@ final class PlaybackPreparation {
     private List<Candidate> pending = Collections.emptyList();
     private boolean running;
     private volatile boolean playbackBusy;
-    synchronized void setPlaybackBusy(boolean busy) { playbackBusy = busy; rebuild(); }
+    private String activeCandidateId;
+    synchronized void setPlaybackBusy(boolean busy) {
+        playbackBusy = busy;
+        if (busy) AudioPrefixCache.cancel(context);
+        rebuild();
+    }
 
     static final class Candidate {
         final String id;
@@ -55,27 +61,43 @@ final class PlaybackPreparation {
     synchronized void setMode(int mode) {
         if (mode < OFF || mode > ANY_NETWORK) return;
         context.getSharedPreferences("blackyt_preparation", Context.MODE_PRIVATE).edit().putInt("mode", mode).apply();
+        if (mode == OFF) {
+            AudioPrefixCache.cancel(context);
+            AudioPrefixCache.clear(context);
+        }
         rebuild();
     }
     synchronized void update(String source, List<Candidate> candidates) {
         if (!"queue".equals(source) && !"screen".equals(source)) return;
-        sources.put(source, new ArrayList<>(candidates.subList(0, Math.min(PER_SOURCE, candidates.size()))));
+        int limit = "queue".equals(source) ? QUEUE_LIMIT : SCREEN_LIMIT;
+        sources.put(source, new ArrayList<>(candidates.subList(0, Math.min(limit, candidates.size()))));
         rebuild();
     }
     private void rebuild() {
-        LinkedHashMap<String, Candidate> ordered = new LinkedHashMap<>();
-        // A user's explicit queue always wins over speculative visible results.
-        for (String source : new String[] {"queue", "screen"}) {
-            for (Candidate candidate : sources.getOrDefault(source, Collections.emptyList())) {
-                ordered.putIfAbsent(candidate.id, candidate);
-                if (ordered.size() == TOTAL) break;
-            }
-            if (ordered.size() == TOTAL) break;
-        }
-        pending = new ArrayList<>(ordered.values());
+        pending = prioritize(sources.getOrDefault("queue", Collections.emptyList()),
+                sources.getOrDefault("screen", Collections.emptyList()));
+        if (activeCandidateId != null && !containsPending(activeCandidateId))
+            AudioPrefixCache.cancel(context);
         if (!running && allowed() && !pending.isEmpty()) {
             running = true;
             worker.execute(this::drain);
+        }
+    }
+
+    static List<Candidate> prioritize(List<Candidate> queue, List<Candidate> screen) {
+        LinkedHashMap<String, Candidate> ordered = new LinkedHashMap<>();
+        appendCandidates(ordered, queue, QUEUE_LIMIT);
+        appendCandidates(ordered, screen, SCREEN_LIMIT);
+        return new ArrayList<>(ordered.values());
+    }
+
+    private static void appendCandidates(LinkedHashMap<String, Candidate> ordered,
+            List<Candidate> candidates, int limit) {
+        int added = 0;
+        for (Candidate candidate : candidates) {
+            if (candidate == null || ordered.containsKey(candidate.id)) continue;
+            ordered.put(candidate.id, candidate);
+            if (++added >= limit || ordered.size() >= TOTAL) return;
         }
     }
     private void drain() {
@@ -88,14 +110,35 @@ final class PlaybackPreparation {
                     if (starts.size() >= 8) { running = false; return; }
                     for (Candidate candidate : pending) {
                         Long last = attempted.get(candidate.id);
-                        if (last == null || now - last >= RETRY_MS) { next = candidate; attempted.put(candidate.id, now); starts.addLast(now); break; }
+                        if (last == null || now - last >= RETRY_MS) {
+                            next = candidate; activeCandidateId = candidate.id;
+                            attempted.put(candidate.id, now); starts.addLast(now); break;
+                        }
                     }
                 }
                 if (next == null) { running = false; return; }
             }
-            try { YouTubeRepository.get().resolve(next.id, next.rules, false); }
+            Candidate selected = next;
+            try {
+                YouTubeRepository.Resolved resolved = YouTubeRepository.get().resolve(selected.id, selected.rules, false);
+                if (stillEligible(selected)) AudioPrefixCache.get(context).prefetch(selected.id, selected.rules,
+                        resolved, () -> stillEligible(selected));
+            }
             catch (Exception ignored) { /* A speculative failure must never interrupt playback or show an error. */ }
+            finally {
+                synchronized (this) { if (selected.id.equals(activeCandidateId)) activeCandidateId = null; }
+            }
         }
+    }
+    private boolean containsPending(String id) {
+        for (Candidate candidate : pending) if (candidate.id.equals(id)) return true;
+        return false;
+    }
+    private synchronized boolean stillEligible(Candidate candidate) {
+        if (!allowed()) return false;
+        for (Candidate pendingCandidate : pending)
+            if (pendingCandidate.id.equals(candidate.id)) return true;
+        return false;
     }
     private boolean allowed() {
         int mode = mode();
