@@ -1,0 +1,16 @@
+{
+  "version": "0.6.0-native",
+  "versionCode": 60,
+  "apk": "BlackYT-Android-v0.6.0.apk",
+  "sha256": "6156f058edd326a7880f2b0879286497a4273888671eb644608d406beca02c64",
+  "bytes": 7148296,
+  "signerSha256": "6a475af54a417cdcf425f38bd599227d29b6cd8d4e31ddc1346fe00d475bacf8",
+  "unitTests": {"passed": 41, "failed": 0},
+  "lint": {"errors": 0, "warnings": 19},
+  "instrumentation": {"passed": 4, "details": ["2 playlist-store tests", "1 read-only prefix-cache evidence test; one 393216-byte file", "1 natural-end playback test; 247.873 seconds; automatic next-track while locked and screen off over Wi-Fi"]},
+  "pixel": {"appDataPreserved": true, "freshSearch": "U2", "playlist": "Created from 2 selected results", "suggestions": "Optional suggestions added to playlist; queue addition and append paths checked", "fullPlayer": "Next and previous swipe checked", "ownerAudibleAcceptance": true, "transport": "Wi-Fi", "usbConnected": true},
+  "privacyReview": "Source-level review; no new runtime traffic capture",
+  "playbackPreparation": "Targets next 2 queued items and first visible result; up to 384 KiB per item; 32 MiB LRU; unmetered by default; cacheable-format coverage unmeasured; not an offline library",
+  "limitations": ["No v0.6.0 mobile-data validation is claimed", "No zero-delay playback or Spotify parity is claimed", "Other Android devices and sources are not verified"],
+  "date": "2026-10-17"
+}

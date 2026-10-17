@@ -12,9 +12,9 @@ Search phrases, video/creator lookups, artwork requests and audio requests go di
 
 Saved episodes and creators, resume progress, recent searches, listening history, filters and Explore topics are stored in app-private local preferences. There is no app-operated cloud sync or analytics upload. The application sets `allowBackup=false` and disallows cleartext traffic. These controls do not promise protection against every OS backup/transfer behaviour, compromised device, system service, or forensic access. Uninstalling or clearing app storage removes local saves.
 
-Debug builds may write bounded local diagnostic files. Release diagnostic-file writing is disabled. In the v0.6.0 candidate, playback-state logging that includes video identifiers is debug-only. No signed stream URLs should be printed or submitted in bug reports.
+Debug builds may write bounded local diagnostic files. Release diagnostic-file writing is disabled. In v0.6.0, playback-state logging that includes video identifiers is debug-only. No signed stream URLs should be printed or submitted in bug reports.
 
-## v0.6.0 candidate: playlists, suggestions and preparation
+## v0.6.0: playlists, suggestions and preparation
 
 Named playlists and their saved video metadata are stored locally on the device. **Play playlist** explicitly replaces the current queue; **Add all** appends playlist items and preserves current playback. Library and playlist data do not sync to an account or cloud. Suggestions are opt-in: **Find more like these** can use up to two creator pages and two searches and returns at most 12 items. The label **New to this playlist** is not a verified upload date. BlackYT never adds suggestions automatically.
 
@@ -24,6 +24,6 @@ Existing search filters are still checked on playback, and original-track handli
 
 ## Validation status
 
-The release candidate builds and passes all 41 JVM unit tests. Release lint reports zero errors and 19 warnings; Android instrumentation tests compile but have not been run. No phone or emulator test has been run for v0.6.0; Pixel testing is deferred by the owner. The public stable APK remains v0.5.1 pending a separate release. Prior-version device results do not validate this candidate.
+The signed v0.6.0 versionCode 60 APK was installed and checked on a USB-connected Pixel with app data preserved; the owner confirmed audible playback. The live check covered search, playlist creation, optional suggestions, queue additions and appending, and full-player next/previous gestures. Four instrumentation checks passed, including natural progression after a 247.873-second sample while locked with the screen off over Wi-Fi. All 41 JVM unit tests pass and release lint has zero errors and 19 warnings. No mobile-data validation is claimed. This is a bounded device check, not a claim that every source, network, or Android device works.
 
 Contact: blackyt@streamit2.me · Unsigned Media Ltd.

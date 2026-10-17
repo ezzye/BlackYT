@@ -6,21 +6,21 @@ BlackYT is an Android-only app for finding and playing music and spoken videos a
 
 ## Public release
 
-The current native release is [v0.5.1](https://github.com/ezzye/BlackYT/releases/tag/v0.5.1), with **BlackYT-Android-v0.5.1.apk** (versionCode 51). For beginner installation steps, questions, and recovery help, see the [Android install guide](../docs/INSTALL.md), [FAQ](../docs/FAQ.md), and [troubleshooting guide](../docs/TROUBLESHOOTING.md). The [standalone HTML guide](https://github.com/ezzye/BlackYT/releases/download/v0.5.1/BlackYT-Android-Guide.html) is convenient for offline reading and sharing.
+The current native release is [v0.6.0](https://github.com/ezzye/BlackYT/releases/tag/v0.6.0), with **BlackYT-Android-v0.6.0.apk** (versionCode 60). For beginner installation steps, questions, and recovery help, see the [Android install guide](../docs/INSTALL.md), [FAQ](../docs/FAQ.md), and [troubleshooting guide](../docs/TROUBLESHOOTING.md). The [standalone HTML guide](https://github.com/ezzye/BlackYT/releases/download/v0.6.0/BlackYT-Android-Guide.html) is convenient for offline reading and sharing.
 
 The old Chrome PWA home-screen app was labelled **BlackYT Phone** and belongs to the separate legacy v0.2.0 Termux setup. The native APK does not need that installation.
 
 ## Home, search, and listen
 
 1. Bottom navigation switches between **Home**, **Search**, **Library**, and **Queue**. Home has **Jump back in** and editable Explore topics. Search offers **Music**, **All videos**, and **Creators**. All videos includes spoken videos; creator pages show and page through available videos. Share or open supported YT links in BlackYT to preview before playback; shared timestamps are retained.
-2. Recent-play history stores public track metadata and original artwork references locally; **Home → More (⋮) → Clear listening history** removes it. The last eight search phrases are stored locally and can also be cleared. The v0.6.0 candidate adds named playlists and optional suggestions; suggestions are never added automatically.
+2. Recent-play history stores public track metadata and original artwork references locally; **Home → More (⋮) → Clear listening history** removes it. The last eight search phrases are stored locally and can also be cleared. Version 0.6.0 adds named playlists and optional suggestions; suggestions are never added automatically.
 3. Search with the compact search field, its action button, or the keyboard Search/Enter action. Paste a YT link or enter a phrase. Choose **Music**, **All videos**, or **Creators**; open **Filters** for optional include-any and exclude-any terms in video search. Music classification depends on YT metadata and is not guaranteed. BlackYT does not automatically classify videos as podcasts and does not provide RSS or subscription features.
 4. Use **Load more** for further pages, up to 200 matches. Tap a result to play it immediately. **Add** appends it to the FIFO queue. Queue items can be removed.
 5. A miniplayer appears above the bottom navigation only when a track is current. Tap it to open full **Now Playing**. Back returns to the previous screen. The full player has seeking, Previous, Play/Pause, Next, Queue, and **More**; More includes Stop and Retry current song. Track starts and button presses have immediate visual feedback. Swipe artwork or the miniplayer left for next and right for previous; short vertical drags do not change tracks. The queue does not wrap at either end.
 
 The queue lasts only for the current app session. The Library stores saved episode metadata, progress, and creators on the phone. Episodes with 30 seconds or less remaining resume from the beginning; saved creators fetch their latest videos when opened. Library data and Explore edits do not sync to an account or cloud, and the Library does not contain offline audio. Audio streams directly over HTTPS from the phone to YT's Googlevideo stream host, with no BlackYT cloud relay.
 
-## v0.6.0 candidate features
+## v0.6.0 features
 
 Select results in Search, tap rows or **Select all**, then choose **Create playlist** or **Add selected**. Add selected opens a chooser for existing playlists. Each result also has a playlist button. Named playlists appear in Library and are stored locally. **Play playlist** explicitly replaces the current queue; **Add all** appends tracks while preserving current playback.
 
@@ -28,7 +28,7 @@ Optional **Find more like these** suggestions use at most two creator pages and 
 
 Playback preparation targets the next two queued items and first visible result. It can prepare a per-item prefix of at most 384 KiB when stable format identity exists, uses a 32 MiB on-device LRU cache, and is rate-limited to eight items per minute. Choose Off, Unmetered connections (default), or Wi-Fi and mobile data. Turning it off cancels work and asynchronously clears the cache. Unknown identity or cache failure falls back to direct streaming. Audio still streams from the phone to YT; this is not an offline download library, and instant starts or Spotify parity are not promised. Very short clips can fit within the byte cap.
 
-The v0.6.0 candidate is not the public release. The candidate builds, all 41 JVM unit tests pass, and release lint reports zero errors and 19 warnings. Android instrumentation tests compile but have not been run. No phone or emulator tests have run; Pixel testing is deferred by the owner. Public stable APK remains v0.5.1.
+The signed v0.6.0 versionCode 60 APK was installed and checked on a USB-connected Pixel with app data preserved. The owner confirmed audible playback. The check covered fresh U2 search, creating a playlist from two results, optional suggestions added to the playlist, adding one suggestion and then three more to the queue, appending a playlist while preserving six queued items, and next/previous swipes in the full player. Four instrumentation checks passed: two playlist-store tests, one read-only prefix-cache evidence test (one 393,216-byte file), and one natural-end playback test (247.873 seconds) that auto-advanced while locked with the screen off over Wi-Fi. All 41 JVM unit tests pass; release lint has zero errors and 19 warnings. No mobile-data validation is claimed for v0.6.0. See [versioned verification evidence](docs/verification-v0.6.0.json).
 
 ## Recovery
 
