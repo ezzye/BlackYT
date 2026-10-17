@@ -44,7 +44,7 @@ public final class YouTubeRepository {
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                     + "(KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36";
 
-    private static final long CACHE_TTL_MS = TimeUnit.SECONDS.toMillis(45);
+    private static final long CACHE_TTL_MS = TimeUnit.MINUTES.toMillis(5);
     private static final int CACHE_LIMIT = 64;
     private static final String GOOGLEVIDEO_SUFFIX = ".googlevideo.com";
     private static final Localization LOCALIZATION = new Localization("en", "GB");
@@ -53,13 +53,9 @@ public final class YouTubeRepository {
 
     private final OkHttpClient extractorClient;
     private final OkHttpClient mediaClient;
-    private final Map<String, CachedResolved> resolvedCache =
-            Collections.synchronizedMap(new LinkedHashMap<String, CachedResolved>(16, 0.75f, true) {
-                @Override
-                protected boolean removeEldestEntry(Map.Entry<String, CachedResolved> eldest) {
-                    return size() > CACHE_LIMIT;
-                }
-            });
+    private final ExpiringSingleFlightCache<String, CachedResolved> resolvedCache =
+            new ExpiringSingleFlightCache<>(CACHE_LIMIT, CACHE_TTL_MS,
+                    SystemClock::elapsedRealtime, this::fetchResolved);
 
     private YouTubeRepository() {
         extractorClient = new OkHttpClient.Builder()
@@ -318,29 +314,22 @@ public final class YouTubeRepository {
     public Resolved resolve(String inputId, Rules rules, boolean fresh) throws Exception {
         final String id = normalizeVideoId(inputId);
         final Rules safeRules = rules == null ? new Rules(false, "", "") : rules;
-        if (!fresh) {
-            CachedResolved cached = resolvedCache.get(id);
-            if (cached != null) {
-                if (SystemClock.elapsedRealtime() - cached.savedAtMs <= CACHE_TTL_MS
-                        && matches(cached.value.title, cached.value.channel, safeRules)
-                        && cachedResultAllowed(cached.musicCategory, safeRules.musicOnly)) {
-                    return cached.value;
-                }
-                resolvedCache.remove(id);
-            }
-        }
+        CachedResolved cached = resolvedCache.get(id, fresh);
+        // Cached metadata is shared, but every playback request still enforces its own filters.
+        if (!matches(cached.value.title, cached.value.channel, safeRules))
+            throw new IOException("This item does not match the current filters.");
+        if (!cachedResultAllowed(cached.musicCategory, safeRules.musicOnly))
+            throw new IOException("This item is not categorized as Music.");
+        return cached.value;
+    }
+
+    private CachedResolved fetchResolved(String id) throws Exception {
         try {
             StreamInfo info = StreamInfo.getInfo(youtubeService(),
                     "https://www.youtube.com/watch?v=" + id);
             String title = nullToEmpty(info.getName());
             String channel = nullToEmpty(info.getUploaderName());
-            if (!matches(title, channel, safeRules)) {
-                throw new IOException("This item does not match the current filters.");
-            }
             boolean musicCategory = isMusicCategory(info.getCategory());
-            if (!cachedResultAllowed(musicCategory, safeRules.musicOnly)) {
-                throw new IOException("This item is not categorized as Music.");
-            }
 
             AudioStream selected = AudioStreamSelector.select(info.getAudioStreams());
             Diagnostics.event("audio-track", AudioStreamSelector.diagnosticMetadata(selected));
@@ -352,23 +341,19 @@ public final class YouTubeRepository {
             String host = requireGoogleVideoUrl(url);
             Resolved result = new Resolved(url, selected.getFormat().getMimeType(),
                     title, channel, info.getDuration(), host, bestSafeThumbnail(info.getThumbnails()));
-            resolvedCache.put(id, new CachedResolved(
-                    result, SystemClock.elapsedRealtime(), musicCategory));
-            return result;
+            return new CachedResolved(result, SystemClock.elapsedRealtime(), musicCategory);
         } catch (IOException e) {
-            invalidate(id);
             throw e;
         } catch (Exception failure) {
             Diagnostics.failure("resolve-error",failure);
             if (BuildConfig.DEBUG) android.util.Log.w("BlackYTNetwork", "Resolve error=" + failure.getClass().getSimpleName());
-            invalidate(id);
             throw new IOException("YT stream resolution failed. Check your connection and retry.");
         }
     }
 
     public void invalidate(String inputId) {
         try {
-            resolvedCache.remove(normalizeVideoId(inputId));
+            resolvedCache.invalidate(normalizeVideoId(inputId));
         } catch (IllegalArgumentException ignored) {
             // Invalid input has no cache entry.
         }

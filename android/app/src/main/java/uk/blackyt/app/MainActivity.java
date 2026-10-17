@@ -106,6 +106,28 @@ public final class MainActivity extends android.app.Activity {
     private String startingTrackId, startingTrackTitle;
     private Toast playbackFeedback;
     private ArtworkLoader artworkLoader;
+    private boolean preparationScreenActive;
+    private final Map<View, PlaybackPreparation.Candidate> preparationViews = new LinkedHashMap<>();
+    private final Runnable visiblePreparation = () -> {
+        List<PlaybackPreparation.Candidate> candidates = new ArrayList<>();
+        if (preparationScreenActive && !destroyed && !fullPlayer) {
+            android.graphics.Rect visible = new android.graphics.Rect();
+            for (Map.Entry<View, PlaybackPreparation.Candidate> entry : preparationViews.entrySet()) {
+                if (entry.getKey().isShown() && entry.getKey().getGlobalVisibleRect(visible) && visible.height() >= dp(32)) {
+                    candidates.add(entry.getValue());
+                    if (candidates.size() == 3) break;
+                }
+            }
+        }
+        PlaybackPreparation.get(this).update("screen", candidates);
+    };
+    private void scheduleVisiblePreparation() {
+        main.removeCallbacks(visiblePreparation);
+        main.postDelayed(visiblePreparation, 180);
+    }
+    private void prepareWhenVisible(View view, YouTubeRepository.Track track, YouTubeRepository.Rules rules) {
+        preparationViews.put(view, new PlaybackPreparation.Candidate(track.id, rules));
+    }
     private Object platformBackCallback;
     private final List<RecentTrack> history = new ArrayList<>();
     private String lastRememberedId = "";
@@ -268,6 +290,7 @@ public final class MainActivity extends android.app.Activity {
     }
 
     private void showTab(int tab) {
+        preparationViews.clear();
         releasePageViews();
         fullPlayer = false;
         bottomTabs.setVisibility(View.VISIBLE);
@@ -282,6 +305,7 @@ public final class MainActivity extends android.app.Activity {
         if (tab == TAB_QUEUE) renderQueue();
         updatePlayer();
         updateBackHandler();
+        scheduleVisiblePreparation();
     }
 
     private void openFullPlayer() {
@@ -289,6 +313,7 @@ public final class MainActivity extends android.app.Activity {
         playerReturnTab = currentTab;
         releasePageViews();
         fullPlayer = true;
+        scheduleVisiblePreparation();
         pageHost.removeAllViews();
         pageHost.addView(buildNowPlayingPage(), new LinearLayout.LayoutParams(-1, -1));
         miniPlayer.setVisibility(View.GONE);
@@ -340,6 +365,7 @@ public final class MainActivity extends android.app.Activity {
                 tile.setFocusable(true);
                 touchFeedback(tile, 6);
                 tile.setOnClickListener(v -> playTrack(recent.track, recent.rules));
+                prepareWhenVisible(tile, recent.track, recent.rules);
                 ImageView art = imageView(dp(124), "Artwork for " + recent.track.title);
                 artworkLoader.load(recent.track.artworkUrl, art);
                 tile.addView(art, lp(dp(124), dp(124), 0, 0, 0, 7));
@@ -353,6 +379,7 @@ public final class MainActivity extends android.app.Activity {
                 recentRow.addView(tile, lp(dp(124), -2, 0, 0, 12, 0));
             }
             recentScroll.addView(recentRow);
+            recentScroll.setOnScrollChangeListener((v, x, y, oldX, oldY) -> scheduleVisiblePreparation());
             root.addView(recentScroll, lp(-1, -2, 0, 0, 0, 22));
         }
 
@@ -492,8 +519,11 @@ public final class MainActivity extends android.app.Activity {
 
     private void renderSearchResults() {
         if (resultsBox == null) return;
+        preparationViews.clear();
+        PlaybackPreparation.get(this).update("screen", java.util.Collections.emptyList());
         resultsBox.removeAllViews();
         resultsBox.setVisibility(View.VISIBLE);
+        scheduleVisiblePreparation();
         if (creatorMode || creatorPageUrl != null) { renderCreatorResults(); return; }
         if (results.isEmpty()) {
             if (hasSearched && !searchLoading) resultsBox.addView(text("No matches. Try another search or adjust your filters.", 14, MUTED, false),
@@ -532,6 +562,7 @@ public final class MainActivity extends android.app.Activity {
         touchFeedback(item, 5);
         item.setContentDescription("Play " + track.title + " by " + track.channel);
         item.setOnClickListener(v -> playTrack(track));
+        prepareWhenVisible(item, track, resultRules.get(track.id));
         ImageView art = imageView(dp(56), "Artwork for " + track.title);
         artworkLoader.load(track.artworkUrl, art);
         item.addView(art, lp(dp(56), dp(56), 0, 0, 10, 0));
@@ -746,6 +777,7 @@ public final class MainActivity extends android.app.Activity {
                     .setPositiveButton("Clear", (dialog, which) -> clearListeningHistory()).show();
             return true;
         });
+        menu.getMenu().add("Playback preparation").setOnMenuItemClickListener(item -> { showPreparationSettings(); return true; });
         menu.getMenu().add("About BlackYT").setOnMenuItemClickListener(item -> { showAbout(); return true; });
         menu.show();
     }
@@ -1394,10 +1426,23 @@ public final class MainActivity extends android.app.Activity {
         getSharedPreferences(PREFS, MODE_PRIVATE).edit().putString(KEY_RECENTS, joined.toString()).apply();
     }
 
+    private void showPreparationSettings() {
+        PlaybackPreparation preparation = PlaybackPreparation.get(this);
+        new android.app.AlertDialog.Builder(this).setTitle("Playback preparation")
+                .setSingleChoiceItems(new String[] {"Off", "Unmetered connections (default)", "Wi-Fi and mobile data"}, preparation.mode(), (dialog, which) -> {
+                    preparation.setMode(which); scheduleVisiblePreparation(); dialog.dismiss();
+                })
+                .setNeutralButton("How it works", (dialog, which) -> new android.app.AlertDialog.Builder(this)
+                        .setTitle("Prepare likely next items")
+                        .setMessage("Prepares stream addresses for the next two queued items, then up to three visible results. It makes extra requests to YT before you tap, but does not download their audio. At most eight items are prepared per minute. Prepared addresses are kept only in app memory and reused for up to five minutes. A short connection or buffering delay can still occur. Choose Off to stop new speculative requests; one request already in progress may finish.")
+                        .setPositiveButton("Got it", null).show())
+                .setNegativeButton("Close", null).show();
+    }
+
     private void showAbout() {
         new android.app.AlertDialog.Builder(this)
                 .setTitle("About BlackYT")
-                .setMessage("BlackYT is an educational listening prototype. Use it only where you have permission, and respect copyright, licences, and the law.")
+                .setMessage("BlackYT is an educational listening prototype. This app contains no in-app advertising or analytics SDKs. Search, artwork and audio requests go directly to YT/Google services, which receive your IP address and request information. Creator-recorded sponsorships can remain in content. Saved episodes, history and progress are stored on this device. Use content only where you have permission, and respect copyright, licences and the law.")
                 .setPositiveButton("Got it", null)
                 .show();
     }
@@ -1503,6 +1548,7 @@ public final class MainActivity extends android.app.Activity {
     private ScrollView pageScroll() {
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
+        scroll.setOnScrollChangeListener((v, x, y, oldX, oldY) -> scheduleVisiblePreparation());
         scroll.setClipToPadding(false);
         scroll.setBackgroundColor(BG);
         return scroll;
@@ -1665,17 +1711,24 @@ public final class MainActivity extends android.app.Activity {
 
     @Override protected void onResume() {
         super.onResume();
+        preparationScreenActive = true;
+        scheduleVisiblePreparation();
         main.removeCallbacks(ticker);
         main.post(ticker);
     }
 
     @Override protected void onPause() {
+        preparationScreenActive = false;
+        main.removeCallbacks(visiblePreparation);
+        PlaybackPreparation.get(this).update("screen", java.util.Collections.emptyList());
         main.removeCallbacks(ticker);
         super.onPause();
     }
 
     @Override protected void onDestroy() {
         destroyed = true;
+        preparationViews.clear();
+        PlaybackPreparation.get(this).update("screen", java.util.Collections.emptyList());
         searchGeneration++;
         if (searchTask != null) searchTask.cancel(true);
         main.removeCallbacksAndMessages(null);
@@ -1782,6 +1835,7 @@ public final class MainActivity extends android.app.Activity {
             });
             line.addView(more, lp(dp(48), dp(48), 2, 0, 0, 0));
             line.setContentDescription("Resume saved episode " + episode.track.title);
+            prepareWhenVisible(line, episode.track, episode.rules);
             line.setOnClickListener(v -> { playTrack(episode.track, episode.rules, resume); openFullPlayer(); });
             root.addView(line, lp(-1, dp(88), 0, 0, 0, 4));
         }

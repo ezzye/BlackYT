@@ -16,6 +16,12 @@ Help improve accessibility, search, design, documentation or testing. You do not
 
 **Educational use only: this project should not be used to break the law.** Respect copyright, creators' rights, applicable platform terms and access restrictions. Read the [full disclaimer](DISCLAIMER.md).
 
+## Playback preparation candidate and privacy
+
+The v0.5.2 source adds **More options → Playback preparation**: next queued items first, then a few visible choices, with an unmetered default, optional mobile-data mode, rate limits and a five-minute in-memory freshness window. It prepares stream addresses rather than downloading audio; buffering can still occur. The candidate builds and passes 33 unit tests; a new physical-phone responsiveness check is pending. The current public APK remains v0.5.1 until a separately published release.
+
+BlackYT has no in-app advertising or app analytics SDKs in the inspected build. YT/Google still receives direct search, artwork and streaming requests and the device IP address; creator sponsorships can remain. Read [ads, privacy and preparation details](android/docs/PRIVACY.md). “No trackers anywhere” or “no personal data leaves the phone” would not be accurate promises.
+
 ## v0.5.1: original audio
 
 Videos with several language tracks now prefer the creator’s original audio when identified by YT. This fixes the Wes Roth episode selecting an Arabic dub instead of its English original. See the [audio comparison and explanation](android/docs/audio-comparison-v0.5.1.html) and [focused verification](android/docs/verification-v0.5.1.json). Direct streaming, background playback and the queue remain in place.

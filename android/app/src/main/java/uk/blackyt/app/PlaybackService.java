@@ -40,6 +40,7 @@ public final class PlaybackService extends MediaSessionService {
         @Override public void run() {
             if (player == null) return;
             if (player.isPlaying()) saveCurrentProgress();
+            updateQueuePreparation();
             progressHandler.postDelayed(this, 10000);
         }
     };
@@ -70,8 +71,10 @@ public final class PlaybackService extends MediaSessionService {
                         .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC).build(), true)
                 .build();
         player.addListener(new Player.Listener() {
+            @Override public void onEvents(Player source, Player.Events events) { updateQueuePreparation(); }
+
             @Override public void onPlaybackStateChanged(int state) {
-                Log.i(TAG, "BlackYTPlayback:state state=" + stateName(state)
+                if (BuildConfig.DEBUG) Log.i(TAG, "BlackYTPlayback:state state=" + stateName(state)
                         + " isPlaying=" + player.isPlaying() + " mediaId=" + safeCurrentMediaId()
                         + " positionMs=" + player.getCurrentPosition());
             }
@@ -89,7 +92,7 @@ public final class PlaybackService extends MediaSessionService {
 
             @Override public void onIsPlayingChanged(boolean isPlaying) {
                 saveCurrentProgress();
-                Log.i(TAG, "BlackYTPlayback:state state=" + stateName(player.getPlaybackState())
+                if (BuildConfig.DEBUG) Log.i(TAG, "BlackYTPlayback:state state=" + stateName(player.getPlaybackState())
                         + " isPlaying=" + isPlaying + " mediaId=" + safeCurrentMediaId()
                         + " positionMs=" + player.getCurrentPosition());
             }
@@ -106,6 +109,22 @@ public final class PlaybackService extends MediaSessionService {
         progressHandler.postDelayed(progressTick, 10000);
         session = new MediaSession.Builder(this, player).setSessionActivity(activity)
                 .setCallback(new QueueCallback()).build();
+    }
+
+    private void updateQueuePreparation() {
+        if (player == null) return;
+        PlaybackPreparation.get(this).setPlaybackBusy(player.getPlaybackState() == Player.STATE_BUFFERING);
+        List<PlaybackPreparation.Candidate> candidates = new ArrayList<>();
+        if (player.getPlaybackState() != Player.STATE_BUFFERING) {
+            int start = player.getCurrentMediaItemIndex() + 1;
+            for (int i = Math.max(0, start); i < player.getMediaItemCount() && candidates.size() < 2; i++) {
+                try {
+                    NativeMediaItems.OwnedItem item = NativeMediaItems.parse(player.getMediaItemAt(i));
+                    candidates.add(new PlaybackPreparation.Candidate(item.id, item.rules));
+                } catch (RuntimeException invalid) { /* Only owned queue entries are eligible. */ }
+            }
+        }
+        PlaybackPreparation.get(this).update("queue", candidates);
     }
 
     private void saveCurrentProgress() {
@@ -169,6 +188,8 @@ public final class PlaybackService extends MediaSessionService {
     }
 
     @Override public void onDestroy() {
+        PlaybackPreparation.get(this).update("queue", java.util.Collections.emptyList());
+        PlaybackPreparation.get(this).setPlaybackBusy(false);
         saveCurrentProgress();
         progressHandler.removeCallbacksAndMessages(null);
         progressWrites.shutdown();

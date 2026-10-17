@@ -20,6 +20,10 @@ The old Chrome PWA home-screen app was labelled **BlackYT Phone** and belongs to
 
 The queue lasts only for the current app session. The Library stores saved episode metadata, progress, and creators on the phone. Episodes with 30 seconds or less remaining resume from the beginning; saved creators fetch their latest videos when opened. Library data and Explore edits do not sync to an account or cloud, and the Library does not contain offline audio. Audio streams directly over HTTPS from the phone to YT's Googlevideo stream host, with no BlackYT cloud relay.
 
+## Playback preparation candidate
+
+The v0.5.2 source prepares the next two queue entries before up to three visible choices. Set **More options → Playback preparation** to Off, Unmetered connections (default), or Wi-Fi and mobile data. It warms addresses and metadata, not audio files. See [ads, privacy and preparation details](docs/PRIVACY.md) for rate/data limits, upstream requests and validation status. The candidate passed 33 unit tests and builds; physical-phone timing and regression checks are pending. The public v0.5.1 release is unchanged.
+
 ## Recovery
 
 - **No search results:** check the phone's internet connection, try the song title or artist, choose **All videos**, and clear or broaden include/exclude words.
