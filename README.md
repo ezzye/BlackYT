@@ -6,6 +6,10 @@ BlackYT is an Android app for finding and playing music and spoken videos availa
 
 <img src="assets/blackyt-mascot-v1.png" alt="BlackYT’s joyful songbird mascot, enjoying music with open wings" width="170">
 
+## Website and help
+
+Visit [blackyt.streamit2.me](https://blackyt.streamit2.me/) for the Android download, captioned promo, installation steps, everyday-use guide, FAQ and troubleshooting. The [website source](website/) is included in this repository.
+
 ## Install the native Android app
 
 The current native release is [v0.6.0](https://github.com/ezzye/BlackYT/releases/tag/v0.6.0), with **BlackYT-Android-v0.6.0.apk** (versionCode 60). Start with the detailed [Android installation guide](docs/INSTALL.md), or use the downloadable [offline HTML guide](https://github.com/ezzye/BlackYT/releases/download/v0.6.0/BlackYT-Android-Guide.html). No GitHub sign-in, developer settings, USB debugging, Termux, or Mac is needed for normal installation. Android 8 or newer is required. See [FAQ](docs/FAQ.md), [troubleshooting](docs/TROUBLESHOOTING.md), and [android/README.md](android/README.md) for source builds and signing. The Android component is GPL-3.0-or-later; see [android/LICENSE](android/LICENSE) and [android/NOTICE](android/NOTICE).

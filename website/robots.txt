@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://blackyt.streamit2.me/sitemap.xml

@@ -1,5 +1,7 @@
 # BlackYT FAQ
 
+BlackYT website: https://blackyt.streamit2.me/
+
 ## Which devices can run BlackYT?
 
 BlackYT is for Android only and requires Android 8.0 or newer. iPhone and iPad are not supported now. An iOS app is planned for later, with no release date. The v0.5.0 phone journey passed the share-preview, timestamp, creator, Library, Explore, and muted screen-off checks described below. Other devices and audible acceptance are not established.
@@ -16,7 +18,7 @@ If you see a Play Protect, “not verified,” developer-verification, work, or 
 
 ## How do I install it?
 
-Open the [v0.5.1 release page](https://github.com/ezzye/BlackYT/releases/tag/v0.5.1) and download **BlackYT-Android-v0.5.1.apk** from Assets. See [INSTALL.md](INSTALL.md) for steps.
+Open the [v0.6.0 release page](https://github.com/ezzye/BlackYT/releases/tag/v0.6.0) and download **BlackYT-Android-v0.6.0.apk** (versionCode 60) from Assets. See [INSTALL.md](INSTALL.md) for steps.
 
 ## Why is the app called BlackYT when my old icon says BlackYT Phone?
 
@@ -28,7 +30,7 @@ The v0.4.2 release adds a clearer bird-and-headphones launcher icon, including a
 
 ## Why did a video play in the wrong language?
 
-Update to v0.5.1 and select the video again. BlackYT prefers a creator’s original audio when YouTube identifies it, in any language. If that information is unavailable, it may use an alternate audio track. There is no manual audio-track selector.
+The v0.5.1 release introduced preference for a creator’s original audio when YT identifies it, in any language. The current v0.6.0 release retains this behavior. If original-audio information is unavailable, BlackYT may use an alternate track; there is no manual audio-track selector.
 
 ## What is new in v0.5.0?
 
