@@ -83,6 +83,8 @@ public final class MainActivity extends android.app.Activity {
     private String includeFilter = "", excludeFilter = "";
     private LinearLayout pageHost, resultsBox, queueBox, bottomTabs;
     private LinearLayout miniPlayer;
+    private LinearLayout offlineBox;
+    private String offlineRenderKey = "";
     private ImageView miniArtwork, playerArtwork;
     private TextView status, miniTitle, miniSubtitle, playerTitle, playerArtist;
     private TextView timeLabel, queueSummary, filtersChip, playerHint;
@@ -172,7 +174,7 @@ public final class MainActivity extends android.app.Activity {
     }
     private final Runnable ticker = new Runnable() {
         @Override public void run() {
-            if (!destroyed) { updatePlayer(); main.postDelayed(this, 1000); }
+            if (!destroyed) { updatePlayer(); renderOfflineDownloads(); main.postDelayed(this, 1000); }
         }
     };
 
@@ -180,6 +182,8 @@ public final class MainActivity extends android.app.Activity {
         if (pageHost != null) cancelArtworkInTree(pageHost);
         queryInput = null;
         resultsBox = null;
+        offlineBox = null;
+        offlineRenderKey = "";
         queueBox = null;
         status = null;
         searchProgress = null;
@@ -652,7 +656,16 @@ public final class MainActivity extends android.app.Activity {
             item.addView(playlistAdd,lp(dp(48),dp(48),0,0,0,0));
             item.addView(add, lp(dp(48), dp(48), 0, 0, 0, 0));
         }
-        if (!track.creatorUrl.isEmpty()) item.setOnLongClickListener(v -> { openCreator(track.creatorUrl); return true; });
+        item.setOnLongClickListener(v -> {
+            android.widget.PopupMenu menu = new android.widget.PopupMenu(this, item);
+            menu.getMenu().add("Download for 24 hours").setOnMenuItemClickListener(i -> {
+                YouTubeRepository.Rules rules = resultRules.get(track.id);
+                requestOfflineDownload(track, rules == null ? currentRules() : rules); return true;
+            });
+            if (!track.creatorUrl.isEmpty()) menu.getMenu().add("Browse creator")
+                    .setOnMenuItemClickListener(i -> { openCreator(track.creatorUrl); return true; });
+            menu.show(); return true;
+        });
         return item;
     }
 
@@ -827,6 +840,15 @@ public final class MainActivity extends android.app.Activity {
     private void showMoreMenu(View anchor) {
         android.widget.PopupMenu menu = new android.widget.PopupMenu(this, anchor);
         menu.getMenu().add("Save current episode").setOnMenuItemClickListener(item -> { saveCurrentEpisode(); return true; });
+        menu.getMenu().add("Download current for 24 hours").setOnMenuItemClickListener(item -> {
+            YouTubeRepository.Track track = currentTrack();
+            if (track == null) showPlaybackFeedback("Choose a song or episode first.");
+            else {
+                try { requestOfflineDownload(track, NativeMediaItems.parse(controller.getCurrentMediaItem()).rules); }
+                catch (IllegalArgumentException invalid) { showPlaybackFeedback("Choose a BlackYT item first."); }
+            }
+            return true;
+        });
         menu.getMenu().add("Your Library").setOnMenuItemClickListener(item -> { showTab(TAB_LIBRARY); return true; });
         menu.getMenu().add("Edit Explore topics").setOnMenuItemClickListener(item -> { showExploreEditor(); return true; });
         YouTubeRepository.Track current = currentTrack();
@@ -1519,7 +1541,7 @@ public final class MainActivity extends android.app.Activity {
                 })
                 .setNeutralButton("How it works", (dialog, which) -> new android.app.AlertDialog.Builder(this)
                         .setTitle("Prepare likely next items")
-                        .setMessage("Prepares the next two queued items, then the first visible result. Where YT exposes a stable audio identity, it buffers up to 384 KiB of each item in a rolling 32 MiB cache on this phone. This is a temporary opening buffer, not an offline download library; very short clips can fit within the byte cap. Up to eight items are prepared per minute. Unmetered connections is the default; mobile data is optional. Off cancels preparation and clears prepared audio in the background. Preparation sends extra requests to YT before you tap. Playback falls back to direct streaming if caching is unavailable; connection and buffering delays can still occur.")
+                        .setMessage("Prepares up to 2 MB each for the next two queued items, then the first visible result, in a rolling 64 MB cache. Preparation waits while the current track has less than 30 seconds buffered. Unmetered connections is the default; mobile data is optional. Off cancels preparation and clears this opening cache. For a journey without signal, choose Download for 24 hours and wait for Ready offline in Library. Temporary downloads are separate from this setting.")
                         .setPositiveButton("Got it", null).show())
                 .setNegativeButton("Close", null).show();
     }
@@ -1890,6 +1912,13 @@ public final class MainActivity extends android.app.Activity {
         LinearLayout root = pageColumn(scroll);
         root.addView(text("Your Library", 26, CREAM, true), lp(-1, dp(52), 0, 0, 0, 4));
         root.addView(text("Saved on this phone. Return to an episode where you left off.", 13, MUTED, false), lp(-1, -2, 0, 0, 0, 14));
+        root.addView(text("Temporary downloads", 18, CREAM, true), lp(-1, -2, 0, 0, 0, 8));
+        root.addView(text("For journeys without signal · up to 512 MB · expires after 24 hours. Keep BlackYT open until Ready offline.", 13, MUTED, false), lp(-1, -2, 0, 0, 0, 10));
+        offlineBox = new LinearLayout(this);
+        offlineBox.setOrientation(LinearLayout.VERTICAL);
+        root.addView(offlineBox, lp(-1, -2, 0, 0, 0, 16));
+        offlineRenderKey = "";
+        renderOfflineDownloads();
         List<PlaylistStore.Playlist> savedPlaylists=playlists.list();
         LinearLayout playlistHeading=row();
         playlistHeading.addView(text("Playlists · " + savedPlaylists.size(),18,CREAM,true),new LinearLayout.LayoutParams(0,dp(48),1));
@@ -1950,6 +1979,7 @@ public final class MainActivity extends android.app.Activity {
                 android.widget.PopupMenu menu = new android.widget.PopupMenu(this, more);
                 menu.getMenu().add("Play from beginning").setOnMenuItemClickListener(i -> { playTrack(episode.track, episode.rules, 0); return true; });
                 menu.getMenu().add("Add to queue").setOnMenuItemClickListener(i -> { addToQueue(episode.track, episode.rules); return true; });
+                menu.getMenu().add("Download for 24 hours").setOnMenuItemClickListener(i -> { requestOfflineDownload(episode.track, episode.rules); return true; });
                 if (!episode.track.creatorUrl.isEmpty()) menu.getMenu().add("Browse creator").setOnMenuItemClickListener(i -> { openCreator(episode.track.creatorUrl); return true; });
                 menu.getMenu().add("Remove from Library").setOnMenuItemClickListener(i -> {
                     listening.removeEpisode(episode.track.id); showTab(TAB_LIBRARY); return true;
@@ -2204,6 +2234,100 @@ public final class MainActivity extends android.app.Activity {
                 item.mediaMetadata.extras == null ? 0 : item.mediaMetadata.extras.getLong("blackyt_duration_seconds", 0),
                 item.mediaMetadata.artworkUri == null ? "" : item.mediaMetadata.artworkUri.toString(),
                 item.mediaMetadata.extras == null ? "" : item.mediaMetadata.extras.getString("blackyt_creator_url", ""));
+    }
+
+    private void requestOfflineDownload(YouTubeRepository.Track track, YouTubeRepository.Rules rules) {
+        if (OfflineAudioStore.get(this).open(track.id, rules) != null) {
+            showPlaybackFeedback("Already ready offline · find it in Library");
+            return;
+        }
+        new android.app.AlertDialog.Builder(this).setTitle("Download for your journey")
+                .setMessage("Download the full audio of “" + track.title + "” using Wi-Fi or mobile data. Keep BlackYT open until Library says Ready offline. The download expires 24 hours after completion. Use content you have permission to download.")
+                .setNegativeButton("Cancel", null)
+                .setPositiveButton("Download", (dialog, which) -> {
+                    try {
+                        OfflineAudioStore.get(this).download(track, rules);
+                        showPlaybackFeedback("Download queued · see Temporary downloads in Library");
+                        renderOfflineDownloads();
+                    } catch (IllegalArgumentException | IllegalStateException invalid) {
+                        showPlaybackFeedback(invalid.getMessage());
+                    }
+                }).show();
+    }
+
+    private void renderOfflineDownloads() {
+        if (offlineBox == null || destroyed) return;
+        List<OfflineAudioStore.Entry> entries = OfflineAudioStore.get(this).list();
+        StringBuilder key = new StringBuilder().append(System.currentTimeMillis() / 60_000);
+        for (OfflineAudioStore.Entry entry : entries) key.append(entry.track.id).append(entry.status)
+                .append(entry.bytesDownloaded / (64 * 1024)).append(entry.error).append(entry.expiresAtMs);
+        String nextKey = entries.isEmpty() ? "empty" : key.toString();
+        if (nextKey.equals(offlineRenderKey)) return;
+        offlineRenderKey = nextKey;
+        offlineBox.removeAllViews();
+        if (entries.isEmpty()) {
+            offlineBox.addView(text("In Now Playing, open ⋮ → Download current for 24 hours. You can also hold a search result or open a saved episode’s options.", 14, MUTED, false));
+        }
+        for (OfflineAudioStore.Entry entry : entries) {
+            LinearLayout line = row();
+            LinearLayout words = new LinearLayout(this);
+            words.setOrientation(LinearLayout.VERTICAL);
+            TextView title = text(entry.track.title, 14, CREAM, true);
+            title.setMaxLines(2);
+            words.addView(title);
+            String detail;
+            switch (entry.status) {
+                case READY:
+                    long minutes = Math.max(1, (entry.expiresAtMs - System.currentTimeMillis()) / 60_000);
+                    detail = "Ready offline · " + offlineSize(entry.totalBytes) + " · expires in "
+                            + (minutes >= 60 ? (minutes / 60) + "h" : minutes + "m");
+                    break;
+                case DOWNLOADING:
+                    detail = "Downloading · " + offlineSize(entry.bytesDownloaded)
+                            + (entry.totalBytes > 0 ? " / " + offlineSize(entry.totalBytes) : "")
+                            + " · waits if playback needs data";
+                    break;
+                case FAILED: detail = entry.error; break;
+                default: detail = "Queued · keep BlackYT open";
+            }
+            words.addView(text(detail, 12, entry.status == OfflineAudioStore.Status.READY ? LIME : MUTED, false), lp(-1, -2, 0, 4, 0, 0));
+            line.addView(words, new LinearLayout.LayoutParams(0, -2, 1));
+            ImageButton options = iconButton(R.drawable.ic_more, "Download options for " + entry.track.title, MUTED);
+            options.setOnClickListener(v -> {
+                android.widget.PopupMenu menu = new android.widget.PopupMenu(this, options);
+                if (entry.status == OfflineAudioStore.Status.READY) {
+                    menu.getMenu().add("Play offline").setOnMenuItemClickListener(i -> { playOfflineEntry(entry); return true; });
+                    menu.getMenu().add("Add to queue").setOnMenuItemClickListener(i -> { addToQueue(entry.track, entry.rules); return true; });
+                }
+                if (entry.status == OfflineAudioStore.Status.FAILED)
+                    menu.getMenu().add("Retry download").setOnMenuItemClickListener(i -> { requestOfflineDownload(entry.track, entry.rules); return true; });
+                menu.getMenu().add(entry.status == OfflineAudioStore.Status.QUEUED || entry.status == OfflineAudioStore.Status.DOWNLOADING
+                        ? "Cancel download" : "Remove download").setOnMenuItemClickListener(i -> {
+                    OfflineAudioStore.get(this).remove(entry.track.id); renderOfflineDownloads(); return true;
+                });
+                menu.show();
+            });
+            line.addView(options, lp(dp(48), dp(48), 0, 0, 0, 0));
+            if (entry.status == OfflineAudioStore.Status.READY) {
+                touchFeedback(line, 5);
+                line.setContentDescription("Play offline " + entry.track.title);
+                line.setOnClickListener(v -> playOfflineEntry(entry));
+            }
+            offlineBox.addView(line, lp(-1, -2, 0, 4, 0, 8));
+        }
+    }
+
+    private void playOfflineEntry(OfflineAudioStore.Entry entry) {
+        if (OfflineAudioStore.get(this).open(entry.track.id, entry.rules) == null) {
+            showPlaybackFeedback("This download has expired or was removed. Download it again before travelling.");
+            renderOfflineDownloads(); return;
+        }
+        playTrack(entry.track, entry.rules, listening.resumePositionMs(entry.track.id));
+        openFullPlayer();
+    }
+
+    private static String offlineSize(long bytes) {
+        return String.format(Locale.ROOT, "%.1f MB", bytes / (1024.0 * 1024.0));
     }
 
     private void saveCurrentEpisode() {

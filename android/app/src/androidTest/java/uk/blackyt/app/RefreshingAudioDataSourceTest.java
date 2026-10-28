@@ -124,6 +124,56 @@ public final class RefreshingAudioDataSourceTest {
         assertNull(source.getUri());
     }
 
+    @Test public void read403ResumesAtNextByteWithOneRefresh() throws Exception {
+        DataSpec original = sampleSpec();
+        FakeDataSource first = FakeDataSource.readDenied(403, original, new byte[] {1, 2, 3});
+        FakeDataSource retry = FakeDataSource.success(new byte[] {4, 5});
+        FakeResolver resolver = new FakeResolver();
+        RefreshingAudioDataSource source = new RefreshingAudioDataSource(new FakeFactory(first, retry), resolver);
+        TransferListener listener = new NoOpTransferListener(); source.addTransferListener(listener);
+        source.open(original);
+        byte[] bytes = new byte[5];
+        assertEquals(3, source.read(bytes, 0, 3));
+        assertEquals(2, source.read(bytes, 3, 2));
+        assertArrayEquals(new byte[] {1, 2, 3, 4, 5}, bytes);
+        DataSpec resume = original.subrange(3);
+        assertPreservedExceptUri(resume, retry.openedSpec, FRESH_URL);
+        assertEquals(resume.position, resolver.specs.get(1).position);
+        assertEquals(resume.length, resolver.specs.get(1).length);
+        assertEquals(original.uri, resolver.specs.get(1).uri);
+        assertEquals(Arrays.asList(false, true), resolver.freshCalls);
+        assertEquals(1, first.closeCalls);
+        assertSame(listener, retry.listeners.get(0));
+        source.close(); assertEquals(1, retry.closeCalls);
+    }
+
+    @Test public void openRefreshConsumesBudgetForLaterRead403() throws Exception {
+        DataSpec original = sampleSpec();
+        FakeDataSource first = FakeDataSource.denied(403, original);
+        FakeDataSource retry = FakeDataSource.readDenied(403, original, new byte[] {8});
+        FakeResolver resolver = new FakeResolver();
+        FakeFactory factory = new FakeFactory(first, retry);
+        RefreshingAudioDataSource source = new RefreshingAudioDataSource(factory, resolver);
+        source.open(original); byte[] b = new byte[2]; assertEquals(1, source.read(b, 0, 1));
+        try { source.read(b, 0, 1); fail("Expected second HTTP 403"); }
+        catch (HttpDataSource.InvalidResponseCodeException expected) { assertEquals(403, expected.responseCode); }
+        assertEquals(Arrays.asList(false, true), resolver.freshCalls);
+        assertEquals(2, factory.created.size()); source.close();
+    }
+
+    @Test public void secondRead403DoesNotRefreshAgain() throws Exception {
+        DataSpec original = sampleSpec();
+        FakeDataSource first = FakeDataSource.readDenied(403, original, new byte[] {1});
+        FakeDataSource second = FakeDataSource.readDenied(403, original, new byte[] {2});
+        FakeResolver resolver = new FakeResolver();
+        RefreshingAudioDataSource source = new RefreshingAudioDataSource(new FakeFactory(first, second), resolver);
+        source.open(original); byte[] b = new byte[1]; assertEquals(1, source.read(b, 0, 1));
+        assertEquals(1, source.read(b, 0, 1)); assertEquals(2, b[0]);
+        try { source.read(b, 0, 1); fail("Expected second HTTP 403"); }
+        catch (HttpDataSource.InvalidResponseCodeException expected) { assertEquals(403, expected.responseCode); }
+        assertEquals(Arrays.asList(false, true), resolver.freshCalls); source.close();
+    }
+
     private static DataSpec sampleSpec() {
         Map<String, String> headers = new HashMap<>();
         headers.put("X-Test-Header", "kept");
@@ -153,8 +203,10 @@ public final class RefreshingAudioDataSourceTest {
 
     private static final class FakeResolver implements RefreshingAudioDataSource.StreamResolver {
         final List<Boolean> freshCalls = new java.util.ArrayList<>();
+        final List<DataSpec> specs = new java.util.ArrayList<>();
         @Override public Uri resolve(DataSpec original, boolean fresh) {
             freshCalls.add(fresh);
+            specs.add(original);
             return fresh ? FRESH_URL : FIRST_URL;
         }
     }
@@ -173,6 +225,7 @@ public final class RefreshingAudioDataSourceTest {
     private static final class FakeDataSource implements DataSource {
         final IOException failure;
         final byte[] bytes;
+        IOException readFailure;
         final List<TransferListener> listeners = new java.util.ArrayList<>();
         DataSpec openedSpec;
         Uri uri;
@@ -187,6 +240,12 @@ public final class RefreshingAudioDataSourceTest {
             return new FakeDataSource(new HttpDataSource.InvalidResponseCodeException(status,
                     "denied", null, Collections.emptyMap(), request, new byte[0]), new byte[0]);
         }
+        static FakeDataSource readDenied(int status, DataSpec request, byte[] bytes) {
+            FakeDataSource result = new FakeDataSource(null, bytes);
+            result.readFailure = new HttpDataSource.InvalidResponseCodeException(status,
+                    "denied", null, Collections.emptyMap(), request, new byte[0]);
+            return result;
+        }
         static FakeDataSource success(byte[] bytes) { return new FakeDataSource(null, bytes); }
         @Override public void addTransferListener(TransferListener listener) { listeners.add(listener); }
         @Override public long open(DataSpec dataSpec) throws IOException {
@@ -195,7 +254,8 @@ public final class RefreshingAudioDataSourceTest {
             if (failure != null) throw failure;
             return 12L;
         }
-        @Override public int read(byte[] buffer, int bufferOffset, int length) {
+        @Override public int read(byte[] buffer, int bufferOffset, int length) throws IOException {
+            if (offset >= bytes.length && readFailure != null) throw readFailure;
             if (offset >= bytes.length) return -1;
             int count = Math.min(length, bytes.length - offset);
             System.arraycopy(bytes, offset, buffer, bufferOffset, count);

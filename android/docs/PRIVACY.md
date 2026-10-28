@@ -22,6 +22,10 @@ Playback preparation targets the next two queued items and the first visible ite
 
 Existing search filters are still checked on playback, and original-track handling remains. A changed source format can require tapping **Retry current song**. Preparation issues should not be described as offline playback or guaranteed speed improvements.
 
+## v0.7.0 preview: buffering and temporary downloads
+
+Opening preparation may retain up to 2 MiB per item within a 64 MiB rolling cache. Current playback takes priority below 30 seconds of buffered audio. Explicit **Download for 24 hours** actions separately request the full audio over the current Wi-Fi or mobile connection and store verified complete files in app-private storage, capped at 256 MiB each and 512 MiB total, with at most 100 entries. These downloads expire 24 hours after completion and are cleaned on the next expiry check. They stay available when ordinary preparation is turned off; use Library to cancel or remove them. Saved metadata includes track, rules, completion size, status and expiry, never a signed stream URL. Downloads need the app process to remain alive until completion. They do not upload to a BlackYT account or service.
+
 ## Validation status
 
 The signed v0.6.0 versionCode 60 APK was installed and checked on a USB-connected Pixel with app data preserved; the owner confirmed audible playback. The live check covered search, playlist creation, optional suggestions, queue additions and appending, and full-player next/previous gestures. Four instrumentation checks passed, including natural progression after a 247.873-second sample while locked with the screen off over Wi-Fi. All 41 JVM unit tests pass and release lint has zero errors and 19 warnings. No mobile-data validation is claimed. This is a bounded device check, not a claim that every source, network, or Android device works.

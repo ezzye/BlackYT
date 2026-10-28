@@ -34,7 +34,7 @@ The v0.5.1 release introduced preference for a creator’s original audio when Y
 
 ## What is new in v0.5.0?
 
-Share or open a supported YT video link in BlackYT to see a preview without autoplay. `youtu.be` links and timestamps are supported; for example, `t=205s` starts at 3:25 after you choose to play. Search offers **Music**, **All videos**, and **Creators**; open a creator to browse and page through its Videos, then save it to Library. Library saves episode metadata and listening progress and keeps saved creators on the phone. Episodes within 30 seconds of the end resume from the beginning. Explore topics can be added, edited, moved, removed, or restored to defaults. There is no account or cloud sync, offline audio, podcast directory, RSS reader, or subscription system.
+Share or open a supported YT video link in BlackYT to see a preview without autoplay. `youtu.be` links and timestamps are supported; for example, `t=205s` starts at 3:25 after you choose to play. Search offers **Music**, **All videos**, and **Creators**; open a creator to browse and page through its Videos, then save it to Library. Library saves episode metadata and listening progress and keeps saved creators on the phone. Episodes within 30 seconds of the end resume from the beginning. Explore topics can be added, edited, moved, removed, or restored to defaults. There is no account or cloud sync, podcast directory, RSS reader, or subscription system. The released v0.6.0 has no offline audio; the v0.7.0 preview adds temporary 24-hour audio downloads in Library. See [the preview instructions](../android/README.md#v070-preview-smoother-playback-and-temporary-downloads).
 
 ## Can I listen to podcasts, and are the Explore tiles a limited catalog?
 

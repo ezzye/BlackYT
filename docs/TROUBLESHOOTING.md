@@ -30,7 +30,7 @@ Start with the issue that best matches what you see. For safety warnings about t
 | Next does nothing, or the queue is empty | **Add** appends to the FIFO queue; it does not start playback. Tap a result to start it, then add more. Next advances through queued tracks. |
 | A swipe does not change tracks, or a short drag skips | Swipe horizontally across the artwork or miniplayer: left goes to the next queued track and right goes to the previous one. Short vertical drags and taps should not skip. The queue does not wrap at its first or last item. |
 | My queue disappeared | The queue lasts only for the current app session. Force-stopping BlackYT, the phone restarting, or Android ending its process can clear it. Pressing Home or locking the screen while music plays is supported. Recent search phrases are saved separately, up to eight. |
-| Mobile-data playback uses too much data | Streaming uses your phone's data plan. Prefer Wi-Fi when available or stop playback. BlackYT does not save music for offline listening. |
+| Mobile-data playback uses too much data | Streaming uses your phone's data plan. Prefer Wi-Fi when available or stop playback. The v0.7.0 preview can download full audio in advance; use Wi-Fi and wait for Ready offline in Library. The released v0.6.0 does not include this feature. |
 
 ## Links, Library, and Explore
 
@@ -52,3 +52,11 @@ Start with the issue that best matches what you see. For safety warnings about t
 - **An update will not install over my current app.** Do not uninstall first if you want to retain app data. Send the exact message and whether your installed app is named BlackYT or BlackYT Phone to the maintainer.
 
 If these steps do not help, [open a support issue](https://github.com/ezzye/BlackYT/issues/new) and include the phone model, Android version, exact error text, and which step you reached. Do not send passwords, signing keys, access tokens, or private account information.
+
+## v0.7.0 preview: interruptions and Tube journeys
+
+- **Repeated starting and stopping:** the preview waits for a larger reserve after interruptions and suspends preparation while the current track is low on buffered audio. A slower start can be expected on a weak connection. A long signal loss still needs a completed download.
+- **Ready for the Tube:** in Now Playing open ⋮ → Download current for 24 hours. Keep the app open and connected until Library → Temporary downloads says Ready offline. Tap that item to play after losing signal.
+- **Download failed or was interrupted:** reconnect and use Retry download in the item’s options. Partial transfers never show Ready offline. A stream with no verifiable size cannot be downloaded.
+- **Download is gone:** it expires 24 hours after completion. Download again before the next journey. Turning playback preparation Off does not remove explicit temporary downloads; remove them in Library.
+- **Preview installation:** BlackYT Preview installs alongside BlackYT and has its own Library. Do not uninstall the released app to test this build. Only an update signed with the original release key can replace it in place.
