@@ -1,0 +1,133 @@
+{
+  "date": "2026-10-28",
+  "versionName": "0.7.0-native-preview",
+  "versionCode": 70,
+  "package": "uk.blackyt.app.preview",
+  "delivery": "Separate locally debug-signed preview; production release remains v0.6.0, requires original private signing key for update",
+  "build": {
+    "unitTests": {
+      "passed": 41,
+      "failed": 0
+    },
+    "targetedDeviceTests": {
+      "uniquePassed": 22,
+      "failed": 0,
+      "breakdown": {
+        "buffering": 1,
+        "offlineStore": 9,
+        "offlinePlayback": 1,
+        "existing403AndByteRangeTransport": 7,
+        "queryRangeTransport": 4
+      },
+      "device": "API 36 arm64 Pixel 7 emulator"
+    },
+    "lintRelease": {
+      "errors": 0,
+      "warnings": 19
+    },
+    "assembleDebug": "passed",
+    "assemblePreview": "passed",
+    "apkSha256": "0b8df22ccb9b4dfd4f61ad1035696669d72c90da1a8a2014f2f832e93a423b03",
+    "finalCombinedDeviceRun": {
+      "tests": 22,
+      "failures": 0,
+      "errors": 0,
+      "status": "passed"
+    }
+  },
+  "bufferingExperiment": {
+    "fixture": "Generated 40-second PCM WAV, four scripted six-second read outages at five-second byte intervals",
+    "runWallTimeMsEach": 32000,
+    "oldDefaults": {
+      "postStartBufferingEvents": 4,
+      "startupMs": 77,
+      "positionMs": 27878
+    },
+    "newPolicy": {
+      "postStartBufferingEvents": 0,
+      "startupMs": 6026,
+      "positionMs": 25976
+    },
+    "limitation": "Controlled data-source simulation, not reproduction of this particular phone/network/video combination"
+  },
+  "offlineEvidence": {
+    "realExoPlayer": "Position advances, seeks past 15 seconds, streaming factory never accessed",
+    "airplaneMode": "OfflinePlaybackDeviceTest passed separately with emulator airplane_mode_on=1; restored after test",
+    "coverage": [
+      "completion persistence",
+      "random byte reads",
+      "truncation",
+      "per-item cap",
+      "total cap",
+      "cancellation while paused",
+      "expiry",
+      "rules match",
+      "interrupted transfer cleanup",
+      "entry cap/orphan cleanup",
+      "500 repeated requeues",
+      "preserve existing ready copy"
+    ]
+  },
+  "limits": {
+    "expiryHours": 24,
+    "totalMiB": 512,
+    "itemMiB": 256,
+    "entries": 100,
+    "processMustRemainAliveForDownloads": true
+  },
+  "phoneAcceptance": "Not performed: no physical Android device attached",
+  "ownerAcceptance": "Unreviewed",
+  "liveProviderCheck": {
+    "videoId": "1OdoSzfUkec",
+    "title": "Dario & Daniela Amodei: The Rise of Superintelligent AI, the End of Human Control & Humanity\u2019s Fate",
+    "declaredDurationSeconds": 2526,
+    "oldFullRequest": {
+      "status": 200,
+      "bytesReadBeforeDeadline": 16384,
+      "deadlineMs": 12006
+    },
+    "queryRangeProbes": [
+      {
+        "start": 0,
+        "length": 1048576,
+        "elapsedMs": 1457
+      },
+      {
+        "start": 1048576,
+        "length": 1048576,
+        "elapsedMs": 3621
+      }
+    ],
+    "overlapValidation": "128 equal bytes across 1 MiB boundary from two independently requested overlapping ranges",
+    "completeDownload": {
+      "status": "READY",
+      "bytes": 15402379,
+      "elapsedMs": 10835
+    },
+    "realOfflinePlayback": {
+      "positionMs": 523,
+      "positionAfter15MinuteSeekMs": 900535,
+      "streamingFactoryCalls": 0
+    },
+    "limitations": [
+      "Different terminal CDN hosts limit attribution of the slowdown",
+      "One episode/emulator/network; no physical phone or audible owner acceptance"
+    ],
+    "airplaneModeRetest": {
+      "airplaneEnabled": true,
+      "wifiEnabled": false,
+      "readyCopyPreserved": true,
+      "positionMs": 505,
+      "positionAfter15MinuteSeekMs": 900503,
+      "streamingFactoryCalls": 0,
+      "deviceConnectivityRestored": true
+    },
+    "liveStreaming": {
+      "playedPositionMs": 15040,
+      "elapsedIncludingStartupMs": 44161,
+      "mediaHttpCalls": 3,
+      "passed": true,
+      "limitation": "Connectivity/decoding check only; did not count live stutters; startup was about 29 seconds on this run"
+    }
+  }
+}

@@ -26,6 +26,9 @@ final class RefreshingAudioDataSource implements DataSource {
     private final StreamResolver resolver;
     private final List<TransferListener> transferListeners = new ArrayList<>();
     private DataSource upstream;
+    private DataSpec originalSpec;
+    private long bytesRead;
+    private boolean refreshed;
 
     RefreshingAudioDataSource(DataSource.Factory http, StreamResolver resolver) {
         this.http = Objects.requireNonNull(http);
@@ -40,6 +43,9 @@ final class RefreshingAudioDataSource implements DataSource {
 
     @Override public long open(DataSpec original) throws IOException {
         close();
+        originalSpec = original;
+        bytesRead = 0;
+        refreshed = false;
         Uri firstUri = requireResolvedUri(resolver.resolve(original, false));
         DataSource first = newUpstream();
         upstream = first;
@@ -47,6 +53,7 @@ final class RefreshingAudioDataSource implements DataSource {
             return first.open(original.withUri(firstUri));
         } catch (HttpDataSource.InvalidResponseCodeException failure) {
             if (failure.responseCode != 403) throw failure;
+            refreshed = true;
             closeAfterDenied(first, failure);
         }
 
@@ -59,7 +66,22 @@ final class RefreshingAudioDataSource implements DataSource {
 
     @Override public int read(byte[] buffer, int offset, int length) throws IOException {
         if (upstream == null) throw new IOException("Audio source is not open.");
-        return upstream.read(buffer, offset, length);
+        int count;
+        try {
+            count = upstream.read(buffer, offset, length);
+        } catch (HttpDataSource.InvalidResponseCodeException failure) {
+            if (failure.responseCode != 403 || refreshed) throw failure;
+            refreshed = true;
+            closeAfterDenied(upstream, failure);
+            DataSpec resume = originalSpec.subrange(bytesRead);
+            Uri freshUri = requireResolvedUri(resolver.resolve(resume, true));
+            DataSource retry = newUpstream();
+            upstream = retry;
+            retry.open(resume.withUri(freshUri));
+            count = retry.read(buffer, offset, length);
+        }
+        if (count > 0) bytesRead += count;
+        return count;
     }
 
     @Override public Uri getUri() {
@@ -73,6 +95,9 @@ final class RefreshingAudioDataSource implements DataSource {
     @Override public void close() throws IOException {
         DataSource current = upstream;
         upstream = null;
+        originalSpec = null;
+        bytesRead = 0;
+        refreshed = false;
         if (current != null) current.close();
     }
 

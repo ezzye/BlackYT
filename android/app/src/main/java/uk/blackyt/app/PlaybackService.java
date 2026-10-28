@@ -36,14 +36,15 @@ public final class PlaybackService extends MediaSessionService {
     private MediaSession session;
     private ListeningStore listening;
     private String pinnedMediaId = "";
+    private int progressSamples;
     private final android.os.Handler progressHandler = new android.os.Handler(android.os.Looper.getMainLooper());
     private final java.util.concurrent.ExecutorService progressWrites = java.util.concurrent.Executors.newSingleThreadExecutor();
     private final Runnable progressTick = new Runnable() {
         @Override public void run() {
             if (player == null) return;
-            if (player.isPlaying()) saveCurrentProgress();
+            if (++progressSamples % 5 == 0 && player.isPlaying()) saveCurrentProgress();
             updateQueuePreparation();
-            progressHandler.postDelayed(this, 10000);
+            progressHandler.postDelayed(this, 2000);
         }
     };
 
@@ -51,8 +52,9 @@ public final class PlaybackService extends MediaSessionService {
         super.onCreate();
         listening = new ListeningStore(this);
         YouTubeRepository repository = YouTubeRepository.get();
-        DataSource.Factory http = new OkHttpDataSource.Factory(repository.mediaClient())
+        DataSource.Factory rawHttp = new OkHttpDataSource.Factory(repository.mediaClient())
                 .setUserAgent(YouTubeRepository.USER_AGENT);
+        DataSource.Factory http = () -> new QueryRangeAudioDataSource(rawHttp);
         DataSource.Factory ownedOnly = () -> new RefreshingAudioDataSource(http, (dataSpec, fresh) -> {
             NativeMediaItems.OwnedItem item = parseOwnedDataSpec(dataSpec);
             try {
@@ -85,7 +87,9 @@ public final class PlaybackService extends MediaSessionService {
             }
         };
         player = new ExoPlayer.Builder(this)
-                .setMediaSourceFactory(new DefaultMediaSourceFactory(this).setDataSourceFactory(playbackFactory))
+                .setLoadControl(PlaybackBufferPolicy.createLoadControl())
+                .setMediaSourceFactory(new DefaultMediaSourceFactory(this).setDataSourceFactory(
+                        () -> new OfflineFirstAudioDataSource(OfflineAudioStore.get(this), playbackFactory)))
                 .setWakeMode(C.WAKE_MODE_NETWORK)
                 .setAudioAttributes(new AudioAttributes.Builder().setUsage(C.USAGE_MEDIA)
                         .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC).build(), true)
@@ -140,9 +144,12 @@ public final class PlaybackService extends MediaSessionService {
 
     private void updateQueuePreparation() {
         if (player == null) return;
-        PlaybackPreparation.get(this).setPlaybackBusy(player.getPlaybackState() == Player.STATE_BUFFERING);
+        boolean lowReserve = player.getPlayWhenReady() && PlaybackBufferPolicy.shouldPausePreparation(
+                player.getPlaybackState(), player.getTotalBufferedDuration());
+        PlaybackPreparation.get(this).setPlaybackBusy(lowReserve);
+        OfflineAudioStore.get(this).setPlaybackBusy(lowReserve);
         List<PlaybackPreparation.Candidate> candidates = new ArrayList<>();
-        if (player.getPlaybackState() != Player.STATE_BUFFERING) {
+        if (!lowReserve) {
             int start = player.getCurrentMediaItemIndex() + 1;
             for (int i = Math.max(0, start); i < player.getMediaItemCount() && candidates.size() < 2; i++) {
                 try {
@@ -217,6 +224,7 @@ public final class PlaybackService extends MediaSessionService {
     @Override public void onDestroy() {
         PlaybackPreparation.get(this).update("queue", java.util.Collections.emptyList());
         PlaybackPreparation.get(this).setPlaybackBusy(false);
+        OfflineAudioStore.get(this).setPlaybackBusy(false);
         PlaybackFormatPins.clear(pinnedMediaId);
         saveCurrentProgress();
         progressHandler.removeCallbacksAndMessages(null);

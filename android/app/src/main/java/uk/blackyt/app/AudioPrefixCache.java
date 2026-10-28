@@ -18,8 +18,8 @@ import java.util.function.BooleanSupplier;
 /** Small on-device cache for the first fraction of explicitly upcoming audio. */
 @androidx.media3.common.util.UnstableApi
 final class AudioPrefixCache {
-    static final long MAX_BYTES = 32L * 1024 * 1024;
-    static final long PREFIX_BYTES = 384L * 1024;
+    static final long MAX_BYTES = 64L * 1024 * 1024;
+    static final long PREFIX_BYTES = 2L * 1024 * 1024;
     private static volatile AudioPrefixCache instance;
     private static final java.util.concurrent.ExecutorService maintenance =
             java.util.concurrent.Executors.newSingleThreadExecutor(r -> {
@@ -81,9 +81,11 @@ final class AudioPrefixCache {
         if (cacheKey == null || cache.isCached(cacheKey, 0, PREFIX_BYTES)) return;
         YouTubeRepository repository = YouTubeRepository.get();
         AtomicBoolean formatChanged = new AtomicBoolean();
-        androidx.media3.datasource.DataSource.Factory upstream = () -> new RefreshingAudioDataSource(
+        androidx.media3.datasource.DataSource.Factory rawHttp =
                 new androidx.media3.datasource.okhttp.OkHttpDataSource.Factory(repository.mediaClient())
-                        .setUserAgent(YouTubeRepository.USER_AGENT), (dataSpec, fresh) -> {
+                        .setUserAgent(YouTubeRepository.USER_AGENT);
+        androidx.media3.datasource.DataSource.Factory upstream = () -> new RefreshingAudioDataSource(
+                () -> new QueryRangeAudioDataSource(rawHttp), (dataSpec, fresh) -> {
                     try {
                         String pathId = dataSpec.uri.getLastPathSegment();
                         NativeMediaItems.OwnedItem owned = NativeMediaItems.parse(

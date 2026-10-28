@@ -5,7 +5,7 @@ if (signingFile.exists()) signingFile.withInputStream { signingProperties.load(i
 android {
  namespace 'uk.blackyt.app'
  compileSdk 36
- defaultConfig { applicationId 'uk.blackyt.app'; minSdk 26; targetSdk 36; versionCode 60; versionName '0.6.0-native'; testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner' }
+ defaultConfig { applicationId 'uk.blackyt.app'; minSdk 26; targetSdk 36; versionCode 70; versionName '0.7.0-native'; testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'; manifestPlaceholders = [appLabel: 'BlackYT'] }
  buildFeatures { buildConfig true }
  compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17; coreLibraryDesugaringEnabled true }
  signingConfigs {
@@ -16,6 +16,15 @@ android {
  }
  buildTypes {
   debug { if (signingFile.exists()) signingConfig signingConfigs.nativeLocal }
+  preview {
+   initWith debug
+   applicationIdSuffix '.preview'
+   versionNameSuffix '-preview'
+   manifestPlaceholders = [appLabel: 'BlackYT Preview']
+   // Install beside the released app, preserving its saved Library and playlists.
+   signingConfig signingConfigs.debug
+   matchingFallbacks = ['debug']
+  }
   release { minifyEnabled false; if (signingFile.exists()) signingConfig signingConfigs.nativeLocal }
  }
  packaging { resources { excludes += ['META-INF/DEPENDENCIES','META-INF/INDEX.LIST'] } }
