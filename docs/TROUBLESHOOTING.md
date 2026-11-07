@@ -52,3 +52,8 @@ Start with the issue that best matches what you see. For safety warnings about t
 - **An update will not install over my current app.** Do not uninstall first if you want to retain app data. Send the exact message and whether your installed app is named BlackYT or BlackYT Phone to the maintainer.
 
 If these steps do not help, [open a support issue](https://github.com/ezzye/BlackYT/issues/new) and include the phone model, Android version, exact error text, and which step you reached. Do not send passwords, signing keys, access tokens, or private account information.
+
+
+## Journey-buffer test update
+
+The v0.7.0-rc1 test build adds a six-hour bounded audio cache and stronger rebuffering. See the [journey-buffer guide](JOURNEY-BUFFER.md) for installation, network/data controls, limits and the pending Pixel test.

@@ -84,3 +84,8 @@ A 403 is an HTTP refusal, and does not identify its cause. In the Pixel checks a
 See [YT region-availability help](https://support.google.com/youtube/answer/92571?hl=en) and [Android's HTTP playback error reference](https://developer.android.com/reference/androidx/media3/common/PlaybackException#ERROR_CODE_IO_BAD_HTTP_STATUS).
 
 Final v0.5.0 checks: **20 release unit tests and 14 phone instrumentation tests passed**; release lint had zero errors and 19 warnings. A complete 208.564-second song advanced naturally to the next queued track on mobile data. The full two-minute sample stayed locked/display asleep, and both conditions held at the next track. USB remained connected; playback was app-muted. See the versioned verification JSON for evidence and limits.
+
+
+## Journey-buffer test update
+
+The v0.7.0-rc1 test build adds a six-hour bounded audio cache and stronger rebuffering. See the [journey-buffer guide](JOURNEY-BUFFER.md) for installation, network/data controls, limits and the pending Pixel test.

@@ -1,0 +1,33 @@
+{
+  "version": "0.7.0-rc1-native",
+  "versionCode": 70,
+  "status": "Testcandidate; Pixel installation and Underground journey validation pending",
+  "unitTests": 53,
+  "failures": 0,
+  "lintErrors": 0,
+  "lintWarnings": 21,
+  "apkBytes": 7155792,
+  "apkSha256": "1b9bce98c9de6077d8a3897605bee3663e8a5f28cec562700f1a2fa17e85d539",
+  "signerSha256": "6a475af54a417cdcf425f38bd599227d29b6cd8d4e31ddc1346fe00d475bacf8",
+  "signerMatchesV060": true,
+  "cacheLimitMiB": 256,
+  "cacheExpiryHours": 6,
+  "queuedPreparation": "Two nextitems, eachup to20minutes/capped24MiB",
+  "currentBufferAimMinutes": 10,
+  "rebufferReserveSeconds": [
+    15,
+    30,
+    60
+  ],
+  "testsInclude": [
+    "RealSimpleCache offline restart andseek",
+    "Partialwrite/sockettimeout thenbyte4resume",
+    "Expiry/rollback/clear/identity",
+    "LRUcapscaledtest",
+    "Burstnetworkhysteresis",
+    "UIradiochoicedisplay/persistence",
+    "Nonretryable403/formatmismatch"
+  ],
+  "physicalPixelTest": false,
+  "unchangedStableWebsite": true
+}

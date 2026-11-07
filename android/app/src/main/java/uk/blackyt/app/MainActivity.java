@@ -843,7 +843,7 @@ public final class MainActivity extends android.app.Activity {
                     .setPositiveButton("Clear", (dialog, which) -> clearListeningHistory()).show();
             return true;
         });
-        menu.getMenu().add("Playback preparation").setOnMenuItemClickListener(item -> { showPreparationSettings(); return true; });
+        menu.getMenu().add("Journey buffer").setOnMenuItemClickListener(item -> { showPreparationSettings(); return true; });
         menu.getMenu().add("About BlackYT").setOnMenuItemClickListener(item -> { showAbout(); return true; });
         menu.show();
     }
@@ -904,7 +904,9 @@ public final class MainActivity extends android.app.Activity {
             startingTrackId = null;
             startingTrackTitle = null;
             safeLog("player_error_" + error.errorCode);
-            String message = "Could not play this song. Check your connection or retry.";
+            String message = ConnectionRetryPolicy.isTransient(error)
+                    ? "Connection interrupted. BlackYT will try again when the connection returns. You can pause to cancel."
+                    : "Could not play this song. Check your connection or retry.";
             setStatus(message);
             android.widget.Toast.makeText(MainActivity.this, message, android.widget.Toast.LENGTH_LONG).show();
         }
@@ -1126,9 +1128,13 @@ public final class MainActivity extends android.app.Activity {
             startingTrackTitle = null;
         }
         boolean failed = controller != null && controller.getPlayerError() != null;
-        if (miniSubtitle != null) miniSubtitle.setText(failed ? "Could not play · " + artist : loading ? "Starting… · " + artist : artist);
-        if (playerHint != null) playerHint.setText(failed ? "Could not play. Open Track options to retry."
-                : loading ? "Starting…" : "Swipe artwork left or right to change queued songs");
+        boolean networkInterrupted = failed && ConnectionRetryPolicy.isTransient(controller.getPlayerError());
+        String bufferingLabel = controller != null && controller.getCurrentPosition() > 0 ? "Rebuilding buffer…" : "Starting…";
+        if (miniSubtitle != null) miniSubtitle.setText(networkInterrupted ? "Waiting for connection · " + artist
+                : failed ? "Could not play · " + artist : loading ? bufferingLabel + " · " + artist : artist);
+        if (playerHint != null) playerHint.setText(networkInterrupted ? "Waiting for a connection. Pause to cancel, or retry in Track options."
+                : failed ? "Could not play. Open Track options to retry."
+                : loading ? "Rebuilding a buffer for smoother listening…" : "Swipe artwork left or right to change queued songs");
         if (miniPlayer != null && !fullPlayer) miniPlayer.setVisibility(hasCurrent ? View.VISIBLE : View.GONE);
         if (miniPlayButton != null) {
             miniPlayButton.setImageResource(wantsPlayback ? R.drawable.ic_pause : R.drawable.ic_play);
@@ -1513,15 +1519,44 @@ public final class MainActivity extends android.app.Activity {
 
     private void showPreparationSettings() {
         PlaybackPreparation preparation = PlaybackPreparation.get(this);
-        new android.app.AlertDialog.Builder(this).setTitle("Playback preparation")
-                .setSingleChoiceItems(new String[] {"Off", "Unmetered connections (default)", "Wi-Fi and mobile data"}, preparation.mode(), (dialog, which) -> {
-                    preparation.setMode(which); scheduleVisiblePreparation(); dialog.dismiss();
+        LinearLayout content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setPadding(dp(20), dp(8), dp(20), dp(8));
+        TextView cacheStatus = new TextView(this);
+        cacheStatus.setText("Audio expires after 6 hours, within a 256 MB limit. Checking saved audio…");
+        content.addView(cacheStatus);
+        android.widget.RadioGroup networks = new android.widget.RadioGroup(this);
+        String[] choices = {"Off (memory buffer only)", "Prepare on unmetered connections (default)", "Prepare on Wi-Fi and mobile data"};
+        for (int i = 0; i < choices.length; i++) {
+            android.widget.RadioButton radio = new android.widget.RadioButton(this);
+            radio.setId(20_000 + i); radio.setText(choices[i]); networks.addView(radio);
+        }
+        networks.check(20_000 + preparation.mode());
+        networks.setOnCheckedChangeListener((group, id) -> {
+            preparation.setMode(id - 20_000); scheduleVisiblePreparation();
+        });
+        content.addView(networks);
+        android.app.AlertDialog options = new android.app.AlertDialog.Builder(this).setTitle("Journey buffer")
+                .setView(content)
+                .setPositiveButton("Clear saved audio", (dialog, which) -> {
+                    AudioPrefixCache.clear(this);
+                    showPlaybackFeedback("Saved audio is being cleared. Your playlists are kept.");
                 })
                 .setNeutralButton("How it works", (dialog, which) -> new android.app.AlertDialog.Builder(this)
-                        .setTitle("Prepare likely next items")
-                        .setMessage("Prepares the next two queued items, then the first visible result. Where YT exposes a stable audio identity, it buffers up to 384 KiB of each item in a rolling 32 MiB cache on this phone. This is a temporary opening buffer, not an offline download library; very short clips can fit within the byte cap. Up to eight items are prepared per minute. Unmetered connections is the default; mobile data is optional. Off cancels preparation and clears prepared audio in the background. Preparation sends extra requests to YT before you tap. Playback falls back to direct streaming if caching is unavailable; connection and buffering delays can still occur.")
+                        .setTitle("Before going underground")
+                        .setMessage("Build your queue while connected, then let it prepare. The player can buffer up to 10 minutes ahead. Once current playback has a useful reserve, the next two queued items can save up to about 20 minutes each, capped at 24 MB per item; visible search results only get a small opening buffer. Preparation is unmetered-only by default; choosing mobile data can use more of your allowance. Played audio is also kept without a second download. The saved cache expires after 6 hours and is limited to 256 MB. Expired files are removed while BlackYT is active or on its next start; Android may clear them earlier. It only covers audio already received: long outages, uncached seeks and new searches still need a connection. After a stall the player waits for a stronger reserve, rather than repeatedly playing tiny bursts. Off stops disk caching and clears saved audio. Clearing audio does not remove playlists. Audio continues to come directly from YT; no Mac or Termux is needed.")
                         .setPositiveButton("Got it", null).show())
-                .setNegativeButton("Close", null).show();
+                .setNegativeButton("Close", null).create();
+        options.show();
+        searches.execute(() -> {
+            long bytes = AudioPrefixCache.get(this).statusBytes();
+            main.post(() -> {
+                if (destroyed || !options.isShowing()) return;
+                long seconds = controller == null ? 0 : Math.max(0, controller.getTotalBufferedDuration() / 1000);
+                cacheStatus.setText(String.format(java.util.Locale.ROOT,
+                        "Saved audio: %.1f MB · expires after 6 hours · limit 256 MB. Current playback buffer: %d seconds. Queue preparation uses the connection choice below. Saved audio only covers received parts; it does not guarantee a whole journey offline.", bytes / (1024d * 1024d), seconds));
+            });
+        });
     }
 
     private void showAbout() {

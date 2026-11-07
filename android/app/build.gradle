@@ -5,7 +5,8 @@ if (signingFile.exists()) signingFile.withInputStream { signingProperties.load(i
 android {
  namespace 'uk.blackyt.app'
  compileSdk 36
- defaultConfig { applicationId 'uk.blackyt.app'; minSdk 26; targetSdk 36; versionCode 60; versionName '0.6.0-native'; testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner' }
+ defaultConfig { applicationId 'uk.blackyt.app'; minSdk 26; targetSdk 36; versionCode 70; versionName '0.7.0-rc1-native'; testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner' }
+ testOptions { unitTests.includeAndroidResources = true }
  buildFeatures { buildConfig true }
  compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17; coreLibraryDesugaringEnabled true }
  signingConfigs {
@@ -29,6 +30,7 @@ dependencies {
  implementation 'androidx.media3:media3-datasource-okhttp:1.9.3'
  coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs_nio:2.1.5'
  testImplementation 'junit:junit:4.13.2'
+ testImplementation 'org.robolectric:robolectric:4.16.1'
  androidTestImplementation 'androidx.test:runner:1.7.0'
  androidTestImplementation 'androidx.test.ext:junit:1.3.0'
 }

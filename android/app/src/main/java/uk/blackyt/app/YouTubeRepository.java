@@ -366,7 +366,7 @@ public final class YouTubeRepository {
         } catch (Exception failure) {
             Diagnostics.failure("resolve-error",failure);
             if (BuildConfig.DEBUG) android.util.Log.w("BlackYTNetwork", "Resolve error=" + failure.getClass().getSimpleName());
-            throw new IOException("YT stream resolution failed. Check your connection and retry.");
+            throw new IOException("YT stream resolution failed. Check your connection and retry.", failure);
         }
     }
 

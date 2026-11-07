@@ -27,3 +27,8 @@ Existing search filters are still checked on playback, and original-track handli
 The signed v0.6.0 versionCode 60 APK was installed and checked on a USB-connected Pixel with app data preserved; the owner confirmed audible playback. The live check covered search, playlist creation, optional suggestions, queue additions and appending, and full-player next/previous gestures. Four instrumentation checks passed, including natural progression after a 247.873-second sample while locked with the screen off over Wi-Fi. All 41 JVM unit tests pass and release lint has zero errors and 19 warnings. No mobile-data validation is claimed. This is a bounded device check, not a claim that every source, network, or Android device works.
 
 Contact: blackyt@streamit2.me · Unsigned Media Ltd.
+
+
+## v0.7.0-rc1 temporary journey cache
+
+The test update replaces the opening-only cache with a 256 MiB private on-device cache and absolute six-hour per-stream lifetime. Expired ranges are not served; cleanup occurs while the app is active or on its next start. Played bytes are saved; optional preparation covers up to two queued items (about20minutes/24MiB each) and one visible prefix. Upcoming preparation stays unmetered-only by default; mobile data is opt-in. Descriptors bind video/rules/audio identity without retaining signed URLs. Off or Clear saved audio removes saved bytes, not playlists. Physical Pixel validation is pending; see ../../docs/JOURNEY-BUFFER.md.
