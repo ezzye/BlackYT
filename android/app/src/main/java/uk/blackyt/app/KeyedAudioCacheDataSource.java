@@ -54,7 +54,10 @@ final class KeyedAudioCacheDataSource implements DataSource {
             catch (Exception e) { throw new IOException("Unable to resolve this audio item.", e); }
             key = AudioPrefixCache.key(item.id, item.rules, resolved);
             format = resolved.formatKey;
-            if (cache != null && key != null && !cache.remember(item.id, item.rules, format)) key = null;
+            if (cache != null && key != null) {
+                if (!cache.remember(item.id, item.rules, format)) key = null;
+                else cache.rememberLength(item.id, item.rules, format, resolved.contentLength);
+            }
         }
         if (!shouldUseCache(cacheFactory, key)) {
             delegate = directFactory.createDataSource();

@@ -83,9 +83,13 @@ public final class JourneyConnectionDeviceTest {
             YouTubeRepository.Rules video = new YouTubeRepository.Rules(false, "", "");
             YouTubeRepository.Track first = choose(repo, "U2 With Or Without You", music);
             YouTubeRepository.Track second = choose(repo, "Prince When Doves Cry", music);
-            YouTubeRepository.Track recovery = new YouTubeRepository.Track("EmaXeEdlJkI", "Wes Roth", "Wes Roth", 0);
-            DeviceStreamChecks.available(Arrays.asList(recovery), video);
             AudioPrefixCache cache = AudioPrefixCache.get(context);
+            List<YouTubeRepository.Track> uncached = new ArrayList<>();
+            for (YouTubeRepository.Track candidate : repo.searchPage("Wes Roth AI", video, null).tracks)
+                if (candidate.durationSeconds > 240 && cache.cachedBytes(candidate.id, video) == 0) uncached.add(candidate);
+            assertFalse("No uncached recovery candidate", uncached.isEmpty());
+            YouTubeRepository.Track recovery = DeviceStreamChecks.available(uncached, video);
+            DeviceStreamChecks.available(Arrays.asList(recovery), video);
             assertEquals("Recovery item already has cached bytes; cannot prove an uncached request", 0,
                     cache.cachedBytes(recovery.id, video));
             result.put("firstId", first.id).put("firstDurationSeconds", first.durationSeconds)
@@ -117,6 +121,13 @@ public final class JourneyConnectionDeviceTest {
                     evidence.put("cachedBytesAfter", cache.cachedBytes(track.id, music));
                 }
                 assertTrue("No cached audio after prefetch", cache.cachedBytes(track.id, music) > 0);
+                AudioPrefixCache.OfflineStatus readiness = cache.offlineStatuses(
+                        java.util.Collections.singletonList(new PlaybackPreparation.Candidate(track.id, music)))
+                        .get(AudioPrefixCache.identity(track.id, music));
+                assertNotNull("Prefetched item has no readiness snapshot", readiness);
+                evidence.put("readyOffline", readiness.ready).put("contentLength", readiness.contentLength)
+                        .put("readinessCachedBytes", readiness.cachedBytes).put("expiresAtMs", readiness.expiresAtMs);
+                assertTrue("Full offline journey requires a known length and all audio cached", readiness.ready);
                 assertTrue("Connection was lost during prefetch", online());
             }
             result.put("firstCachedBytes", cache.cachedBytes(first.id, music))

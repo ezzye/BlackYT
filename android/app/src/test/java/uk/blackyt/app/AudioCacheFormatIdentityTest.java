@@ -38,6 +38,13 @@ public final class AudioCacheFormatIdentityTest {
             assertEquals(url, "", key(url, ""));
         }
     }
+    @Test public void lengthRequiresSameValidatedFormatAndFitsLong() {
+        assertEquals(456789, AudioCacheFormatIdentity.contentLength(BASE, 140, "", "", "audio/mp4", "", 0));
+        assertEquals(-1, AudioCacheFormatIdentity.contentLength(BASE + "&clen=1", 140, "", "", "audio/mp4", "", 0));
+        assertEquals(-1, AudioCacheFormatIdentity.contentLength(BASE, 141, "", "", "audio/mp4", "", 0));
+        assertEquals(-1, AudioCacheFormatIdentity.contentLength(BASE.replace("456789", "99999999999999999999"),
+                140, "", "", "audio/mp4", "", 0));
+    }
     @Test public void bitrateRemainsAvailableToPrefetchPolicy() {
         String format = AudioCacheFormatIdentity.create(BASE, 140, "", "", "audio/mp4", "aac", 128000);
         assertTrue(format.endsWith(":128000"));

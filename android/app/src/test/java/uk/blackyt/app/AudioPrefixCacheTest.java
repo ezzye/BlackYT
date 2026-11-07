@@ -188,6 +188,57 @@ public class AudioPrefixCacheTest {
         catch (IOException expected) { }
         assertEquals(0, cache.statusBytes());
     }
+    private AudioPrefixCache.OfflineStatus status() {
+        return cache.offlineStatuses(java.util.Collections.singletonList(
+                new PlaybackPreparation.Candidate(ID, rules))).get(AudioPrefixCache.identity(ID, rules));
+    }
+    private void seedRange(long position, int length, byte[] data) throws Exception {
+        String key = AudioPrefixCache.keyForFormat(ID, rules, "format-original-en");
+        DataSource source = cache.factory(() -> new ByteArrayDataSource(data)).createDataSource();
+        try {
+            source.open(new DataSpec.Builder().setUri(uri).setKey(key).setPosition(position).setLength(length).build());
+            byte[] buffer = new byte[16];
+            while (source.read(buffer, 0, buffer.length) != -1) { }
+        } finally { source.close(); }
+    }
+    @Test public void statusRequiresKnownLengthAndEveryByteAcrossRestart() throws Exception {
+        assertTrue(cache.remember(ID, rules, "format-original-en"));
+        byte[] data = new byte[10];
+        seedRange(0, 4, data);
+        assertFalse(status().ready);
+        assertEquals(-1, status().contentLength);
+        cache.rememberLength(ID, rules, "wrong-format", 4);
+        assertFalse(status().ready);
+        cache.rememberLength(ID, rules, "format-original-en", 10);
+        assertFalse(status().ready);
+        assertEquals(4, status().cachedBytes);
+        seedRange(6, 4, data);
+        assertFalse(status().ready); // Four bytes at each end still leave a hole.
+        seedRange(4, 2, data);
+        assertTrue(status().ready);
+        assertEquals(10, status().contentLength);
+        long expiry = status().expiresAtMs;
+        cache.releaseForTest(); cache = new AudioPrefixCache(context, now::get);
+        assertTrue(status().ready);
+        assertEquals(expiry, status().expiresAtMs);
+        assertTrue(cache.offlineStatuses(java.util.Collections.singletonList(new PlaybackPreparation.Candidate(
+                ID, new YouTubeRepository.Rules(true, "music", "other")))).isEmpty());
+        now.set(expiry);
+        assertNull(status());
+    }
+    @Test public void clearEvictionAndFormatReplacementRemoveReadiness() throws Exception {
+        seed(new byte[10]);
+        cache.rememberLength(ID, rules, "format-original-en", 10);
+        assertTrue(status().ready);
+        assertTrue(cache.remember(ID, rules, "new-format"));
+        assertFalse(status().ready);
+        cache.clear();
+        assertNull(status());
+        cache.releaseForTest(); cache = new AudioPrefixCache(context, now::get, 4);
+        seed(new byte[10]);
+        cache.rememberLength(ID, rules, "format-original-en", 10);
+        assertFalse(status().ready);
+    }
     @Test public void lruBoundIsEnforced() throws Exception {
         cache.releaseForTest(); cache = new AudioPrefixCache(context, now::get, 1024);
         assertEquals(256L * 1024 * 1024, AudioPrefixCache.MAX_BYTES);

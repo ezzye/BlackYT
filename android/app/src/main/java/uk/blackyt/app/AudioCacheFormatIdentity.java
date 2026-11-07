@@ -57,6 +57,23 @@ final class AudioCacheFormatIdentity {
             return "";
         }
     }
+    /** The same URL validation as the format identity, with a representable byte count. */
+    static long contentLength(String url, int itag, String trackId, String trackType,
+            String mime, String codec, int bitrate) {
+        if (create(url, itag, trackId, trackType, mime, codec, bitrate).isEmpty()) return -1;
+        try {
+            for (String part : new URI(url).getRawQuery().split("&", -1)) {
+                int equals = part.indexOf('=');
+                String name = URLDecoder.decode(equals < 0 ? part : part.substring(0, equals), "UTF-8");
+                if (name.equals("clen")) {
+                    String value = URLDecoder.decode(part.substring(equals + 1), "UTF-8");
+                    long length = Long.parseLong(value);
+                    return length > 0 ? length : -1;
+                }
+            }
+        } catch (Exception invalid) { return -1; }
+        return -1;
+    }
     private static String positiveNumber(String value) {
         if (value == null || !value.matches("[0-9]{1,20}")) return null;
         BigInteger number = new BigInteger(value);

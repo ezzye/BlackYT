@@ -6,6 +6,8 @@ import android.net.Uri;
 import androidx.media3.datasource.DataSpec;
 import androidx.media3.datasource.cache.CacheDataSource;
 import androidx.media3.datasource.cache.CacheWriter;
+import androidx.media3.datasource.cache.ContentMetadata;
+import androidx.media3.datasource.cache.ContentMetadataMutations;
 import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor;
 import androidx.media3.datasource.cache.SimpleCache;
 import java.io.File;
@@ -22,6 +24,8 @@ final class AudioPrefixCache {
     static final long MAX_PREFETCH_BYTES = 24L * 1024 * 1024;
     static final long PREFIX_BYTES = 384L * 1024;
     private static volatile AudioPrefixCache instance;
+    private static final java.util.concurrent.atomic.AtomicInteger pendingClears =
+            new java.util.concurrent.atomic.AtomicInteger();
     private static final java.util.concurrent.ExecutorService maintenance =
             java.util.concurrent.Executors.newSingleThreadExecutor(r -> {
                 Thread thread = new Thread(r, "BlackYT-audio-cache-maintenance");
@@ -122,6 +126,50 @@ final class AudioPrefixCache {
         if (old != null && !old.key.equals(cacheKey)) cache.removeResource(old.key);
         return descriptors.put(identity(id, rules), cacheKey, format, clock.getAsLong());
     }
+    private static final String TOTAL_LENGTH = "blackyt.total_length";
+
+    /** Persist only a validated selected format's length; never change Media3 playback metadata. */
+    synchronized void rememberLength(String id, YouTubeRepository.Rules rules, String format, long length) {
+        String key = keyForFormat(id, rules, format);
+        if (length <= 0 || key == null || !descriptors.isCurrent(identity(id, rules), key, clock.getAsLong())) return;
+        try {
+            cache.applyContentMetadataMutations(key, new ContentMetadataMutations().set(TOTAL_LENGTH, length));
+        } catch (IOException ignored) { /* Unknown length means not ready. */ }
+    }
+
+    static final class OfflineStatus {
+        final boolean ready;
+        final long cachedBytes, contentLength, expiresAtMs;
+        OfflineStatus(boolean ready, long cachedBytes, long contentLength, long expiresAtMs) {
+            this.ready = ready; this.cachedBytes = cachedBytes;
+            this.contentLength = contentLength; this.expiresAtMs = expiresAtMs;
+        }
+    }
+
+    /** Call off the main thread: one maintenance pass, then an in-memory cache snapshot. */
+    synchronized java.util.Map<String, OfflineStatus> offlineStatuses(
+            java.util.List<PlaybackPreparation.Candidate> candidates) {
+        java.util.Map<String, OfflineStatus> result = new java.util.LinkedHashMap<>();
+        if (pendingClears.get() > 0 || clearWhenWriterStops) return java.util.Collections.unmodifiableMap(result);
+        maintain();
+        for (PlaybackPreparation.Candidate candidate : candidates) {
+            if (candidate == null) continue;
+            String identity = identity(candidate.id, candidate.rules);
+            AudioCacheDescriptors.Entry entry = descriptors.getMaintained(identity);
+            if (entry == null || !entry.key.equals(keyForFormat(candidate.id, candidate.rules, entry.format))) continue;
+            ContentMetadata metadata = cache.getContentMetadata(entry.key);
+            long length = metadata.get(TOTAL_LENGTH, -1L);
+            // Media3's content length is authoritative when present (e.g. complete unbounded opens).
+            if (length <= 0) length = ContentMetadata.getContentLength(metadata);
+            if (length <= 0) length = -1;
+            long bytes = cache.getCachedBytes(entry.key, 0, Long.MAX_VALUE);
+            boolean ready = length > 0 && cache.isCached(entry.key, 0, length);
+            result.put(identity, new OfflineStatus(ready, bytes, length,
+                    entry.created > Long.MAX_VALUE - AudioCacheDescriptors.TTL_MS ? Long.MAX_VALUE
+                            : entry.created + AudioCacheDescriptors.TTL_MS));
+        }
+        return java.util.Collections.unmodifiableMap(result);
+    }
     synchronized boolean isCurrent(String id, YouTubeRepository.Rules rules, String key) {
         return descriptors.isCurrent(identity(id, rules), key, clock.getAsLong());
     }
@@ -141,8 +189,9 @@ final class AudioPrefixCache {
             long maxBytes, BooleanSupplier stillAllowed) throws IOException {
         long limit = Math.min(MAX_PREFETCH_BYTES, Math.max(0, maxBytes));
         String cacheKey = key(id, rules, expected);
-        if (limit == 0 || cacheKey == null || !remember(id, rules, expected.formatKey)
-                || cache.isCached(cacheKey, 0, limit)) return;
+        if (limit == 0 || cacheKey == null || !remember(id, rules, expected.formatKey)) return;
+        rememberLength(id, rules, expected.formatKey, expected.contentLength);
+        if (cache.isCached(cacheKey, 0, limit)) return;
         YouTubeRepository repository = YouTubeRepository.get();
         AtomicBoolean formatChanged = new AtomicBoolean();
         androidx.media3.datasource.DataSource.Factory upstream = () -> new RefreshingAudioDataSource(
@@ -159,6 +208,7 @@ final class AudioPrefixCache {
                             formatChanged.set(true);
                             throw new IOException("Audio format changed; speculative prefix discarded.");
                         }
+                        rememberLength(owned.id, owned.rules, resolved.formatKey, resolved.contentLength);
                         return Uri.parse(resolved.url);
                     } catch (IOException failure) {
                         throw failure;
@@ -218,7 +268,11 @@ final class AudioPrefixCache {
 
     static void clear(Context context) {
         Context app = context.getApplicationContext();
-        maintenance.execute(() -> get(app).clear());
+        pendingClears.incrementAndGet();
+        maintenance.execute(() -> {
+            try { get(app).clear(); }
+            finally { pendingClears.decrementAndGet(); }
+        });
     }
 
     void invalidate(String cacheKey) {

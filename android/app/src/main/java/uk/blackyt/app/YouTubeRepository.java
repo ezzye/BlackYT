@@ -183,6 +183,7 @@ public final class YouTubeRepository {
         public final String artworkUrl;
         /** Stable selected-stream identity for the on-device prefix cache; never a signed URL. */
         public final String formatKey;
+        public final long contentLength;
 
         public Resolved(String url, String mimeType, String title, String channel,
                         long durationSeconds, String sourceHost) {
@@ -196,7 +197,14 @@ public final class YouTubeRepository {
 
         public Resolved(String url, String mimeType, String title, String channel,
                         long durationSeconds, String sourceHost, String artworkUrl, String formatKey) {
+            this(url, mimeType, title, channel, durationSeconds, sourceHost, artworkUrl, formatKey, -1);
+        }
+
+        private Resolved(String url, String mimeType, String title, String channel,
+                        long durationSeconds, String sourceHost, String artworkUrl, String formatKey,
+                        long contentLength) {
             this.url = url;
+            this.contentLength = contentLength;
             this.mimeType = mimeType;
             this.title = title;
             this.channel = channel;
@@ -355,7 +363,8 @@ public final class YouTubeRepository {
                     trackType, mime, codec, selected.getBitrate());
             Resolved result = new Resolved(url, selected.getFormat().getMimeType(),
                     title, channel, info.getDuration(), host, bestSafeThumbnail(info.getThumbnails()),
-                    formatKey);
+                    formatKey, AudioCacheFormatIdentity.contentLength(url, selected.getItag(), trackId,
+                            trackType, mime, codec, selected.getBitrate()));
             return new CachedResolved(result, SystemClock.elapsedRealtime(), musicCategory);
         } catch (IOException e) {
             throw e;

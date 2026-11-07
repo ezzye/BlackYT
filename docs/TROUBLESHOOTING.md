@@ -56,4 +56,8 @@ If these steps do not help, [open a support issue](https://github.com/ezzye/Blac
 
 ## Journey-buffer test update
 
-The v0.7.0-rc2 test build adds a six-hour bounded audio cache and stronger rebuffering. See the [journey-buffer guide](JOURNEY-BUFFER.md) for installation, network/data controls, limits and the completed controlled Pixel test and remaining real-journey listening check.
+The v0.7.0-rc3 test build adds a six-hour bounded audio cache and stronger rebuffering. See the [journey-buffer guide](JOURNEY-BUFFER.md) for installation, network/data controls, limits and the completed controlled Pixel test and remaining real-journey listening check.
+
+### What does the small saved-audio icon mean?
+
+A green check means **Ready offline**: the whole selected audio file is currently saved and unexpired. A half circle is **Part saved**, an empty circle is **Needs connection**, and dots mean **Checking**. Long-press for the full explanation. The current player’s buffered seconds are separate from whole-item readiness. Icons update while visible and on returning to the app. See the [journey-buffer guide](JOURNEY-BUFFER.md).

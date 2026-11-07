@@ -54,6 +54,10 @@ final class AudioCacheDescriptors {
         maintain(now);
         return healthy ? entries.get(identity) : null;
     }
+    // Caller has already run maintain once for the whole snapshot.
+    synchronized Entry getMaintained(String identity) {
+        return healthy ? entries.get(identity) : null;
+    }
     synchronized boolean put(String identity, String key, String format, long now) {
         maintain(now);
         if (!healthy || now <= 0) return false;
