@@ -1,0 +1,13 @@
+{
+  "test": "OfflineReadinessUiDeviceTest.queueReflectsCompletePartialAndRemovedCache",
+  "status": "passed",
+  "durationSeconds": 5.494,
+  "observed": [
+    "complete cache Ready offline",
+    "partial cache Part saved",
+    "uncached item not ready",
+    "cache removal refresh",
+    "queue selection unchanged"
+  ],
+  "limits": "Synthetic cache and own-Activity view assertions; no synthetic media played"
+}

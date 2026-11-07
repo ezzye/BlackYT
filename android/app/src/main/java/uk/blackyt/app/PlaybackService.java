@@ -36,6 +36,10 @@ public final class PlaybackService extends MediaSessionService {
     private MediaSession session;
     private ListeningStore listening;
     private String pinnedMediaId = "";
+    private android.net.ConnectivityManager connectivity;
+    private android.net.ConnectivityManager.NetworkCallback networkCallback;
+    private boolean waitingForConnection;
+    private long nextConnectionRetryMs, retryDeadlineMs, lastCacheMaintenanceMs;
     private final android.os.Handler progressHandler = new android.os.Handler(android.os.Looper.getMainLooper());
     private final java.util.concurrent.ExecutorService progressWrites = java.util.concurrent.Executors.newSingleThreadExecutor();
     private final Runnable progressTick = new Runnable() {
@@ -43,7 +47,14 @@ public final class PlaybackService extends MediaSessionService {
             if (player == null) return;
             if (player.isPlaying()) saveCurrentProgress();
             updateQueuePreparation();
-            progressHandler.postDelayed(this, 10000);
+            retryAfterConnection();
+            long now = android.os.SystemClock.elapsedRealtime();
+            if (now - lastCacheMaintenanceMs >= 60_000) {
+                lastCacheMaintenanceMs = now;
+                AudioPrefixCache cache = AudioPrefixCache.peek();
+                if (cache != null) progressWrites.execute(cache::maintain);
+            }
+            progressHandler.postDelayed(this, 5000);
         }
     };
 
@@ -72,20 +83,21 @@ public final class PlaybackService extends MediaSessionService {
                 throw changed;
             } catch (Exception failure) {
                 Log.w(TAG, "Resolution failed (" + failure.getClass().getSimpleName() + ")");
-                throw new IOException("Unable to resolve this audio item.");
+                throw new IOException("Unable to resolve this audio item.", failure);
             }
         });
         DataSource.Factory playbackFactory = () -> {
-            AudioPrefixCache preparedCache = AudioPrefixCache.peek();
-            if (preparedCache == null) return ownedOnly.createDataSource();
-            try { return new KeyedAudioCacheDataSource(preparedCache.factory(ownedOnly), ownedOnly); }
+            if (PlaybackPreparation.get(this).mode() == PlaybackPreparation.OFF) return ownedOnly.createDataSource();
+            try { return new KeyedAudioCacheDataSource(AudioPrefixCache.get(this), ownedOnly); }
             catch (RuntimeException unavailable) {
                 Log.w(TAG, "Audio cache unavailable; using direct playback");
                 return ownedOnly.createDataSource();
             }
         };
         player = new ExoPlayer.Builder(this)
-                .setMediaSourceFactory(new DefaultMediaSourceFactory(this).setDataSourceFactory(playbackFactory))
+                .setLoadControl(new SmoothAudioLoadControl())
+                .setMediaSourceFactory(new DefaultMediaSourceFactory(this).setDataSourceFactory(playbackFactory)
+                        .setLoadErrorHandlingPolicy(new ConnectionRetryPolicy()))
                 .setWakeMode(C.WAKE_MODE_NETWORK)
                 .setAudioAttributes(new AudioAttributes.Builder().setUsage(C.USAGE_MEDIA)
                         .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC).build(), true)
@@ -94,6 +106,7 @@ public final class PlaybackService extends MediaSessionService {
             @Override public void onEvents(Player source, Player.Events events) { updateQueuePreparation(); }
 
             @Override public void onMediaItemTransition(@Nullable MediaItem item, int reason) {
+                waitingForConnection = false; retryDeadlineMs = 0;
                 String nextId = item == null ? "" : item.mediaId;
                 if (!pinnedMediaId.isEmpty() && !pinnedMediaId.equals(nextId))
                     PlaybackFormatPins.clear(pinnedMediaId);
@@ -101,6 +114,7 @@ public final class PlaybackService extends MediaSessionService {
             }
 
             @Override public void onPlaybackStateChanged(int state) {
+                if (state == Player.STATE_READY || state == Player.STATE_ENDED) { waitingForConnection = false; retryDeadlineMs = 0; }
                 if (BuildConfig.DEBUG) Log.i(TAG, "BlackYTPlayback:state state=" + stateName(state)
                         + " isPlaying=" + player.isPlaying() + " mediaId=" + safeCurrentMediaId()
                         + " positionMs=" + player.getCurrentPosition());
@@ -125,6 +139,16 @@ public final class PlaybackService extends MediaSessionService {
             }
 
             @Override public void onPlayerError(PlaybackException error) {
+                boolean wasWaiting = waitingForConnection;
+                boolean networkIo = error.errorCode == PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED
+                        || error.errorCode == PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT
+                        || (error.errorCode == PlaybackException.ERROR_CODE_IO_UNSPECIFIED && !connectionAvailable());
+                waitingForConnection = player.getPlayWhenReady() && (networkIo || ConnectionRetryPolicy.isTransient(error));
+                if (waitingForConnection) {
+                    long now = android.os.SystemClock.elapsedRealtime();
+                    if (!wasWaiting) retryDeadlineMs = now + 30 * 60_000L;
+                    nextConnectionRetryMs = now + 15_000;
+                }
                 Log.w(TAG, "Playback failed (code=" + error.errorCode + ", "
                         + error.getClass().getSimpleName() + ")");
             }
@@ -136,13 +160,25 @@ public final class PlaybackService extends MediaSessionService {
         progressHandler.postDelayed(progressTick, 10000);
         session = new MediaSession.Builder(this, player).setSessionActivity(activity)
                 .setCallback(new QueueCallback()).build();
+        connectivity = (android.net.ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+        networkCallback = new android.net.ConnectivityManager.NetworkCallback() {
+            @Override public void onCapabilitiesChanged(android.net.Network network, android.net.NetworkCapabilities capabilities) {
+                if (capabilities.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_VALIDATED))
+                    progressHandler.post(() -> { nextConnectionRetryMs = 0; retryAfterConnection(); });
+            }
+        };
+        if (connectivity != null) try { connectivity.registerDefaultNetworkCallback(networkCallback); }
+        catch (RuntimeException unavailable) { networkCallback = null; }
     }
 
     private void updateQueuePreparation() {
         if (player == null) return;
-        PlaybackPreparation.get(this).setPlaybackBusy(player.getPlaybackState() == Player.STATE_BUFFERING);
+        long remaining = player.getDuration() == C.TIME_UNSET ? -1 : Math.max(0, player.getDuration() - player.getCurrentPosition());
+        boolean busy = PlaybackBufferPolicy.playbackNeedsPriority(player.getPlaybackState() == Player.STATE_BUFFERING,
+                player.isPlaying(), player.getTotalBufferedDuration(), remaining);
+        PlaybackPreparation.get(this).setPlaybackBusy(busy);
         List<PlaybackPreparation.Candidate> candidates = new ArrayList<>();
-        if (player.getPlaybackState() != Player.STATE_BUFFERING) {
+        if (!busy) {
             int start = player.getCurrentMediaItemIndex() + 1;
             for (int i = Math.max(0, start); i < player.getMediaItemCount() && candidates.size() < 2; i++) {
                 try {
@@ -152,6 +188,24 @@ public final class PlaybackService extends MediaSessionService {
             }
         }
         PlaybackPreparation.get(this).update("queue", candidates);
+    }
+
+    private boolean connectionAvailable() {
+        if (connectivity == null) return false;
+        android.net.NetworkCapabilities caps = connectivity.getNetworkCapabilities(connectivity.getActiveNetwork());
+        return caps != null && caps.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                && caps.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_VALIDATED);
+    }
+
+    private void retryAfterConnection() {
+        if (!waitingForConnection || player == null || player.getPlayerError() == null) return;
+        if (!player.getPlayWhenReady() || player.getMediaItemCount() == 0) { waitingForConnection = false; return; }
+        long now = android.os.SystemClock.elapsedRealtime();
+        if (now > retryDeadlineMs) { waitingForConnection = false; return; }
+        if (now < nextConnectionRetryMs || !connectionAvailable()) return;
+        nextConnectionRetryMs = now + 30_000;
+        // prepare retains the queue and current position. Never seek to zero on network recovery.
+        player.prepare();
     }
 
     private void saveCurrentProgress() {
@@ -215,6 +269,9 @@ public final class PlaybackService extends MediaSessionService {
     }
 
     @Override public void onDestroy() {
+        if (connectivity != null && networkCallback != null) {
+            try { connectivity.unregisterNetworkCallback(networkCallback); } catch (RuntimeException ignored) { }
+        }
         PlaybackPreparation.get(this).update("queue", java.util.Collections.emptyList());
         PlaybackPreparation.get(this).setPlaybackBusy(false);
         PlaybackFormatPins.clear(pinnedMediaId);

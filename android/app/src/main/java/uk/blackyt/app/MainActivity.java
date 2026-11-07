@@ -73,6 +73,7 @@ public final class MainActivity extends android.app.Activity {
     private static final int SEARCH_LIMIT = 200;
 
     private final ExecutorService searches = Executors.newFixedThreadPool(2);
+    private final ExecutorService offlineWorker = Executors.newSingleThreadExecutor();
     private final android.os.Handler main = new android.os.Handler(android.os.Looper.getMainLooper());
     private final List<YouTubeRepository.Track> results = new ArrayList<>();
     private final Map<String, YouTubeRepository.Rules> resultRules = new LinkedHashMap<>();
@@ -85,7 +86,7 @@ public final class MainActivity extends android.app.Activity {
     private LinearLayout miniPlayer;
     private ImageView miniArtwork, playerArtwork;
     private TextView status, miniTitle, miniSubtitle, playerTitle, playerArtist;
-    private TextView timeLabel, queueSummary, filtersChip, playerHint;
+    private TextView timeLabel, queueSummary, filtersChip, playerHint, playerOffline, playerBuffered;
     private ImageButton miniPlayButton, miniNextButton, fullPlayButton, fullPreviousButton, fullNextButton;
     private SeekBar seekBar;
     private ProgressBar miniProgress;
@@ -127,6 +128,136 @@ public final class MainActivity extends android.app.Activity {
     }
     private void prepareWhenVisible(View view, YouTubeRepository.Track track, YouTubeRepository.Rules rules) {
         preparationViews.put(view, new PlaybackPreparation.Candidate(track.id, rules));
+    }
+    private static final class OfflineBinding {
+        final TextView label;
+        final View row;
+        final PlaybackPreparation.Candidate candidate;
+        String baseDescription;
+        OfflineBinding(TextView label, View row, PlaybackPreparation.Candidate candidate) {
+            this.label = label; this.row = row; this.candidate = candidate;
+        }
+    }
+    private final Map<TextView, OfflineBinding> offlineViews = new LinkedHashMap<>();
+    private boolean offlineBusy;
+    private long offlineGeneration, lastOfflineRefresh;
+    private String playerOfflineKey = "";
+
+    private void resetOfflineViews() {
+        offlineGeneration++;
+        offlineViews.clear();
+        playerOfflineKey = "";
+        lastOfflineRefresh = 0;
+    }
+    private void addOfflineBadge(LinearLayout column, View row, String id, YouTubeRepository.Rules rules) {
+        // Keep the state beside the existing metadata instead of adding another line.
+        View metadata = column.getChildAt(column.getChildCount() - 1);
+        ViewGroup.LayoutParams previousLayout = metadata.getLayoutParams();
+        if (metadata instanceof TextView) ((TextView) metadata).setMaxLines(1);
+        column.removeView(metadata);
+        LinearLayout details = row();
+        details.addView(metadata, new LinearLayout.LayoutParams(0, -2, 1));
+        TextView badge = text("…", 14, MUTED, true);
+        badge.setGravity(Gravity.CENTER);
+        badge.setSingleLine(true);
+        badge.setContentDescription("Checking saved audio…");
+        badge.setOnLongClickListener(v -> {
+            Toast.makeText(this, badge.getContentDescription(), Toast.LENGTH_SHORT).show();
+            return true;
+        });
+        details.addView(badge, lp(dp(22), dp(24), 3, 0, 0, 0));
+        column.addView(details, previousLayout);
+        try {
+            PlaybackPreparation.Candidate candidate = new PlaybackPreparation.Candidate(id, rules);
+            offlineViews.put(badge, new OfflineBinding(badge, row, candidate));
+        } catch (IllegalArgumentException invalid) { badge.setText("○"); badge.setContentDescription("Needs connection"); }
+    }
+    private void bindPlayerOffline(MediaItem item) {
+        if (playerOffline == null) return;
+        try {
+            NativeMediaItems.OwnedItem owned = NativeMediaItems.parse(item);
+            String key = AudioPrefixCache.identity(owned.id, owned.rules);
+            if (key.equals(playerOfflineKey)) return;
+            playerOfflineKey = key;
+            OfflineBinding binding = new OfflineBinding(playerOffline, playerOffline,
+                    new PlaybackPreparation.Candidate(owned.id, owned.rules));
+            offlineViews.put(playerOffline, binding);
+            setOfflineLabel(binding, "Checking saved audio…", false, 0);
+            offlineGeneration++;
+            lastOfflineRefresh = 0;
+        } catch (Exception invalid) {
+            offlineViews.remove(playerOffline);
+            playerOfflineKey = "";
+            playerOffline.setText("Needs connection");
+        }
+    }
+    private void setOfflineLabel(OfflineBinding binding, String message, boolean ready, long expiry) {
+        boolean compact = binding.row != binding.label;
+        String symbol = ready ? "✓" : message.startsWith("Part saved") ? "◐"
+                : message.startsWith("Checking") ? "…" : "○";
+        binding.label.setText(compact ? symbol : message);
+        binding.label.setTextColor(ready ? LIME : MUTED);
+        String spoken = message;
+        if (ready && expiry > 0) spoken += ", expires at " + android.text.format.DateFormat.getTimeFormat(this).format(new java.util.Date(expiry));
+        binding.label.setContentDescription(spoken);
+        if (Build.VERSION.SDK_INT >= 26 && compact) binding.label.setTooltipText(spoken);
+        if (compact) {
+            if (binding.baseDescription == null && binding.row.getContentDescription() != null)
+                binding.baseDescription = binding.row.getContentDescription().toString();
+            if (binding.baseDescription != null) binding.row.setContentDescription(binding.baseDescription + ", " + spoken);
+        }
+    }
+    private void markOfflineChecking() {
+        offlineGeneration++;
+        for (OfflineBinding binding : offlineViews.values()) setOfflineLabel(binding, "Checking saved audio…", false, 0);
+        lastOfflineRefresh = 0;
+    }
+    private void refreshOfflineBadges() {
+        if (!preparationScreenActive || destroyed || offlineBusy) return;
+        long now = android.os.SystemClock.elapsedRealtime();
+        if (now - lastOfflineRefresh < 2000) return;
+        lastOfflineRefresh = now;
+        List<OfflineBinding> visible = new ArrayList<>();
+        List<PlaybackPreparation.Candidate> candidates = new ArrayList<>();
+        android.graphics.Rect rect = new android.graphics.Rect();
+        java.util.Iterator<OfflineBinding> iterator = offlineViews.values().iterator();
+        while (iterator.hasNext()) {
+            OfflineBinding binding = iterator.next();
+            if (!binding.label.isAttachedToWindow()) { iterator.remove(); continue; }
+            if (binding.row.isShown() && binding.row.getGlobalVisibleRect(rect) && rect.height() > 0) {
+                visible.add(binding); candidates.add(binding.candidate);
+                if (visible.size() == 32) break;
+            }
+        }
+        if (visible.isEmpty()) return;
+        final long generation = offlineGeneration;
+        offlineBusy = true;
+        offlineWorker.execute(() -> {
+            Map<String, AudioPrefixCache.OfflineStatus> statuses;
+            try { statuses = AudioPrefixCache.get(getApplicationContext()).offlineStatuses(candidates); }
+            catch (Exception error) { statuses = null; }
+            final Map<String, AudioPrefixCache.OfflineStatus> snapshot = statuses;
+            main.post(() -> {
+                offlineBusy = false;
+                if (destroyed || !preparationScreenActive || generation != offlineGeneration) return;
+                if (snapshot == null) {
+                    for (OfflineBinding binding : visible) if (offlineViews.get(binding.label) == binding) setOfflineLabel(binding, "Checking saved audio…", false, 0);
+                    return;
+                }
+                for (OfflineBinding binding : visible) {
+                    if (offlineViews.get(binding.label) != binding || !binding.label.isAttachedToWindow()) continue;
+                    AudioPrefixCache.OfflineStatus status = snapshot.get(AudioPrefixCache.identity(binding.candidate.id, binding.candidate.rules));
+                    String message = "Needs connection";
+                    boolean ready = status != null && status.ready && status.expiresAtMs > System.currentTimeMillis();
+                    if (ready) message = "Ready offline";
+                    else if (status != null && status.expiresAtMs > System.currentTimeMillis() && status.cachedBytes > 0) {
+                        message = "Part saved";
+                        if (status.contentLength > 0) message += " · " + Math.min(99, (int) (100.0 * status.cachedBytes / status.contentLength)) + "%";
+                    }
+                    setOfflineLabel(binding, message, ready, ready ? status.expiresAtMs : 0);
+                }
+            });
+        });
     }
     private Object platformBackCallback;
     private final List<RecentTrack> history = new ArrayList<>();
@@ -172,7 +303,7 @@ public final class MainActivity extends android.app.Activity {
     }
     private final Runnable ticker = new Runnable() {
         @Override public void run() {
-            if (!destroyed) { updatePlayer(); main.postDelayed(this, 1000); }
+            if (!destroyed) { updatePlayer(); refreshOfflineBadges(); main.postDelayed(this, 1000); }
         }
     };
 
@@ -189,6 +320,8 @@ public final class MainActivity extends android.app.Activity {
         playerTitle = null;
         playerArtist = null;
         playerHint = null;
+        playerOffline = null;
+        playerBuffered = null;
         timeLabel = null;
         seekBar = null;
         fullPlayButton = null;
@@ -310,6 +443,7 @@ public final class MainActivity extends android.app.Activity {
     }
 
     private void showTab(int tab) {
+        resetOfflineViews();
         preparationViews.clear();
         releasePageViews();
         fullPlayer = false;
@@ -331,6 +465,7 @@ public final class MainActivity extends android.app.Activity {
     private void openFullPlayer() {
         if (controller == null || controller.getCurrentMediaItem() == null) return;
         playerReturnTab = currentTab;
+        resetOfflineViews();
         releasePageViews();
         fullPlayer = true;
         scheduleVisiblePreparation();
@@ -395,6 +530,7 @@ public final class MainActivity extends android.app.Activity {
                 artist.setMaxLines(1);
                 tile.addView(title);
                 tile.addView(artist, lp(-1, -2, 0, 2, 0, 0));
+                addOfflineBadge(tile, tile, recent.track.id, recent.rules);
                 tile.setContentDescription("Play " + recent.track.title + " by " + recent.track.channel);
                 recentRow.addView(tile, lp(dp(124), -2, 0, 0, 12, 0));
             }
@@ -539,6 +675,7 @@ public final class MainActivity extends android.app.Activity {
 
     private void renderSearchResults() {
         if (resultsBox == null) return;
+        resetOfflineViews();
         preparationViews.clear();
         PlaybackPreparation.get(this).update("screen", java.util.Collections.emptyList());
         resultsBox.removeAllViews();
@@ -588,7 +725,7 @@ public final class MainActivity extends android.app.Activity {
         }
         if (sharedStartMs > 0 && !sharedVideoId.isEmpty())
             resultsBox.addView(text("Shared starting point · " + format(sharedStartMs / 1000) + " · tap a result to play", 13, LIME, false), lp(-1, -2, 0, 0, 0, 8));
-        for (YouTubeRepository.Track track : results) resultsBox.addView(buildCompactResult(track), lp(-1, dp(72), 0, 0, 0, 2));
+        for (YouTubeRepository.Track track : results) resultsBox.addView(buildCompactResult(track), lp(-1, -2, 0, 0, 0, 2));
         if (!selectingPlaylistItems) {
             Button suggest=button(suggestionsLoading ? "Finding ideas…" : "More like this", false);
             suggest.setEnabled(!suggestionsLoading);
@@ -597,7 +734,7 @@ public final class MainActivity extends android.app.Activity {
             resultsBox.addView(suggest,lp(-1,dp(48),0,10,0,2));
             for (PlaylistSuggestionRow suggestion : suggestionRows) {
                 resultsBox.addView(text(suggestion.why,12,LIME,true),lp(-1,-2,0,12,0,2));
-                resultsBox.addView(buildCompactResult(suggestion.track),lp(-1,dp(72),0,0,0,2));
+                resultsBox.addView(buildCompactResult(suggestion.track),lp(-1,-2,0,0,0,2));
             }
         }
         if (nextCursor != null && !activeSearch && results.size() < SEARCH_LIMIT) {
@@ -631,7 +768,10 @@ public final class MainActivity extends android.app.Activity {
         TextView artist = text(track.channel + "  ·  " + format(track.durationSeconds), 12, MUTED, false);
         artist.setMaxLines(1);
         words.addView(title);
-        words.addView(artist, lp(-1, -2, 0, 4, 0, 0));
+        words.addView(artist, lp(-1, -2, 0, 2, 0, 0));
+        YouTubeRepository.Rules badgeRules = resultRules.get(track.id);
+        if (badgeRules == null) badgeRules = displayedRules == null ? currentRules() : displayedRules;
+        addOfflineBadge(words, item, track.id, badgeRules);
         item.addView(words, new LinearLayout.LayoutParams(0, -2, 1));
         ImageButton add = iconButton(R.drawable.ic_add, "Add " + track.title + " to queue", MUTED);
         add.setOnClickListener(v -> addNext(track));
@@ -760,6 +900,10 @@ public final class MainActivity extends android.app.Activity {
         playerArtist.setMaxLines(1);
         titleColumn.addView(playerTitle);
         titleColumn.addView(playerArtist, lp(-1, -2, 0, 4, 0, 0));
+        playerOffline = text("Checking saved audio…", 12, MUTED, true);
+        titleColumn.addView(playerOffline, lp(-1, -2, 0, 3, 0, 0));
+        playerBuffered = text("Buffered: 0:00 ahead", 12, MUTED, false);
+        titleColumn.addView(playerBuffered, lp(-1, -2, 0, 2, 0, 0));
         details.addView(titleColumn, new LinearLayout.LayoutParams(0, -2, 1));
         fullSaveButton = iconButton(R.drawable.ic_bookmark, "Save current episode in Library", MUTED);
         fullSaveButton.setOnClickListener(v -> saveCurrentEpisode());
@@ -843,7 +987,7 @@ public final class MainActivity extends android.app.Activity {
                     .setPositiveButton("Clear", (dialog, which) -> clearListeningHistory()).show();
             return true;
         });
-        menu.getMenu().add("Playback preparation").setOnMenuItemClickListener(item -> { showPreparationSettings(); return true; });
+        menu.getMenu().add("Journey buffer").setOnMenuItemClickListener(item -> { showPreparationSettings(); return true; });
         menu.getMenu().add("About BlackYT").setOnMenuItemClickListener(item -> { showAbout(); return true; });
         menu.show();
     }
@@ -904,7 +1048,9 @@ public final class MainActivity extends android.app.Activity {
             startingTrackId = null;
             startingTrackTitle = null;
             safeLog("player_error_" + error.errorCode);
-            String message = "Could not play this song. Check your connection or retry.";
+            String message = ConnectionRetryPolicy.isTransient(error)
+                    ? "Connection interrupted. BlackYT will try again when the connection returns. You can pause to cancel."
+                    : "Could not play this song. Check your connection or retry.";
             setStatus(message);
             android.widget.Toast.makeText(MainActivity.this, message, android.widget.Toast.LENGTH_LONG).show();
         }
@@ -1126,9 +1272,13 @@ public final class MainActivity extends android.app.Activity {
             startingTrackTitle = null;
         }
         boolean failed = controller != null && controller.getPlayerError() != null;
-        if (miniSubtitle != null) miniSubtitle.setText(failed ? "Could not play · " + artist : loading ? "Starting… · " + artist : artist);
-        if (playerHint != null) playerHint.setText(failed ? "Could not play. Open Track options to retry."
-                : loading ? "Starting…" : "Swipe artwork left or right to change queued songs");
+        boolean networkInterrupted = failed && ConnectionRetryPolicy.isTransient(controller.getPlayerError());
+        String bufferingLabel = controller != null && controller.getCurrentPosition() > 0 ? "Rebuilding buffer…" : "Starting…";
+        if (miniSubtitle != null) miniSubtitle.setText(networkInterrupted ? "Waiting for connection · " + artist
+                : failed ? "Could not play · " + artist : loading ? bufferingLabel + " · " + artist : artist);
+        if (playerHint != null) playerHint.setText(networkInterrupted ? "Waiting for a connection. Pause to cancel, or retry in Track options."
+                : failed ? "Could not play. Open Track options to retry."
+                : loading ? "Rebuilding a buffer for smoother listening…" : "Swipe artwork left or right to change queued songs");
         if (miniPlayer != null && !fullPlayer) miniPlayer.setVisibility(hasCurrent ? View.VISIBLE : View.GONE);
         if (miniPlayButton != null) {
             miniPlayButton.setImageResource(wantsPlayback ? R.drawable.ic_pause : R.drawable.ic_play);
@@ -1138,6 +1288,8 @@ public final class MainActivity extends android.app.Activity {
         setTransportEnabled(miniNextButton, controller != null && controller.hasNextMediaItem());
         if (playerTitle != null) playerTitle.setText(hasCurrent ? title : "Nothing playing yet");
         if (playerArtist != null) playerArtist.setText(hasCurrent ? artist : "Choose a result to start listening.");
+        if (playerOffline != null && hasCurrent) bindPlayerOffline(current);
+        if (playerBuffered != null) playerBuffered.setText("Buffered: " + format(controller == null ? 0 : Math.max(0, controller.getTotalBufferedDuration() / 1000)) + " ahead");
         if (fullPlayButton != null) {
             fullPlayButton.setImageResource(wantsPlayback ? R.drawable.ic_pause : R.drawable.ic_play);
             fullPlayButton.setContentDescription(wantsPlayback ? "Pause current song" : "Play current song");
@@ -1199,11 +1351,11 @@ public final class MainActivity extends android.app.Activity {
         int current = controller == null ? -1 : controller.getCurrentMediaItemIndex();
         if (current >= 0 && current < count) {
             queueBox.addView(text("NOW PLAYING", 11, LIME, true), lp(-1, dp(36), 0, 0, 0, 2));
-            queueBox.addView(queueRow(current, true), lp(-1, dp(64), 0, 0, 0, 12));
+            queueBox.addView(queueRow(current, true), lp(-1, -2, 0, 0, 0, 12));
         }
         int firstUpcoming = current >= 0 ? current + 1 : 0;
         if (firstUpcoming < count) queueBox.addView(text("UP NEXT", 11, MUTED, true), lp(-1, dp(36), 0, 0, 0, 2));
-        for (int i = firstUpcoming; i < count; i++) queueBox.addView(queueRow(i, false), lp(-1, dp(64), 0, 0, 0, 2));
+        for (int i = firstUpcoming; i < count; i++) queueBox.addView(queueRow(i, false), lp(-1, -2, 0, 0, 0, 2));
     }
 
     private View queueRow(int index, boolean current) {
@@ -1224,6 +1376,8 @@ public final class MainActivity extends android.app.Activity {
         names.addView(title);
         CharSequence artist = item.mediaMetadata.artist;
         names.addView(text(artist == null ? "YT" : artist.toString(), 12, MUTED, false), lp(-1, -2, 0, 3, 0, 0));
+        try { NativeMediaItems.OwnedItem owned = NativeMediaItems.parse(item); addOfflineBadge(names, line, owned.id, owned.rules); }
+        catch (IllegalArgumentException invalid) { }
         line.addView(names, new LinearLayout.LayoutParams(0, -2, 1));
         line.setContentDescription((current ? "Current song, " : "Play ") + titleOf(item));
         line.setFocusable(true);
@@ -1513,15 +1667,46 @@ public final class MainActivity extends android.app.Activity {
 
     private void showPreparationSettings() {
         PlaybackPreparation preparation = PlaybackPreparation.get(this);
-        new android.app.AlertDialog.Builder(this).setTitle("Playback preparation")
-                .setSingleChoiceItems(new String[] {"Off", "Unmetered connections (default)", "Wi-Fi and mobile data"}, preparation.mode(), (dialog, which) -> {
-                    preparation.setMode(which); scheduleVisiblePreparation(); dialog.dismiss();
+        LinearLayout content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setPadding(dp(20), dp(8), dp(20), dp(8));
+        TextView cacheStatus = new TextView(this);
+        cacheStatus.setText("Audio expires after 6 hours, within a 256 MB limit. Checking saved audio…");
+        content.addView(cacheStatus);
+        android.widget.RadioGroup networks = new android.widget.RadioGroup(this);
+        String[] choices = {"Off (memory buffer only)", "Prepare on unmetered connections (default)", "Prepare on Wi-Fi and mobile data"};
+        for (int i = 0; i < choices.length; i++) {
+            android.widget.RadioButton radio = new android.widget.RadioButton(this);
+            radio.setId(20_000 + i); radio.setText(choices[i]); networks.addView(radio);
+        }
+        networks.check(20_000 + preparation.mode());
+        networks.setOnCheckedChangeListener((group, id) -> {
+            markOfflineChecking();
+            preparation.setMode(id - 20_000); scheduleVisiblePreparation();
+        });
+        content.addView(networks);
+        android.app.AlertDialog options = new android.app.AlertDialog.Builder(this).setTitle("Journey buffer")
+                .setView(content)
+                .setPositiveButton("Clear saved audio", (dialog, which) -> {
+                    markOfflineChecking();
+                    AudioPrefixCache.clear(this);
+                    showPlaybackFeedback("Saved audio is being cleared. Your playlists are kept.");
                 })
                 .setNeutralButton("How it works", (dialog, which) -> new android.app.AlertDialog.Builder(this)
-                        .setTitle("Prepare likely next items")
-                        .setMessage("Prepares the next two queued items, then the first visible result. Where YT exposes a stable audio identity, it buffers up to 384 KiB of each item in a rolling 32 MiB cache on this phone. This is a temporary opening buffer, not an offline download library; very short clips can fit within the byte cap. Up to eight items are prepared per minute. Unmetered connections is the default; mobile data is optional. Off cancels preparation and clears prepared audio in the background. Preparation sends extra requests to YT before you tap. Playback falls back to direct streaming if caching is unavailable; connection and buffering delays can still occur.")
+                        .setTitle("Before going underground")
+                        .setMessage("Build your queue while connected, then let it prepare. The player can buffer up to 10 minutes ahead. Once current playback has a useful reserve, the next two queued items can save up to about 20 minutes each, capped at 24 MB per item; visible search results only get a small opening buffer. Preparation is unmetered-only by default; choosing mobile data can use more of your allowance. Played audio is also kept without a second download. The saved cache expires after 6 hours and is limited to 256 MB. Expired files are removed while BlackYT is active or on its next start; Android may clear them earlier. It only covers audio already received: long outages, uncached seeks and new searches still need a connection. After a stall the player waits for a stronger reserve, rather than repeatedly playing tiny bursts. Off stops disk caching and clears saved audio. Clearing audio does not remove playlists. Audio continues to come directly from YT; no Mac or Termux is needed.")
                         .setPositiveButton("Got it", null).show())
-                .setNegativeButton("Close", null).show();
+                .setNegativeButton("Close", null).create();
+        options.show();
+        searches.execute(() -> {
+            long bytes = AudioPrefixCache.get(this).statusBytes();
+            main.post(() -> {
+                if (destroyed || !options.isShowing()) return;
+                long seconds = controller == null ? 0 : Math.max(0, controller.getTotalBufferedDuration() / 1000);
+                cacheStatus.setText(String.format(java.util.Locale.ROOT,
+                        "Saved audio: %.1f MB · expires after 6 hours · limit 256 MB. Current playback buffer: %d seconds. Queue preparation uses the connection choice below. Saved audio only covers received parts; it does not guarantee a whole journey offline.", bytes / (1024d * 1024d), seconds));
+            });
+        });
     }
 
     private void showAbout() {
@@ -1804,6 +1989,7 @@ public final class MainActivity extends android.app.Activity {
 
     @Override protected void onPause() {
         preparationScreenActive = false;
+        markOfflineChecking();
         main.removeCallbacks(visiblePreparation);
         PlaybackPreparation.get(this).update("screen", java.util.Collections.emptyList());
         main.removeCallbacks(ticker);
@@ -1821,6 +2007,7 @@ public final class MainActivity extends android.app.Activity {
         if (controller != null) controller.removeListener(playerListener);
         if (controllerFuture != null) MediaController.releaseFuture(controllerFuture);
         searches.shutdownNow();
+        offlineWorker.shutdownNow();
         activeSearch = false;
         artworkLoader.close();
         if (Build.VERSION.SDK_INT >= 33 && platformBackCallback != null) {
@@ -1944,6 +2131,7 @@ public final class MainActivity extends android.app.Activity {
             TextView subtitle = text((resume > 0 ? "Resume " + format(resume / 1000) : "Play from beginning")
                     + " · " + episode.track.channel, 12, resume > 0 ? LIME : MUTED, false);
             subtitle.setMaxLines(1); words.addView(subtitle, lp(-1, -2, 0, 3, 0, 0));
+            addOfflineBadge(words, line, episode.track.id, episode.rules);
             line.addView(words, new LinearLayout.LayoutParams(0, -2, 1));
             ImageButton more = iconButton(R.drawable.ic_more, "Saved episode options for " + episode.track.title, MUTED);
             more.setOnClickListener(v -> {
@@ -1960,7 +2148,7 @@ public final class MainActivity extends android.app.Activity {
             line.setContentDescription("Resume saved episode " + episode.track.title);
             prepareWhenVisible(line, episode.track, episode.rules);
             line.setOnClickListener(v -> { playTrack(episode.track, episode.rules, resume); openFullPlayer(); });
-            root.addView(line, lp(-1, dp(88), 0, 0, 0, 4));
+            root.addView(line, lp(-1, -2, 0, 0, 0, 4));
         }
         List<ListeningStore.SavedCreator> savedCreators = listening.listCreators();
         root.addView(text("Saved creators · " + savedCreators.size(), 18, CREAM, true), lp(-1, -2, 0, 22, 0, 8));
@@ -2010,7 +2198,7 @@ public final class MainActivity extends android.app.Activity {
             line.addView(art,lp(dp(52),dp(52),0,0,9,0));
             LinearLayout words=new LinearLayout(this); words.setOrientation(LinearLayout.VERTICAL);
             TextView title=text(suggestion.track.title,14,CREAM,true); title.setMaxLines(2); words.addView(title);
-            words.addView(text(suggestion.track.channel,12,MUTED,false),lp(-1,-2,0,3,0,0)); line.addView(words,new LinearLayout.LayoutParams(0,-2,1));
+            words.addView(text(suggestion.track.channel,12,MUTED,false),lp(-1,-2,0,3,0,0)); addOfflineBadge(words,line,suggestion.track.id,suggestion.rules); line.addView(words,new LinearLayout.LayoutParams(0,-2,1));
             ImageButton add=iconButton(R.drawable.ic_nav_library,"Add " + suggestion.track.title + " to " + playlist.name,LIME);
             add.setOnClickListener(v -> {
                 try {
@@ -2021,7 +2209,7 @@ public final class MainActivity extends android.app.Activity {
                 } catch (IllegalArgumentException full) { showPlaybackFeedback(full.getMessage()); }
                 showTab(TAB_LIBRARY);
             });
-            line.addView(add,lp(dp(48),dp(48),0,0,0,0)); root.addView(line,lp(-1,dp(68),0,0,0,3));
+            line.addView(add,lp(dp(48),dp(48),0,0,0,0)); root.addView(line,lp(-1,-2,0,0,0,3));
         }
         for (PlaylistStore.Entry entry : playlist.entries) {
             LinearLayout line=row(); touchFeedback(line,5);
@@ -2029,7 +2217,7 @@ public final class MainActivity extends android.app.Activity {
             line.addView(art,lp(dp(52),dp(52),0,0,9,0));
             LinearLayout words=new LinearLayout(this); words.setOrientation(LinearLayout.VERTICAL);
             TextView title=text(entry.track.title,14,CREAM,true); title.setMaxLines(2); words.addView(title);
-            words.addView(text(entry.track.channel,12,MUTED,false),lp(-1,-2,0,3,0,0)); line.addView(words,new LinearLayout.LayoutParams(0,-2,1));
+            words.addView(text(entry.track.channel,12,MUTED,false),lp(-1,-2,0,3,0,0)); addOfflineBadge(words,line,entry.track.id,entry.rules); line.addView(words,new LinearLayout.LayoutParams(0,-2,1));
             ImageButton options=iconButton(R.drawable.ic_more,"Options for " + entry.track.title,MUTED);
             options.setOnClickListener(v -> { android.widget.PopupMenu popup=new android.widget.PopupMenu(this,options);
                 popup.getMenu().add("Play now").setOnMenuItemClickListener(i -> { playTrack(entry.track,entry.rules,0); openFullPlayer(); return true; });
@@ -2037,7 +2225,7 @@ public final class MainActivity extends android.app.Activity {
                 popup.getMenu().add("Remove from playlist").setOnMenuItemClickListener(i -> { playlists.remove(playlist.id,entry.track.id); showTab(TAB_LIBRARY); return true; }); popup.show(); });
             line.addView(options,lp(dp(48),dp(48),0,0,0,0));
             line.setOnClickListener(v -> { playTrack(entry.track,entry.rules,0); openFullPlayer(); });
-            root.addView(line,lp(-1,dp(68),0,0,0,3));
+            root.addView(line,lp(-1,-2,0,0,0,3));
         }
         return scroll;
     }
@@ -2366,7 +2554,7 @@ public final class MainActivity extends android.app.Activity {
                     resultsBox.addView(description, lp(-1, -2, 0, 0, 0, 12));
                 }
             }
-            for (YouTubeRepository.Track track : channelResults) resultsBox.addView(buildCompactResult(track), lp(-1, dp(72), 0, 0, 0, 2));
+            for (YouTubeRepository.Track track : channelResults) resultsBox.addView(buildCompactResult(track), lp(-1, -2, 0, 0, 0, 2));
             if (!activeSearch && (channelCursor != null || creatorInfo == null)) {
                 Button more = button(creatorInfo == null ? "Retry creator" : "Load more episodes", false);
                 more.setContentDescription(creatorInfo == null ? "Retry creator" : "Load more creator episodes");

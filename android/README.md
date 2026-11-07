@@ -80,3 +80,8 @@ The transport tests also simulate a 403: they verify exactly one fresh resolutio
 For a screen-off check, lock the phone normally before running the playback test and add the runner argument `expect_screen_off=true`. This requires the test to observe both the existing lock and the display off. A silent automated pass does not establish audible quality, everyday touch usability, or support for every phone.
 
 Final v0.5.0 checks: **20 release unit tests and 14 phone instrumentation tests passed**; release lint had zero errors and 19 warnings. A complete 208.564-second song advanced naturally to the next queued track on mobile data. The full two-minute sample stayed locked/display asleep, and both conditions held at the next track. USB remained connected; playback was app-muted. See the versioned verification JSON for evidence and limits.
+
+
+## Journey-buffer test update
+
+The v0.7.0-rc1 test build adds a six-hour bounded audio cache and stronger rebuffering. See the [journey-buffer guide](../docs/JOURNEY-BUFFER.md) for installation, network/data controls, limits and the pending Pixel test.

@@ -14,7 +14,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-/** Bounded, on-device stream preparation. Writes only the explicitly limited audio prefix. */
+/** Bounded queue audio preparation; visible search results keep a small opening buffer. */
 @androidx.media3.common.util.UnstableApi
 final class PlaybackPreparation {
     static final int OFF = 0, UNMETERED = 1, ANY_NETWORK = 2;
@@ -121,8 +121,15 @@ final class PlaybackPreparation {
             Candidate selected = next;
             try {
                 YouTubeRepository.Resolved resolved = YouTubeRepository.get().resolve(selected.id, selected.rules, false);
+                boolean queued;
+                synchronized (this) {
+                    queued = sources.getOrDefault("queue", Collections.emptyList()).stream()
+                            .anyMatch(candidate -> candidate.id.equals(selected.id));
+                }
+                long bytes = queued ? PlaybackBufferPolicy.queuePrefetchBytes(resolved.durationSeconds, resolved.formatKey)
+                        : AudioPrefixCache.PREFIX_BYTES;
                 if (stillEligible(selected)) AudioPrefixCache.get(context).prefetch(selected.id, selected.rules,
-                        resolved, () -> stillEligible(selected));
+                        resolved, bytes, () -> stillEligible(selected));
             }
             catch (Exception ignored) { /* A speculative failure must never interrupt playback or show an error. */ }
             finally {
