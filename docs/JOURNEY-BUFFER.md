@@ -1,6 +1,6 @@
 # Journey buffer — v0.7.0 test update
 
-This test update improves listening through short signal gaps and reduces repeated start–stop playback. The preceding rc2 build passed the physical Pixel check: 120 seconds of offline locked-screen progress, a natural transition to the next cached song, and automatic recovery of an uncached episode about 8.4 seconds after reconnecting. The automated check muted app audio; audible quality and a real Underground journey remain owner checks. The public website’s stable download remains unchanged.
+This test update improves listening through short signal gaps and reduces repeated start–stop playback. The preceding rc2 build passed the physical Pixel check: 120 seconds of offline locked-screen progress, a natural transition to the next cached song, and automatic recovery of an uncached episode about 8.4 seconds after reconnecting. The automated check muted app audio; audible quality and a real Underground journey remain owner checks. The main website download now serves the tested v0.7.0-rc3 build.
 
 ## Install the update
 

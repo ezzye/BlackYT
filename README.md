@@ -12,7 +12,7 @@ Visit [blackyt.streamit2.me](https://blackyt.streamit2.me/) for the Android down
 
 ## Install the native Android app
 
-The current native release is [v0.6.0](https://github.com/ezzye/BlackYT/releases/tag/v0.6.0), with **BlackYT-Android-v0.6.0.apk** (versionCode 60). Start with the detailed [Android installation guide](docs/INSTALL.md), or use the downloadable [offline HTML guide](https://github.com/ezzye/BlackYT/releases/download/v0.6.0/BlackYT-Android-Guide.html). No GitHub sign-in, developer settings, USB debugging, Termux, or Mac is needed for normal installation. Android 8 or newer is required. See [FAQ](docs/FAQ.md), [troubleshooting](docs/TROUBLESHOOTING.md), and [android/README.md](android/README.md) for source builds and signing. The Android component is GPL-3.0-or-later; see [android/LICENSE](android/LICENSE) and [android/NOTICE](android/NOTICE).
+The main website download is [v0.7.0-rc3](https://blackyt.streamit2.me/), with **BlackYT-Android-v0.7.0-rc3.apk** (versionCode 72), also available from the [GitHub release](https://github.com/ezzye/BlackYT/releases/tag/v0.7.0-rc3). The release-candidate version name is retained. Start with the detailed [Android installation guide](docs/INSTALL.md), or use the downloadable [offline HTML guide](https://blackyt.streamit2.me/BlackYT-Android-Guide.html). No GitHub sign-in, developer settings, USB debugging, Termux, or Mac is needed for normal installation. Android 8 or newer is required. See [FAQ](docs/FAQ.md), [troubleshooting](docs/TROUBLESHOOTING.md), and [android/README.md](android/README.md) for source builds and signing. The Android component is GPL-3.0-or-later; see [android/LICENSE](android/LICENSE) and [android/NOTICE](android/NOTICE).
 
 ## Contribute to BlackYT
 
@@ -20,7 +20,13 @@ Help improve accessibility, search, design, documentation or testing. You do not
 
 **Educational use only: this project should not be used to break the law.** Respect copyright, creators' rights, applicable platform terms and access restrictions. Read the [full disclaimer](DISCLAIMER.md).
 
-## v0.6.0: playlists and playback preparation
+## v0.7.0-rc3: offline status and journey preparation
+
+Tiny icons show **✓ Ready offline**, **◐ Part saved**, **○ Needs connection**, or **… Checking** beside each item. Long-press for the written status. Prepare a playlist on Wi-Fi before losing signal; a green check requires a whole saved audio file with a known size and valid expiry. The full player shows RAM-buffered seconds separately. The temporary cache is 256 MiB with a six-hour lifetime; preparation covers the current item and next two queue entries within size/duration limits. It does not automatically download a whole playlist. See the [journey guide](docs/JOURNEY-BUFFER.md) and [website usage guide](https://blackyt.streamit2.me/#underground).
+
+60 unit tests passed. Pixel checks covered actual queue icons, cache-removal refresh, 120 seconds offline with the screen locked, natural next-song transition and automatic recovery. The automated tests were app-muted; audible quality and a real Underground journey remain owner checks.
+
+## Earlier v0.6.0: playlists and playback preparation
 
 Version 0.6.0 adds named local playlists, suggestions to find more music, and optional playback preparation. Select search results and choose **Create playlist** or **Add to playlist**; each result also has a playlist button. Library playlists stay on the phone. **Play playlist** explicitly replaces the queue; **Add all** appends items and preserves current playback. “Find more like these” is optional, uses at most two creator pages and two searches, and returns at most 12 suggestions. Suggestions are never added automatically; “New to this playlist” does not verify upload dates.
 
