@@ -1,10 +1,10 @@
 # Journey buffer — v0.7.0 test update
 
-This test update improves listening through short signal gaps and reduces repeated start–stop playback. It has passed automated checks; a physical Pixel and Underground journey check are still pending. The public website’s stable download remains unchanged until that check.
+This test update improves listening through short signal gaps and reduces repeated start–stop playback. The rc2 build passed the physical Pixel check: 120 seconds of offline locked-screen progress, a natural transition to the next cached song, and automatic recovery of an uncached episode about 8.4 seconds after reconnecting. The automated check muted app audio; audible quality and a real Underground journey remain owner checks. The public website’s stable download remains unchanged.
 
 ## Install the update
 
-Download **BlackYT-Android-v0.7.0-rc1.apk** from the [test release](https://github.com/ezzye/BlackYT/releases/tag/v0.7.0-rc1). Open it in Files/Downloads and install over your existing BlackYT. The package uses the existing signing identity and versionCode 70. Do not uninstall or clear app storage: your saved playlists and episodes are kept when Android installs a compatible update. If Android reports a signing conflict, stop and contact blackyt@streamit2.me. Developer options, USB debugging, Termux and a running Mac are not needed for ordinary installation or listening.
+Download **BlackYT-Android-v0.7.0-rc2.apk** from the [test release](https://github.com/ezzye/BlackYT/releases/tag/v0.7.0-rc2). Open it in Files/Downloads and install over your existing BlackYT. The package uses the existing signing identity and versionCode 71. Do not uninstall or clear app storage: your saved playlists and episodes are kept when Android installs a compatible update. If Android reports a signing conflict, stop and contact blackyt@streamit2.me. Developer options, USB debugging, Termux and a running Mac are not needed for ordinary installation or listening.
 
 ## Before going underground
 
@@ -27,8 +27,12 @@ After an underrun, BlackYT first gathers roughly 15 seconds of playable audio. R
 
 No buffer can play audio that has not arrived. If average bandwidth stays below the stream bitrate, longer pauses can still be needed.
 
-## Pixel check for later
+## Repeat the listening check
 
 Queue three short tracks on Wi-Fi and let preparation run. Turn off both Wi-Fi and mobile data, keeping any headphone connection enabled; lock the screen and listen through the current item and a prepared next item. Restore data and check automatic recovery if the buffer ran out. Repeat with a longer episode and a seek beyond the prepared part. Check that Clear saved audio and Off do not lose your queue or Library. Please report whether you heard gaps, which items were queued and how many seconds the dialog showed before disconnecting.
 
 Audio remains direct from YT/Google to the phone; this change adds no media proxy, account, analytics SDK or hosted streaming bill.
+
+## Device evidence and rc2 repair
+
+The first handset run found missing optional extractor format metadata caused preparation to skip caching. Rc2 uses hashed stable representation/revision identifiers and available language metadata, rejecting ambiguous identities. Signed URL tokens are excluded. Both songs were cached after repair. Two preliminary screen-off attempts were interrupted by lift-to-wake; the controlled passing run temporarily disabled that gesture and restored it afterward. Original Library and network settings were restored; the temporary test queue was cleared. See [device evidence](testing/pixel-journey-20261107.json) and [build checks](testing/journey-build-rc2.json). The full passing test took about four minutes. Restricted-bandwidth listening remains unverified.

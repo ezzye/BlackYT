@@ -56,4 +56,4 @@ If these steps do not help, [open a support issue](https://github.com/ezzye/Blac
 
 ## Journey-buffer test update
 
-The v0.7.0-rc1 test build adds a six-hour bounded audio cache and stronger rebuffering. See the [journey-buffer guide](JOURNEY-BUFFER.md) for installation, network/data controls, limits and the pending Pixel test.
+The v0.7.0-rc2 test build adds a six-hour bounded audio cache and stronger rebuffering. See the [journey-buffer guide](JOURNEY-BUFFER.md) for installation, network/data controls, limits and the completed controlled Pixel test and remaining real-journey listening check.

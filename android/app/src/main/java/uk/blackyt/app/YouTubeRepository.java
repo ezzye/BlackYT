@@ -351,12 +351,8 @@ public final class YouTubeRepository {
             String trackType = selected.getAudioTrackType() == null ? "" : selected.getAudioTrackType().name();
             String codec = nullToEmpty(selected.getCodec());
             String mime = nullToEmpty(selected.getFormat().getMimeType()).toLowerCase(Locale.ROOT);
-            String formatKey = selected.getItag() > 0 && (!trackId.isEmpty() || !trackType.isEmpty())
-                    && !codec.isEmpty()
-                    && selected.getBitrate() > 0 && !mime.isEmpty()
-                    ? selected.getItag() + ":" + trackId + ":" + trackType
-                            + ":" + mime + ":" + codec + ":" + selected.getBitrate()
-                    : "";
+            String formatKey = AudioCacheFormatIdentity.create(url, selected.getItag(), trackId,
+                    trackType, mime, codec, selected.getBitrate());
             Resolved result = new Resolved(url, selected.getFormat().getMimeType(),
                     title, channel, info.getDuration(), host, bestSafeThumbnail(info.getThumbnails()),
                     formatKey);

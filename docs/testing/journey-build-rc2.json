@@ -1,0 +1,16 @@
+{
+  "version": "0.7.0-rc2-native",
+  "versionCode": 71,
+  "tests": {
+    "tests": 57,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "lint": {
+    "Error": 0,
+    "Warning": 21
+  },
+  "apkSha256": "6092ffbd42bd3b66780a42e509c6fb48ef883ffb1a3506675cc530268cefcf6f",
+  "apkBytes": 7156992
+}

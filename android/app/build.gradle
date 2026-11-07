@@ -5,7 +5,7 @@ if (signingFile.exists()) signingFile.withInputStream { signingProperties.load(i
 android {
  namespace 'uk.blackyt.app'
  compileSdk 36
- defaultConfig { applicationId 'uk.blackyt.app'; minSdk 26; targetSdk 36; versionCode 70; versionName '0.7.0-rc1-native'; testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner' }
+ defaultConfig { applicationId 'uk.blackyt.app'; minSdk 26; targetSdk 36; versionCode 71; versionName '0.7.0-rc2-native'; testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner' }
  testOptions { unitTests.includeAndroidResources = true }
  buildFeatures { buildConfig true }
  compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17; coreLibraryDesugaringEnabled true }
