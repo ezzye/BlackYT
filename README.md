@@ -12,13 +12,17 @@ Visit [blackyt.streamit2.me](https://blackyt.streamit2.me/) for the Android down
 
 ## Install the native Android app
 
-The main website download is [v0.7.0-rc3](https://blackyt.streamit2.me/), with **BlackYT-Android-v0.7.0-rc3.apk** (versionCode 72), also available from the [GitHub release](https://github.com/ezzye/BlackYT/releases/tag/v0.7.0-rc3). The release-candidate version name is retained. Start with the detailed [Android installation guide](docs/INSTALL.md), or use the downloadable [offline HTML guide](https://blackyt.streamit2.me/BlackYT-Android-Guide.html). No GitHub sign-in, developer settings, USB debugging, Termux, or Mac is needed for normal installation. Android 8 or newer is required. See [FAQ](docs/FAQ.md), [troubleshooting](docs/TROUBLESHOOTING.md), and [android/README.md](android/README.md) for source builds and signing. The Android component is GPL-3.0-or-later; see [android/LICENSE](android/LICENSE) and [android/NOTICE](android/NOTICE).
+The main website download is [v0.7.0-rc4](https://blackyt.streamit2.me/), with **BlackYT-Android-v0.7.0-rc4.apk** (versionCode 73), also available from the [GitHub release](https://github.com/ezzye/BlackYT/releases/tag/v0.7.0-rc4). The release-candidate version name is retained. Start with the detailed [Android installation guide](docs/INSTALL.md), or use the downloadable [offline HTML guide](https://blackyt.streamit2.me/BlackYT-Android-Guide.html). No GitHub sign-in, developer settings, USB debugging, Termux, or Mac is needed for normal installation. Android 8 or newer is required. See [FAQ](docs/FAQ.md), [troubleshooting](docs/TROUBLESHOOTING.md), and [android/README.md](android/README.md) for source builds and signing. The Android component is GPL-3.0-or-later; see [android/LICENSE](android/LICENSE) and [android/NOTICE](android/NOTICE).
 
 ## Contribute to BlackYT
 
 Help improve accessibility, search, design, documentation or testing. You do not need to write code: bug reports, clearer instructions and feature ideas are welcome. Start with [the contribution guide](CONTRIBUTING.md), or [download its offline HTML copy](CONTRIBUTING.html). It explains issues, browser-based edits, forks, pull requests, build checks and licensing. Project contact: **blackyt@streamit2.me** · Unsigned Media Ltd.
 
 **Educational use only: this project should not be used to break the law.** Respect copyright, creators' rights, applicable platform terms and access restrictions. Read the [full disclaimer](DISCLAIMER.md).
+
+## v0.7.0-rc4: playlist recovery
+
+Rc4 can refresh a conflicting temporary audio buffer once to help a stuck playlist recover. The buffer display counts the current song only. Update over the existing app to keep saved playlists. See [troubleshooting](docs/TROUBLESHOOTING.md).
 
 ## v0.7.0-rc3: offline status and journey preparation
 

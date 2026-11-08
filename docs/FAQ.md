@@ -88,7 +88,7 @@ Final v0.5.0 checks: **20 release unit tests and 14 phone instrumentation tests 
 
 ## Journey-buffer test update
 
-The v0.7.0-rc3 test build adds a six-hour bounded audio cache and stronger rebuffering. See the [journey-buffer guide](JOURNEY-BUFFER.md) for installation, network/data controls, limits and the completed controlled Pixel test and remaining real-journey listening check.
+The current v0.7.0-rc4 release candidate includes a six-hour bounded audio cache and stronger rebuffering. See the [journey-buffer guide](JOURNEY-BUFFER.md) for installation, network/data controls, limits and the completed controlled Pixel test and remaining real-journey listening check.
 
 ### What does the small saved-audio icon mean?
 

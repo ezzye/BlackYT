@@ -56,8 +56,16 @@ If these steps do not help, [open a support issue](https://github.com/ezzye/Blac
 
 ## Journey-buffer test update
 
-The v0.7.0-rc3 test build adds a six-hour bounded audio cache and stronger rebuffering. See the [journey-buffer guide](JOURNEY-BUFFER.md) for installation, network/data controls, limits and the completed controlled Pixel test and remaining real-journey listening check.
+The current v0.7.0-rc4 release candidate includes a six-hour bounded audio cache and stronger rebuffering. See the [journey-buffer guide](JOURNEY-BUFFER.md) for installation, network/data controls, limits and the completed controlled Pixel test and remaining real-journey listening check.
 
 ### What does the small saved-audio icon mean?
 
 A green check means **Ready offline**: the whole selected audio file is currently saved and unexpired. A half circle is **Part saved**, an empty circle is **Needs connection**, and dots mean **Checking**. Long-press for the full explanation. The current player’s buffered seconds are separate from whole-item readiness. Icons update while visible and on returning to the app. See the [journey-buffer guide](JOURNEY-BUFFER.md).
+
+## Playlist stops at the start despite Ready offline
+
+First update to rc4: use Download Android on the BlackYT website, open the APK and choose **Update** over your existing app. Do not uninstall: this preserves your saved playlists. Developer options, USB debugging and Termux are not needed. Rc4 can refresh a conflicting temporary buffer automatically once without mixing audio formats.
+
+If still stuck, open track options and choose **Retry current song**, then check your connection. As a last resort, open Journey buffer and choose **Clear saved audio**. This clears the six-hour temporary cache, not your saved playlists. Ready offline reflects audio saved at that time; it cannot guarantee indefinite service availability. Buffered seconds count the current song only.
+
+If playback appears to start but Bluetooth is silent, check the connected audio output and media volume on both phone and device. The fixed buffer-format issue has not been proven to be caused by Bluetooth.
