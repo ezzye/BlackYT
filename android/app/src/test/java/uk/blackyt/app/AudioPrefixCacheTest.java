@@ -158,6 +158,15 @@ public class AudioPrefixCacheTest {
         assertNull(cache.descriptor(ID, rules));
         assertEquals(0, cache.statusBytes());
     }
+    @Test public void conflictingPinDiscardsReplacementDescriptorBeforeRestart() throws Exception {
+        assertTrue(PlaybackFormatPins.accept(ID, "older-format"));
+        seed(new byte[] {1, 2, 3});
+        assertNotNull(cache.descriptor(ID, rules));
+        try { readOffline(0, 1); fail("expected format change"); }
+        catch (AudioFormatChangedException expected) { }
+        assertNull(cache.descriptor(ID, rules));
+        assertEquals(0, cache.statusBytes());
+    }
     @Test public void identityExpiryAndRollbackFailClosed() throws Exception {
         seed(new byte[] {1,2,3});
         assertNull(cache.descriptor(ID, new YouTubeRepository.Rules(true, "music", "other")));
@@ -225,6 +234,34 @@ public class AudioPrefixCacheTest {
                 ID, new YouTubeRepository.Rules(true, "music", "other")))).isEmpty());
         now.set(expiry);
         assertNull(status());
+    }
+    @Test public void completeKnownLengthCanReadUnboundedOfflineThroughEof() throws Exception {
+        byte[] data = new byte[] {1, 2, 3, 4};
+        seed(data);
+        cache.rememberLength(ID, rules, "format-original-en", data.length);
+        assertTrue(status().ready);
+        String key = AudioPrefixCache.keyForFormat(ID, rules, "format-original-en");
+        assertEquals(data.length, androidx.media3.datasource.cache.ContentMetadata.getContentLength(
+                cache.factory(offline()).getCache().getContentMetadata(key)));
+        // Simulate a cache written by a previous version, which omitted Media3's EOF metadata.
+        cache.factory(offline()).getCache().applyContentMetadataMutations(
+                key, new androidx.media3.datasource.cache.ContentMetadataMutations().remove(
+                        androidx.media3.datasource.cache.ContentMetadata.KEY_CONTENT_LENGTH));
+        cache.releaseForTest();
+        cache = new AudioPrefixCache(context, now::get);
+        DataSource source = new KeyedAudioCacheDataSource(cache, offline());
+        try {
+            source.open(new DataSpec.Builder().setUri(uri).build());
+            byte[] actual = new byte[data.length];
+            int offset = 0;
+            while (offset < actual.length) {
+                int count = source.read(actual, offset, actual.length - offset);
+                assertTrue(count > 0);
+                offset += count;
+            }
+            assertArrayEquals(data, actual);
+            assertEquals(-1, source.read(new byte[1], 0, 1));
+        } finally { source.close(); }
     }
     @Test public void clearEvictionAndFormatReplacementRemoveReadiness() throws Exception {
         seed(new byte[10]);

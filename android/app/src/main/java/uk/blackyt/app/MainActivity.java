@@ -1289,7 +1289,7 @@ public final class MainActivity extends android.app.Activity {
         if (playerTitle != null) playerTitle.setText(hasCurrent ? title : "Nothing playing yet");
         if (playerArtist != null) playerArtist.setText(hasCurrent ? artist : "Choose a result to start listening.");
         if (playerOffline != null && hasCurrent) bindPlayerOffline(current);
-        if (playerBuffered != null) playerBuffered.setText("Buffered: " + format(controller == null ? 0 : Math.max(0, controller.getTotalBufferedDuration() / 1000)) + " ahead");
+        if (playerBuffered != null) playerBuffered.setText("Buffered: " + format(currentItemBufferedMs() / 1000) + " ahead");
         if (fullPlayButton != null) {
             fullPlayButton.setImageResource(wantsPlayback ? R.drawable.ic_pause : R.drawable.ic_play);
             fullPlayButton.setContentDescription(wantsPlayback ? "Pause current song" : "Play current song");
@@ -1702,11 +1702,21 @@ public final class MainActivity extends android.app.Activity {
             long bytes = AudioPrefixCache.get(this).statusBytes();
             main.post(() -> {
                 if (destroyed || !options.isShowing()) return;
-                long seconds = controller == null ? 0 : Math.max(0, controller.getTotalBufferedDuration() / 1000);
+                long seconds = currentItemBufferedMs() / 1000;
                 cacheStatus.setText(String.format(java.util.Locale.ROOT,
                         "Saved audio: %.1f MB · expires after 6 hours · limit 256 MB. Current playback buffer: %d seconds. Queue preparation uses the connection choice below. Saved audio only covers received parts; it does not guarantee a whole journey offline.", bytes / (1024d * 1024d), seconds));
             });
         });
+    }
+
+    // TotalBufferedDuration also counts prepared queue entries; this label describes only this song.
+    private long currentItemBufferedMs() {
+        if (controller == null || controller.getPlayerError() != null) return 0;
+        long position = Math.max(0, controller.getCurrentPosition());
+        long buffered = Math.max(position, controller.getBufferedPosition());
+        long duration = controller.getDuration();
+        if (duration > 0 && duration != androidx.media3.common.C.TIME_UNSET) buffered = Math.min(buffered, duration);
+        return Math.max(0, buffered - position);
     }
 
     private void showAbout() {

@@ -36,6 +36,7 @@ public final class PlaybackService extends MediaSessionService {
     private MediaSession session;
     private ListeningStore listening;
     private String pinnedMediaId = "";
+    private final CacheRecoveryPolicy cacheRecovery = new CacheRecoveryPolicy();
     private android.net.ConnectivityManager connectivity;
     private android.net.ConnectivityManager.NetworkCallback networkCallback;
     private boolean waitingForConnection;
@@ -45,6 +46,7 @@ public final class PlaybackService extends MediaSessionService {
     private final Runnable progressTick = new Runnable() {
         @Override public void run() {
             if (player == null) return;
+            cacheRecovery.playing(player.isPlaying(), android.os.SystemClock.elapsedRealtime());
             if (player.isPlaying()) saveCurrentProgress();
             updateQueuePreparation();
             retryAfterConnection();
@@ -111,6 +113,7 @@ public final class PlaybackService extends MediaSessionService {
                 if (!pinnedMediaId.isEmpty() && !pinnedMediaId.equals(nextId))
                     PlaybackFormatPins.clear(pinnedMediaId);
                 pinnedMediaId = nextId;
+                cacheRecovery.transition(nextId);
             }
 
             @Override public void onPlaybackStateChanged(int state) {
@@ -132,6 +135,7 @@ public final class PlaybackService extends MediaSessionService {
             }
 
             @Override public void onIsPlayingChanged(boolean isPlaying) {
+                cacheRecovery.playing(isPlaying, android.os.SystemClock.elapsedRealtime());
                 saveCurrentProgress();
                 if (BuildConfig.DEBUG) Log.i(TAG, "BlackYTPlayback:state state=" + stateName(player.getPlaybackState())
                         + " isPlaying=" + isPlaying + " mediaId=" + safeCurrentMediaId()
@@ -139,6 +143,7 @@ public final class PlaybackService extends MediaSessionService {
             }
 
             @Override public void onPlayerError(PlaybackException error) {
+                if (scheduleCacheRecovery(error)) return;
                 boolean wasWaiting = waitingForConnection;
                 boolean networkIo = error.errorCode == PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED
                         || error.errorCode == PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT
@@ -188,6 +193,29 @@ public final class PlaybackService extends MediaSessionService {
             }
         }
         PlaybackPreparation.get(this).update("queue", candidates);
+    }
+
+    private boolean scheduleCacheRecovery(PlaybackException error) {
+        MediaItem current = player.getCurrentMediaItem();
+        if (current == null || !cacheRecovery.take(current.mediaId, error)) return false;
+        final ExoPlayer expected = player;
+        final int index = player.getCurrentMediaItemIndex();
+        final boolean play = player.getPlayWhenReady();
+        final List<MediaItem> queue = new ArrayList<>();
+        for (int i = 0; i < player.getMediaItemCount(); i++) queue.add(player.getMediaItemAt(i));
+        progressHandler.post(() -> {
+            if (player != expected || player.getPlayerError() != error || player.getCurrentMediaItemIndex() != index
+                    || player.getPlayWhenReady() != play || player.getMediaItemCount() != queue.size()) return;
+            for (int i = 0; i < queue.size(); i++) if (!queue.get(i).equals(player.getMediaItemAt(i))) return;
+            long position = Math.max(0, player.getCurrentPosition());
+            waitingForConnection = false;
+            YouTubeRepository.get().invalidate(current.mediaId);
+            // A new source and extractor prevent mixing old decoder state with a fresh representation.
+            player.setMediaItems(queue, index, position);
+            player.setPlayWhenReady(play);
+            player.prepare();
+        });
+        return true;
     }
 
     private boolean connectionAvailable() {

@@ -116,6 +116,7 @@ final class AudioPrefixCache {
         if (entry != null && !entry.key.equals(keyForFormat(id, rules, entry.format))) {
             invalidate(entry.key); return null;
         }
+        if (entry != null) restorePlaybackLength(entry.key);
         return entry;
     }
     synchronized boolean remember(String id, YouTubeRepository.Rules rules, String format) {
@@ -128,13 +129,28 @@ final class AudioPrefixCache {
     }
     private static final String TOTAL_LENGTH = "blackyt.total_length";
 
-    /** Persist only a validated selected format's length; never change Media3 playback metadata. */
+    /** Persist the validated selected format's length for readiness and playback EOF. */
     synchronized void rememberLength(String id, YouTubeRepository.Rules rules, String format, long length) {
         String key = keyForFormat(id, rules, format);
         if (length <= 0 || key == null || !descriptors.isCurrent(identity(id, rules), key, clock.getAsLong())) return;
         try {
-            cache.applyContentMetadataMutations(key, new ContentMetadataMutations().set(TOTAL_LENGTH, length));
+            ContentMetadataMutations mutations = new ContentMetadataMutations().set(TOTAL_LENGTH, length);
+            ContentMetadataMutations.setContentLength(mutations, length);
+            cache.applyContentMetadataMutations(key, mutations);
         } catch (IOException ignored) { /* Unknown length means not ready. */ }
+    }
+
+    // Earlier versions saved the validated length only under the private readiness key.
+    // Restore Media3's EOF metadata before opening those existing entries for playback.
+    private void restorePlaybackLength(String key) {
+        ContentMetadata metadata = cache.getContentMetadata(key);
+        long length = metadata.get(TOTAL_LENGTH, -1L);
+        if (length <= 0 || ContentMetadata.getContentLength(metadata) == length) return;
+        try {
+            ContentMetadataMutations mutations = new ContentMetadataMutations();
+            ContentMetadataMutations.setContentLength(mutations, length);
+            cache.applyContentMetadataMutations(key, mutations);
+        } catch (IOException ignored) { /* Playback may still use the upstream source. */ }
     }
 
     static final class OfflineStatus {

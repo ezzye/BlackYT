@@ -64,8 +64,13 @@ final class KeyedAudioCacheDataSource implements DataSource {
             for (TransferListener listener : listeners) delegate.addTransferListener(listener);
             return delegate.open(spec.buildUpon().setKey(null).build());
         }
-        if (!PlaybackFormatPins.accept(item.id, format))
+        if (!PlaybackFormatPins.accept(item.id, format)) {
+            // The descriptor now points at a different representation from the active pin.
+            if (cache != null) cache.invalidate(key);
+            else if (cacheFactory != null && cacheFactory.getCache() != null)
+                cacheFactory.getCache().removeResource(key);
             throw new AudioFormatChangedException();
+        }
         cacheKey = key;
         itemId = item.id;
         itemRules = item.rules;
