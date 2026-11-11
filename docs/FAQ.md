@@ -18,7 +18,7 @@ If you see a Play Protect, “not verified,” developer-verification, work, or 
 
 ## How do I install it?
 
-Open the [v0.6.0 release page](https://github.com/ezzye/BlackYT/releases/tag/v0.6.0) and download **BlackYT-Android-v0.6.0.apk** (versionCode 60) from Assets. See [INSTALL.md](INSTALL.md) for steps.
+Open the [v0.7.0-rc5 release page](https://github.com/ezzye/BlackYT/releases/tag/v0.7.0-rc5) and download **BlackYT-Android-v0.7.0-rc5.apk** (versionCode 74) from Assets. See [INSTALL.md](INSTALL.md) for steps.
 
 ## Why is the app called BlackYT when my old icon says BlackYT Phone?
 
@@ -30,7 +30,7 @@ The v0.4.2 release adds a clearer bird-and-headphones launcher icon, including a
 
 ## Why did a video play in the wrong language?
 
-The v0.5.1 release introduced preference for a creator’s original audio when YT identifies it, in any language. The current v0.6.0 release retains this behavior. If original-audio information is unavailable, BlackYT may use an alternate track; there is no manual audio-track selector.
+The v0.5.1 release introduced preference for a creator’s original audio when YT identifies it, in any language. The current release retains this behavior. If original-audio information is unavailable, BlackYT may use an alternate track; there is no manual audio-track selector.
 
 ## What is new in v0.5.0?
 
@@ -42,7 +42,7 @@ Explore topics are editable search shortcuts, not a fixed catalog. Add or edit a
 
 ## How do Play and Add differ?
 
-**Play** starts that result now. **Add** puts it at the end of the current queue. The queue plays in the order songs were added and does not wrap after the last or before the first item. If nothing is playing, Add fills the queue but does not start it; choose a result to start playback. Queue items can be removed and are played FIFO. BlackYT does not automatically choose songs or fetch recommendations.
+Tap a row in a playlist, search results, creator videos, suggestions, saved episodes or history to start the displayed list at that item. Playback continues through the loaded list and stops at its end; load more results before selecting a row to include them. Add still appends to the queue. A saved episode resumes its position and a shared link keeps its timestamp. Pause and Stop remain in control. When offline, BlackYT skips missing or partial items to the next fully cached, unexpired item in the same queue; if none is ready, it waits for a connection. The queue stays intact. No setting is needed.
 
 ## What do the filters do?
 
@@ -50,7 +50,7 @@ Choose **Music** or **All videos** in Search. Music classification depends on YT
 
 ## Does BlackYT download songs or need an account?
 
-No. It streams audio to the phone and needs an internet connection. Library saves episode links, metadata, and resume progress, not audio files. Saved creators fetch videos when opened and also need internet. There is no BlackYT sign-in or hosting account. Mobile-data and battery use depend on how long you listen and on your device and network plan.
+There is no permanent download library. It streams audio to the phone and can temporarily cache some audio for offline gaps. Library saves episode links, metadata, and resume progress, not audio files. Saved creators fetch videos when opened and also need internet. There is no BlackYT sign-in or hosting account. Mobile-data and battery use depend on how long you listen and on your device and network plan.
 
 ## What permissions does BlackYT need?
 
@@ -88,7 +88,7 @@ Final v0.5.0 checks: **20 release unit tests and 14 phone instrumentation tests 
 
 ## Journey-buffer test update
 
-The current v0.7.0-rc4 release candidate includes a six-hour bounded audio cache and stronger rebuffering. See the [journey-buffer guide](JOURNEY-BUFFER.md) for installation, network/data controls, limits and the completed controlled Pixel test and remaining real-journey listening check.
+The current v0.7.0-rc5 release candidate includes a six-hour bounded audio cache and stronger rebuffering. See the [journey-buffer guide](JOURNEY-BUFFER.md) for installation, network/data controls, limits and the completed controlled Pixel test and remaining real-journey listening check.
 
 ### What does the small saved-audio icon mean?
 
