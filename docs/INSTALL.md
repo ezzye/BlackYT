@@ -2,18 +2,18 @@
 
 BlackYT website: https://blackyt.streamit2.me/
 
-BlackYT is an Android app for Android 8.0 or newer. The current main-download v0.7.0-rc4 native release candidate (versionCode 73) provides **BlackYT-Android-v0.7.0-rc4.apk**. The older Termux and Chrome instructions later in this document are a separate legacy option.
+BlackYT is an Android app for Android 8.0 or newer. The current main-download v0.7.0-rc5 native release candidate (versionCode 74) provides **BlackYT-Android-v0.7.0-rc5.apk**. The older Termux and Chrome instructions later in this document are a separate legacy option.
 
 ## Before you begin
 
 - Android 8.0 or newer is required. An iOS app is planned for later, with no release date.
 - You need internet to download, search, and stream. Mobile-data use may count against your plan. No BlackYT account is needed.
-- Download the APK from the [v0.7.0-rc4 release page](https://github.com/ezzye/BlackYT/releases/tag/v0.7.0-rc4). Choose **BlackYT-Android-v0.7.0-rc4.apk** under **Assets**, not the source-code ZIP.
+- Download the APK from the [v0.7.0-rc5 release page](https://github.com/ezzye/BlackYT/releases/tag/v0.7.0-rc5). Choose **BlackYT-Android-v0.7.0-rc5.apk** under **Assets**, not the source-code ZIP.
 - Normal phone installation needs no Developer options, USB debugging, computer, Termux, or Mac.
 
-## Install v0.7.0-rc4
+## Install v0.7.0-rc5
 
-1. Open the [v0.7.0-rc4 release page](https://github.com/ezzye/BlackYT/releases/tag/v0.7.0-rc4) in Chrome or another browser and download **BlackYT-Android-v0.7.0-rc4.apk** under **Assets**. Do not choose the source-code ZIP.
+1. Open the [v0.7.0-rc5 release page](https://github.com/ezzye/BlackYT/releases/tag/v0.7.0-rc5) in Chrome or another browser and download **BlackYT-Android-v0.7.0-rc5.apk** under **Assets**. Do not choose the source-code ZIP.
 2. Open the completed download from Chrome Downloads or Files → Downloads.
 3. If Android asks permission for Chrome or Files to install apps from that source, allow it for that app only. On a Pixel: **Settings → Apps → Special app access → Install unknown apps → Chrome → Allow from this source** (choose Files if Files opened the APK). Labels vary by phone. You can revoke the permission after installation. See [Google Pixel install help](https://support.google.com/pixelphone/answer/7391672).
 4. Tap **Install**, then **Open**. Find **BlackYT** in the app list.
@@ -24,11 +24,13 @@ Do not disable Play Protect or bypass a security warning. If Android shows a Pla
 
 Bottom navigation has **Home**, **Search**, **Library**, and **Queue**. Home includes **Jump back in** and editable Explore topics. Search offers **Music**, **All videos**, and **Creators**. All videos can find talks, interviews, lectures, podcasts, music and other public YT videos. Spoken discovery uses video search and creator browsing; BlackYT does not label videos automatically as podcasts and has no podcast directory, RSS reader, or subscription system. Recently played history stores public track metadata and original artwork references locally; **Home → More (⋮) → Clear listening history** removes it.
 
-Search uses a compact field with a Search action and keyboard Search/Enter submission. Choose **Music**, **All videos**, or **Creators**. Video search has optional Filters for include-any and exclude-any terms. Open a creator to browse its Videos page, load more, and save that creator. You can share a supported YT link to BlackYT or open it from another app. BlackYT shows a preview without autoplay and retains supported timestamps such as `t=205s` (3:25). Tapping a result plays it; **Add** appends it to the FIFO queue. Queue tracks can be removed.
+Search uses a compact field with a Search action and keyboard Search/Enter submission. Choose **Music**, **All videos**, or **Creators**. Video search has optional Filters for include-any and exclude-any terms. Open a creator to browse its Videos page, load more, and save that creator. You can share a supported YT link to BlackYT or open it from another app. BlackYT shows a preview without autoplay and retains supported timestamps such as `t=205s` (3:25). Tapping a result starts the displayed list at that item; **Add** appends it to the queue. Queue tracks can be removed.
 
 A miniplayer appears above the bottom navigation only while a track is current. Tap it to open full **Now Playing**; Back returns. The full player provides seeking, Previous, Play/Pause, Next, Queue, and **More**, with Stop and Retry under More. Track starts and button presses show immediate visual feedback. Swipe across the artwork or miniplayer left for next and right for previous; short vertical drags do not skip. The FIFO queue does not wrap at either end and lasts for the current app session.
 
-Audio streams directly over HTTPS from YT's Googlevideo host to the phone. There are no offline downloads or sign-in; YT can change its service and availability.
+Tap a row in a playlist, search results, creator videos, suggestions, saved episodes or history to start the displayed list at that item. Playback continues through the loaded list and stops at its end; load more results before selecting a row to include them. Add still appends to the queue. A saved episode resumes its position and a shared link keeps its timestamp. Pause and Stop remain in control. When offline, BlackYT skips missing or partial items to the next fully cached, unexpired item in the same queue; if none is ready, it waits for a connection. The queue stays intact. No setting is needed.
+
+Audio streams directly over HTTPS from YT's Googlevideo host to the phone. Journey buffer temporarily caches audio; there is no permanent offline download library or sign-in. YT can change its service and availability.
 
 Tap a bookmark to save an episode in **Library**. Its metadata and listening progress stay on the phone; tapping it later resumes playback, unless 30 seconds or less remain, in which case it starts from the beginning. Saved creators are local too; opening one fetches its latest videos over the internet. Library entries are links, not offline audio. On Home, use **Edit** beside Explore to add a topic, edit its name or search phrase, move it, remove it, or restore the defaults. These features need no account or cloud sync.
 
@@ -36,7 +38,7 @@ Tap a bookmark to save an episode in **Library**. Its metadata and listening pro
 
 The phone journey passed: a shared `youtu.be` link with `t=205s` opened a preview without autoplay and played from 205 seconds when selected; the saved episode retained that resume point after recreating the Library activity. A Wes Roth creator search opened its Videos page, paged results, saved the creator, and reopened its latest videos from Library. Explore add/edit persisted and the edited topic launched an All videos search. With the activity finished, Media3 playback continued muted for 35 seconds with the screen locked and display off. See [verification-v0.5.0.json](../android/docs/verification-v0.5.0.json) for final automated results. This muted check does not establish audible acceptance. Other devices are unverified.
 
-See the [FAQ](FAQ.md), [troubleshooting guide](TROUBLESHOOTING.md), and [offline HTML guide](https://github.com/ezzye/BlackYT/releases/download/v0.7.0-rc4/BlackYT-Android-Guide.html). Updates require the same signing key as the installed release; install over the existing app instead of uninstalling if you want to retain app data.
+See the [FAQ](FAQ.md), [troubleshooting guide](TROUBLESHOOTING.md), and [offline HTML guide](https://github.com/ezzye/BlackYT/releases/download/v0.7.0-rc5/BlackYT-Android-Guide.html). Updates require the same signing key as the installed release; install over the existing app instead of uninstalling if you want to retain app data.
 
 ## Legacy Termux + Chrome PWA (v0.2.0)
 

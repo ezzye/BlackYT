@@ -40,6 +40,7 @@ public final class PlaybackService extends MediaSessionService {
     private android.net.ConnectivityManager connectivity;
     private android.net.ConnectivityManager.NetworkCallback networkCallback;
     private boolean waitingForConnection;
+    private boolean checkingOfflineQueue;
     private long nextConnectionRetryMs, retryDeadlineMs, lastCacheMaintenanceMs;
     private final android.os.Handler progressHandler = new android.os.Handler(android.os.Looper.getMainLooper());
     private final java.util.concurrent.ExecutorService progressWrites = java.util.concurrent.Executors.newSingleThreadExecutor();
@@ -50,6 +51,7 @@ public final class PlaybackService extends MediaSessionService {
             if (player.isPlaying()) saveCurrentProgress();
             updateQueuePreparation();
             retryAfterConnection();
+            continueOfflineQueue();
             long now = android.os.SystemClock.elapsedRealtime();
             if (now - lastCacheMaintenanceMs >= 60_000) {
                 lastCacheMaintenanceMs = now;
@@ -63,6 +65,7 @@ public final class PlaybackService extends MediaSessionService {
     @Override public void onCreate() {
         super.onCreate();
         listening = new ListeningStore(this);
+        connectivity = (android.net.ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
         YouTubeRepository repository = YouTubeRepository.get();
         DataSource.Factory http = new OkHttpDataSource.Factory(repository.mediaClient())
                 .setUserAgent(YouTubeRepository.USER_AGENT);
@@ -99,13 +102,16 @@ public final class PlaybackService extends MediaSessionService {
         player = new ExoPlayer.Builder(this)
                 .setLoadControl(new SmoothAudioLoadControl())
                 .setMediaSourceFactory(new DefaultMediaSourceFactory(this).setDataSourceFactory(playbackFactory)
-                        .setLoadErrorHandlingPolicy(new ConnectionRetryPolicy()))
+                        .setLoadErrorHandlingPolicy(new ConnectionRetryPolicy(this::connectionAvailable)))
                 .setWakeMode(C.WAKE_MODE_NETWORK)
                 .setAudioAttributes(new AudioAttributes.Builder().setUsage(C.USAGE_MEDIA)
                         .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC).build(), true)
                 .build();
         player.addListener(new Player.Listener() {
-            @Override public void onEvents(Player source, Player.Events events) { updateQueuePreparation(); }
+            @Override public void onEvents(Player source, Player.Events events) {
+                updateQueuePreparation();
+                continueOfflineQueue();
+            }
 
             @Override public void onMediaItemTransition(@Nullable MediaItem item, int reason) {
                 waitingForConnection = false; retryDeadlineMs = 0;
@@ -165,7 +171,6 @@ public final class PlaybackService extends MediaSessionService {
         progressHandler.postDelayed(progressTick, 10000);
         session = new MediaSession.Builder(this, player).setSessionActivity(activity)
                 .setCallback(new QueueCallback()).build();
-        connectivity = (android.net.ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
         networkCallback = new android.net.ConnectivityManager.NetworkCallback() {
             @Override public void onCapabilitiesChanged(android.net.Network network, android.net.NetworkCapabilities capabilities) {
                 if (capabilities.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_VALIDATED))
@@ -223,6 +228,63 @@ public final class PlaybackService extends MediaSessionService {
         android.net.NetworkCapabilities caps = connectivity.getNetworkCapabilities(connectivity.getActiveNetwork());
         return caps != null && caps.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)
                 && caps.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_VALIDATED);
+    }
+
+    /** Keep the selected list intact, but bypass entries that cannot finish offline. */
+    private void continueOfflineQueue() {
+        if (checkingOfflineQueue || player == null || progressWrites.isShutdown() || connectionAvailable()
+                || !player.getPlayWhenReady() || player.isPlaying()
+                || (player.getPlaybackState() == Player.STATE_IDLE && player.getPlayerError() == null)
+                || player.getPlaybackState() == Player.STATE_ENDED
+                || player.getMediaItemCount() == 0
+                || PlaybackPreparation.get(this).mode() == PlaybackPreparation.OFF) return;
+        // A signal loss must not discard a song that still has playable buffered audio.
+        final PlaybackException error = player.getPlayerError();
+        if (error == null && player.getCurrentPosition() > 500) return;
+        final ExoPlayer expected = player;
+        final int index = player.getCurrentMediaItemIndex();
+        final long position = player.getCurrentPosition();
+        final List<MediaItem> queue = new ArrayList<>();
+        final List<PlaybackPreparation.Candidate> candidates = new ArrayList<>();
+        for (int i = 0; i < player.getMediaItemCount(); i++) {
+            MediaItem item = player.getMediaItemAt(i);
+            queue.add(item);
+            NativeMediaItems.OwnedItem owned = NativeMediaItems.parse(item);
+            candidates.add(new PlaybackPreparation.Candidate(owned.id, owned.rules));
+        }
+        checkingOfflineQueue = true;
+        progressWrites.execute(() -> {
+            int available = -1;
+            try {
+                java.util.Map<String, AudioPrefixCache.OfflineStatus> statuses =
+                        AudioPrefixCache.get(this).offlineStatuses(candidates);
+                for (int i = index; i < candidates.size(); i++) {
+                    PlaybackPreparation.Candidate candidate = candidates.get(i);
+                    AudioPrefixCache.OfflineStatus status = statuses.get(
+                            AudioPrefixCache.identity(candidate.id, candidate.rules));
+                    if (status != null && status.ready) { available = i; break; }
+                }
+            } catch (RuntimeException unavailable) {
+                Log.w(TAG, "Unable to check offline queue");
+            }
+            final int next = available;
+            progressHandler.post(() -> {
+                checkingOfflineQueue = false;
+                if (player != expected || connectionAvailable() || !player.getPlayWhenReady()
+                        || player.isPlaying() || player.getCurrentMediaItemIndex() != index
+                        || (player.getPlaybackState() == Player.STATE_IDLE && player.getPlayerError() == null)
+                        || player.getPlayerError() != error || player.getCurrentPosition() != position
+                        || player.getMediaItemCount() != queue.size()) return;
+                for (int i = 0; i < queue.size(); i++)
+                    if (!queue.get(i).equals(player.getMediaItemAt(i))) return;
+                if (next <= index) return;
+                waitingForConnection = false;
+                retryDeadlineMs = 0;
+                Log.i(TAG, "Continuing with next offline-ready queue item; skipped=" + (next - index));
+                player.seekTo(next, 0);
+                player.prepare();
+            });
+        });
     }
 
     private void retryAfterConnection() {
@@ -315,7 +377,7 @@ public final class PlaybackService extends MediaSessionService {
         @Override public ListenableFuture<List<MediaItem>> onAddMediaItems(
                 MediaSession mediaSession, MediaSession.ControllerInfo controller, List<MediaItem> items) {
             try {
-                if (items == null || items.isEmpty() || items.size() > 200)
+                if (items == null || items.isEmpty() || items.size() > ListeningStore.MAX_EPISODES)
                     throw new IllegalArgumentException("Invalid queue size");
                 List<MediaItem> accepted = new ArrayList<>(items.size());
                 for (MediaItem item : items) {
