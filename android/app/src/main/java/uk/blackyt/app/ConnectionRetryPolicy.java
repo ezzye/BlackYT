@@ -8,7 +8,12 @@ import androidx.media3.exoplayer.upstream.DefaultLoadErrorHandlingPolicy;
 /** Back off network interruptions without retrying denied or incompatible streams. */
 @androidx.media3.common.util.UnstableApi
 final class ConnectionRetryPolicy extends DefaultLoadErrorHandlingPolicy {
-    ConnectionRetryPolicy() { super(12); }
+    private final java.util.function.BooleanSupplier connected;
+    ConnectionRetryPolicy() { this(() -> true); }
+    ConnectionRetryPolicy(java.util.function.BooleanSupplier connected) {
+        super(12);
+        this.connected = connected;
+    }
 
     static boolean isTransient(Throwable error) {
         for (int depth = 0; error != null && depth < 20; depth++, error = error.getCause()) {
@@ -26,6 +31,9 @@ final class ConnectionRetryPolicy extends DefaultLoadErrorHandlingPolicy {
 
     @Override public long getRetryDelayMsFor(LoadErrorInfo info) {
         if (info.exception instanceof AudioCacheInvalidatedException) return 0;
+        // Surface the miss to the service promptly so it can select cached successors.
+        // When none are available, the service retains the item and resumes on reconnect.
+        if (!connected.getAsBoolean()) return C.TIME_UNSET;
         if (isTransient(info.exception)) return info.errorCount > 12 ? C.TIME_UNSET
                 : Math.min(15_000, 1_000L << Math.min(4, Math.max(0, info.errorCount - 1)));
         for (Throwable e = info.exception; e != null; e = e.getCause()) {

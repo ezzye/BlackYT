@@ -1,0 +1,17 @@
+{
+  "versionName": "0.7.0-rc5-native",
+  "versionCode": 74,
+  "signedReleaseInstalled": true,
+  "installedApkMatchesArtifact": true,
+  "sha256": "33263fb06653ada7b92f017270a9b336b0aa372253294fa8867cebaefbe0718e",
+  "tests": 64,
+  "unitFailures": 0,
+  "lintErrors": 0,
+  "lintWarnings": 26,
+  "signedDeviceTests": 2,
+  "realAudioReplayStarts": 6,
+  "seekAssistedRealAudioAutoNext": true,
+  "muted": true,
+  "ownerListening": "Pending",
+  "publicRelease": false
+}
